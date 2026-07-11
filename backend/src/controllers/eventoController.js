@@ -2,6 +2,7 @@
  * Controller de eventos.
  */
 const eventoService = require('../services/eventoService');
+const { salvarBanner } = require('../services/storageService');
 const { success } = require('../utils/response');
 
 async function listarPublicos(req, res, next) {
@@ -40,11 +41,16 @@ async function obterAdmin(req, res, next) {
   }
 }
 
+async function resolverBanner(req, body) {
+  if (!req.file) return body;
+  body.bannerUrl = await salvarBanner(req.file);
+  return body;
+}
+
 async function criar(req, res, next) {
   try {
     const body = { ...req.body };
-    if (req.file) body.bannerUrl = `/uploads/banners/${req.file.filename}`;
-    // Multer envia números como string
+    await resolverBanner(req, body);
     if (body.valor) body.valor = Number(body.valor);
     if (body.vagasMaximas) body.vagasMaximas = Number(body.vagasMaximas);
 
@@ -58,7 +64,7 @@ async function criar(req, res, next) {
 async function atualizar(req, res, next) {
   try {
     const body = { ...req.body };
-    if (req.file) body.bannerUrl = `/uploads/banners/${req.file.filename}`;
+    await resolverBanner(req, body);
     if (body.valor) body.valor = Number(body.valor);
     if (body.vagasMaximas) body.vagasMaximas = Number(body.vagasMaximas);
 

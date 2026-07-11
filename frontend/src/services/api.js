@@ -27,9 +27,19 @@ export default api;
 
 export function mediaUrl(path) {
   if (!path) return null;
-  if (path.startsWith('http')) return path;
-  const base = import.meta.env.VITE_MEDIA_URL || '';
-  return `${base}${path}`;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+
+  const explicit = import.meta.env.VITE_MEDIA_URL;
+  if (explicit) return `${explicit.replace(/\/$/, '')}${path}`;
+
+  // Em produção (Netlify), /uploads precisa apontar para a API (Render)
+  const apiBase = import.meta.env.VITE_API_URL || '';
+  if (apiBase.startsWith('http')) {
+    const origin = apiBase.replace(/\/api\/?$/, '');
+    return `${origin}${path}`;
+  }
+
+  return path;
 }
 
 export function formatMoney(value) {

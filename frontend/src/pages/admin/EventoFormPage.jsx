@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import api from '../../services/api';
+import api, { mediaUrl } from '../../services/api';
 import { Button, Input, TextArea, Loading } from '../../components/ui';
 
 export default function EventoFormPage() {
@@ -12,6 +12,8 @@ export default function EventoFormPage() {
     defaultValues: { status: 'ABERTO', valor: 10, vagasMaximas: 100 },
   });
   const [banner, setBanner] = useState(null);
+  const [bannerAtual, setBannerAtual] = useState(null);
+  const [previewLocal, setPreviewLocal] = useState(null);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -34,9 +36,21 @@ export default function EventoFormPage() {
           nomeFavorecido: e.nomeFavorecido,
           status: e.status,
         });
+        setBannerAtual(e.bannerUrl || null);
       })
       .finally(() => setLoading(false));
   }, [id, isEdit, reset]);
+
+  useEffect(() => () => {
+    if (previewLocal) URL.revokeObjectURL(previewLocal);
+  }, [previewLocal]);
+
+  function onBannerChange(e) {
+    const file = e.target.files?.[0] || null;
+    setBanner(file);
+    if (previewLocal) URL.revokeObjectURL(previewLocal);
+    setPreviewLocal(file ? URL.createObjectURL(file) : null);
+  }
 
   async function onSubmit(values) {
     setSaving(true);
@@ -46,6 +60,7 @@ export default function EventoFormPage() {
       Object.entries(values).forEach(([k, v]) => form.append(k, v ?? ''));
       if (banner) form.append('banner', banner);
 
+      // Não forçar Content-Type: o browser define o boundary do multipart
       if (isEdit) await api.put(`/eventos/${id}`, form);
       else await api.post('/eventos', form);
 
@@ -58,6 +73,8 @@ export default function EventoFormPage() {
   }
 
   if (loading) return <Loading />;
+
+  const previewSrc = previewLocal || mediaUrl(bannerAtual);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -89,7 +106,17 @@ export default function EventoFormPage() {
         </label>
         <label className="block space-y-1.5">
           <span className="text-sm font-medium text-[var(--color-ink-soft)]">Banner</span>
-          <input type="file" accept="image/*" onChange={(e) => setBanner(e.target.files?.[0] || null)} />
+          <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={onBannerChange} />
+          {banner && (
+            <p className="text-xs text-[var(--color-ink-soft)]">Selecionado: {banner.name}</p>
+          )}
+          {previewSrc && (
+            <img
+              src={previewSrc}
+              alt="Preview do banner"
+              className="mt-2 max-h-48 w-full rounded-xl object-cover"
+            />
+          )}
         </label>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <Button type="submit" disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
