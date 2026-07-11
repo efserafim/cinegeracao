@@ -22,13 +22,22 @@ const app = express();
 
 // Segurança HTTP
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+
+const allowedOrigins = new Set(
+  config.frontendOrigins
+    .map((o) => o.replace(/\/$/, ''))
+    .concat(['https://cinegeracao.netlify.app', 'http://localhost:5173']),
+);
+
 app.use(
   cors({
     origin(origin, callback) {
-      // Requests sem Origin (healthcheck, curl, mobile)
       if (!origin) return callback(null, true);
-      if (config.frontendOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error(`CORS bloqueado para origem: ${origin}`));
+      const normalized = origin.replace(/\/$/, '');
+      if (allowedOrigins.has(normalized)) return callback(null, true);
+      console.warn('[CORS] origem não permitida:', origin, '| permitidas:', [...allowedOrigins]);
+      // false = bloqueia sem quebrar o preflight com 500
+      return callback(null, false);
     },
     credentials: true,
   }),
