@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import api, { formatDate, formatMoney } from '../services/api';
+import api, { formatDate, formatMoney, mediaUrl } from '../services/api';
 import { Button, Loading } from '../components/ui';
 import { logoImg, posterImg } from '../assets/brand';
 import ContatosDuvidas from '../components/ContatosDuvidas';
@@ -31,13 +31,16 @@ export default function HomePage() {
     navigate(`/evento/${selected}/inscrever`);
   }
 
+  const eventoPrincipal = eventos[0];
+  const heroImg = mediaUrl(eventoPrincipal?.bannerUrl) || posterImg;
+
   return (
     <div>
       {/* Hero: no mobile cobre a tela; no desktop mostra o poster inteiro ao lado */}
       <section className="relative overflow-hidden bg-[#070a12]">
         {/* Fundo desfocado (desktop) para preencher laterais sem crop agressivo */}
         <img
-          src={posterImg}
+          src={heroImg}
           alt=""
           aria-hidden
           className="pointer-events-none absolute inset-0 hidden h-full w-full scale-110 object-cover opacity-40 blur-2xl lg:block"
@@ -50,7 +53,7 @@ export default function HomePage() {
           <div className="relative min-h-[52vh] lg:min-h-[70vh]">
             {/* Mobile: crop mais suave no centro */}
             <img
-              src={posterImg}
+              src={heroImg}
               alt="Homem-Aranha: Um novo dia"
               className="absolute inset-0 h-full w-full object-cover object-[center_25%] lg:hidden"
             />
@@ -59,7 +62,7 @@ export default function HomePage() {
             {/* Desktop: poster vertical inteiro */}
             <div className="relative hidden h-full items-center justify-center lg:flex">
               <img
-                src={posterImg}
+                src={heroImg}
                 alt="Homem-Aranha: Um novo dia"
                 className="animate-fade-in max-h-[70vh] w-auto max-w-full rounded-2xl object-contain shadow-[0_20px_60px_rgba(0,0,0,0.55)] ring-1 ring-white/15"
               />
@@ -119,14 +122,23 @@ export default function HomePage() {
 
         {!loading && eventos.length === 1 && (
           <div className="space-y-4">
-            <div className="rounded-2xl border border-[#e11d2e]/20 bg-white/90 p-4 dark:border-white/10 dark:bg-slate-900/80">
-              <p className="font-semibold">{eventos[0].nome}</p>
-              <p className="mt-1 whitespace-pre-line text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
-                {eventos[0].descricao}
-              </p>
-              <p className="mt-2 text-sm font-medium">
-                {formatDate(eventos[0].data)} · {eventos[0].horario} · {formatMoney(eventos[0].valor)}
-              </p>
+            <div className="overflow-hidden rounded-2xl border border-[#e11d2e]/20 bg-white/90 dark:border-white/10 dark:bg-slate-900/80">
+              {(mediaUrl(eventos[0].bannerUrl) || posterImg) && (
+                <img
+                  src={mediaUrl(eventos[0].bannerUrl) || posterImg}
+                  alt=""
+                  className="h-48 w-full object-cover object-top sm:h-56"
+                />
+              )}
+              <div className="p-4">
+                <p className="font-semibold">{eventos[0].nome}</p>
+                <p className="mt-1 whitespace-pre-line text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
+                  {eventos[0].descricao}
+                </p>
+                <p className="mt-2 text-sm font-medium">
+                  {formatDate(eventos[0].data)} · {eventos[0].horario} · {formatMoney(eventos[0].valor)}
+                </p>
+              </div>
             </div>
             <Button
               className="w-full"

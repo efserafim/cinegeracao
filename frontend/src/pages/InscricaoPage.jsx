@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import api, { formatDate, formatMoney } from '../services/api';
+import api, { formatDate, formatMoney, mediaUrl } from '../services/api';
 import { Button, Input, Loading } from '../components/ui';
 import { logoImg, posterImg } from '../assets/brand';
 import ContatosDuvidas from '../components/ContatosDuvidas';
@@ -48,12 +48,13 @@ export default function InscricaoPage() {
   }
 
   const esgotado = evento.vagasRestantes <= 0;
+  const bannerSrc = mediaUrl(evento.bannerUrl) || posterImg;
 
   return (
     <div className="mx-auto max-w-md px-4 py-8 animate-fade-up">
       <div className="relative mb-6 overflow-hidden rounded-2xl bg-[#070a12]">
         <img
-          src={posterImg}
+          src={bannerSrc}
           alt=""
           className="mx-auto h-44 w-auto max-w-full object-contain sm:h-52"
         />
