@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Download, Search } from 'lucide-react';
+import { Download, Search, Trash2 } from 'lucide-react';
 import api, { formatDate, formatMoney } from '../../services/api';
 import { Button, Input, Loading, StatCard, StatusBadge } from '../../components/ui';
 
@@ -9,6 +9,7 @@ export default function InscritosPage() {
   const [items, setItems] = useState([]);
   const [dash, setDash] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [excluindoId, setExcluindoId] = useState(null);
   const [filters, setFilters] = useState({ q: '', status: '', cidade: '', telefone: '' });
 
   async function load() {
@@ -39,6 +40,22 @@ export default function InscritosPage() {
     a.download = `inscritos.${ext}`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function excluirInscricao(inscricao) {
+    const nome = inscricao.participante?.nome || 'esta inscrição';
+    const ok = window.confirm(`Excluir a inscrição de ${nome}?\nEssa ação não pode ser desfeita.`);
+    if (!ok) return;
+
+    setExcluindoId(inscricao.id);
+    try {
+      await api.delete(`/inscricoes/${inscricao.id}`);
+      await load();
+    } catch (err) {
+      window.alert(err.response?.data?.message || err.message || 'Falha ao excluir');
+    } finally {
+      setExcluindoId(null);
+    }
   }
 
   return (
@@ -116,10 +133,22 @@ export default function InscritosPage() {
                   <td className="px-4 py-3">{formatDate(i.criadoEm)}</td>
                   <td className="px-4 py-3"><StatusBadge status={i.status} /></td>
                   <td className="px-4 py-3">{formatMoney(i.valor)}</td>
-                  <td className="px-4 py-3 text-right">
-                    <Link to={`/admin/inscricoes/${i.id}`} className="text-[var(--color-forest)] hover:underline">
-                      Ver comprovante
-                    </Link>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-3">
+                      <Link to={`/admin/inscricoes/${i.id}`} className="text-[var(--color-forest)] hover:underline">
+                        Ver comprovante
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => excluirInscricao(i)}
+                        disabled={excluindoId === i.id}
+                        className="inline-flex items-center gap-1 text-red-600 hover:underline disabled:opacity-50"
+                        title="Excluir inscrição"
+                      >
+                        <Trash2 size={14} />
+                        {excluindoId === i.id ? 'Excluindo...' : 'Excluir'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

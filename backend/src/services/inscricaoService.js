@@ -386,6 +386,42 @@ async function cancelar(id, observacao, adminId, ip) {
   return buscarAdmin(id);
 }
 
+async function excluir(id, adminId, ip) {
+  const inscricao = await prisma.inscricao.findUnique({
+    where: { id },
+    include: { participante: true },
+  });
+  if (!inscricao) {
+    const err = new Error('Inscrição não encontrada');
+    err.status = 404;
+    throw err;
+  }
+
+  const participanteId = inscricao.participanteId;
+
+  await prisma.inscricao.delete({ where: { id } });
+
+  // Remove participante órfão (sem outras inscrições)
+  const outras = await prisma.inscricao.count({ where: { participanteId } });
+  if (outras === 0) {
+    await prisma.participante.delete({ where: { id: participanteId } }).catch(() => {});
+  }
+
+  await registrarLog({
+    adminId,
+    acao: 'INSCRICAO_EXCLUIDA',
+    entidade: 'Inscricao',
+    entidadeId: id,
+    detalhes: {
+      codigo: inscricao.codigo,
+      participante: inscricao.participante?.nome,
+    },
+    ip,
+  });
+
+  return { id, excluida: true };
+}
+
 async function atualizarObservacao(id, observacao, adminId, ip) {
   await prisma.inscricao.update({
     where: { id },
@@ -548,6 +584,7 @@ module.exports = {
   confirmarPagamento,
   recusarPagamento,
   cancelar,
+  excluir,
   atualizarObservacao,
   dashboard,
   dashboardGlobal,

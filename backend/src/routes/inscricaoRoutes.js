@@ -40,6 +40,7 @@ router.get('/:id', authAdmin, inscricaoController.obterAdmin);
 router.post('/:id/confirmar', authAdmin, inscricaoController.confirmar);
 router.post('/:id/recusar', authAdmin, inscricaoController.recusar);
 router.post('/:id/cancelar', authAdmin, inscricaoController.cancelar);
+router.delete('/:id', authAdmin, inscricaoController.excluir);
 router.patch('/:id/observacao', authAdmin, inscricaoController.observacao);
 
 module.exports = router;

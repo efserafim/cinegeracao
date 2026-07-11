@@ -92,6 +92,15 @@ async function cancelar(req, res, next) {
   }
 }
 
+async function excluir(req, res, next) {
+  try {
+    const data = await inscricaoService.excluir(req.params.id, req.admin.id, req.ip);
+    return success(res, data, 'Inscrição excluída');
+  } catch (err) {
+    return next(err);
+  }
+}
+
 async function observacao(req, res, next) {
   try {
     const data = await inscricaoService.atualizarObservacao(
@@ -174,6 +183,7 @@ module.exports = {
   confirmar,
   recusar,
   cancelar,
+  excluir,
   observacao,
   dashboard,
   dashboardGlobal,
