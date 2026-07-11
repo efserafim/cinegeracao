@@ -41,6 +41,8 @@ export default function PublicLayout() {
           <p className="font-display text-base text-[var(--color-ink)] dark:text-white">CineGeração</p>
           <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[#e11d2e]/80">Homem-Aranha: Um novo dia</p>
           <p className="mt-3 leading-relaxed">
+            Paróquia Santo Antônio · Bacaxá · Saquarema/RJ
+            <br />
             Cinema MaxiMovie · Bacaxá, Saquarema
             <br />
             Dúvidas: Eduardo (22) 99247-3724 · Lavínia (22) 99818-7602
