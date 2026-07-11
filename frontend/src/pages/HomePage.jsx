@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api, { formatDate, formatMoney, mediaUrl } from '../services/api';
 import { Button, Loading } from '../components/ui';
-import { posterImg } from '../assets/brand';
+import { logoImg, posterImg } from '../assets/brand';
 import ContatosDuvidas from '../components/ContatosDuvidas';
 import CinemaMapa from '../components/CinemaMapa';
 
@@ -58,69 +58,40 @@ export default function HomePage() {
             />
           </div>
 
-          {/* Marca Homem-Aranha + CTA */}
-          <div className="relative z-10 overflow-hidden px-4 pb-10 pt-4 lg:overflow-visible lg:pb-6 lg:pt-0">
-            <div className="pointer-events-none absolute inset-0 opacity-50 web-mask lg:rounded-3xl" />
-            <div className="pointer-events-none absolute -right-8 bottom-0 h-40 w-40 rounded-full bg-[#e11d2e]/25 blur-3xl" />
-            <div className="pointer-events-none absolute left-4 top-8 h-28 w-28 rounded-full bg-[#1a6cff]/20 blur-3xl" />
-
-            <div className="relative flex flex-col items-center lg:items-start lg:text-left">
-              {/* Título + aranha da marca */}
-              <div
-                className="animate-fade-up flex items-center justify-center gap-2.5 lg:justify-start"
-                style={{ animationDelay: '0.08s' }}
-              >
-                <img
-                  src="/image/aranha.png"
-                  alt=""
-                  aria-hidden
-                  className="animate-pulse-glow h-10 w-10 object-contain md:h-12 md:w-12"
-                />
-                <p className="brand-cinegeracao text-[clamp(2.35rem,10vw,3.75rem)]">
-                  CineGeração
-                </p>
-              </div>
-
-              <p
-                className="animate-fade-up mt-2 font-display text-lg uppercase tracking-[0.14em] text-[#f5c542] md:text-xl"
-                style={{ animationDelay: '0.12s' }}
-              >
-                Homem-Aranha: Um novo dia
-              </p>
-
-              {/* Spidey cutout com efeito moderno */}
-              <div
-                className="animate-fade-up relative mt-2 w-full max-w-md lg:max-w-none"
-                style={{ animationDelay: '0.16s' }}
-              >
-                <div className="pointer-events-none absolute inset-x-8 bottom-2 h-10 rounded-[100%] bg-black/50 blur-xl" />
-                <img
-                  src="/image/spiderman.png"
-                  alt="Homem-Aranha"
-                  className="animate-spidey-float spidey-glow relative mx-auto h-auto w-[min(100%,340px)] object-contain lg:w-[min(100%,420px)]"
-                />
-              </div>
-
-              <h1
-                className="animate-fade-up mt-1 max-w-sm text-center text-sm font-medium leading-relaxed text-white/90 md:text-base lg:text-left"
-                style={{ animationDelay: '0.2s' }}
-              >
-                Cinema MaxiMovie · Bacaxá, Saquarema
-                <br />
-                Sessão 18h10 · Chegada 17h10
-                <br />
-                Pipoca P + Guaravita inclusos
-              </h1>
-
-              <button
-                type="button"
-                onClick={() => document.getElementById('inscricao')?.scrollIntoView({ behavior: 'smooth' })}
-                className="animate-fade-up mt-6 rounded-xl bg-[#e11d2e] px-6 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-red-900/40 transition hover:bg-[#b01422]"
-                style={{ animationDelay: '0.26s' }}
-              >
-                Quero participar
-              </button>
-            </div>
+          {/* Marca + CTA */}
+          <div className="relative z-10 flex flex-col items-center px-4 pb-12 pt-6 text-center lg:items-start lg:pb-6 lg:pt-0 lg:text-left">
+            <img
+              src={logoImg}
+              alt="CineGeração"
+              className="animate-swing animate-pulse-glow h-28 w-28 rounded-full object-cover shadow-[0_0_40px_rgba(225,29,46,0.45)] ring-4 ring-[#f5c542]/80 md:h-36 md:w-36"
+            />
+            <p className="animate-fade-up mt-5 font-display text-4xl text-white drop-shadow-lg md:text-5xl" style={{ animationDelay: '0.1s' }}>
+              CineGeração
+            </p>
+            <p
+              className="animate-fade-up mt-1 font-display text-xl text-[#f5c542] md:text-2xl"
+              style={{ animationDelay: '0.14s' }}
+            >
+              Homem-Aranha: Um novo dia
+            </p>
+            <h1
+              className="animate-fade-up mt-3 max-w-sm text-sm font-medium leading-relaxed text-white/90 md:text-base"
+              style={{ animationDelay: '0.18s' }}
+            >
+              Cinema MaxiMovie · Bacaxá, Saquarema
+              <br />
+              Sessão 18h10 · Chegada 17h10
+              <br />
+              Pipoca P + Guaravita inclusos
+            </h1>
+            <button
+              type="button"
+              onClick={() => document.getElementById('inscricao')?.scrollIntoView({ behavior: 'smooth' })}
+              className="animate-fade-up mt-7 rounded-xl bg-[#e11d2e] px-6 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-red-900/40 transition hover:bg-[#b01422]"
+              style={{ animationDelay: '0.26s' }}
+            >
+              Quero participar
+            </button>
           </div>
         </div>
       </section>

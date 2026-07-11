@@ -17,10 +17,7 @@ export default function PublicLayout() {
               className="h-11 w-11 rounded-full object-cover ring-2 ring-[#f5c542]/70"
             />
             <span className="leading-tight">
-              <span className="flex items-center gap-1.5">
-                <img src="/image/aranha.png" alt="" aria-hidden className="h-4 w-4 object-contain opacity-90" />
-                <span className="block font-display text-lg tracking-wide text-white">CINEGERAÇÃO</span>
-              </span>
+              <span className="block font-display text-lg text-white">CineGeração</span>
               <span className="block text-[10px] uppercase tracking-[0.18em] text-[#f5c542]">Homem-Aranha: Um novo dia</span>
             </span>
           </Link>
