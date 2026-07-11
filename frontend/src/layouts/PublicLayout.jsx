@@ -8,16 +8,16 @@ export default function PublicLayout() {
 
   return (
     <div className="bg-page min-h-screen">
-      <header className="sticky top-0 z-20 border-b border-black/5 bg-[#070a12]/90 backdrop-blur-md dark:border-white/10">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-2.5 lg:px-6">
+      <header className="sticky top-0 z-20 border-b border-white/5 bg-[#070a12]/75 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-2 lg:px-6">
           <Link to="/" className="flex items-center gap-2.5">
             <img
               src={logoImg}
               alt="CineGeração"
-              className="h-11 w-11 rounded-full object-cover ring-2 ring-[#f5c542]/70"
+              className="h-10 w-10 rounded-full object-cover ring-2 ring-[#f5c542]/60"
             />
             <span className="leading-tight">
-              <span className="block font-display text-lg text-white">CineGeração</span>
+              <span className="block font-display text-base text-white">CineGeração</span>
               <span className="block text-[10px] uppercase tracking-[0.18em] text-[#f5c542]">Homem-Aranha: Um novo dia</span>
             </span>
           </Link>

@@ -7,8 +7,7 @@ import ContatosDuvidas from '../components/ContatosDuvidas';
 import CinemaMapa from '../components/CinemaMapa';
 
 /**
- * Entrada pública temática Homem-Aranha + formulário.
- * Poster full-bleed + logo como marca principal.
+ * Entrada pública: poster cinematográfico full-bleed + inscrição.
  */
 export default function HomePage() {
   const [eventos, setEventos] = useState([]);
@@ -33,39 +32,43 @@ export default function HomePage() {
   }
 
   const eventoPrincipal = eventos[0];
-  const heroImg = mediaUrl(eventoPrincipal?.bannerUrl) || posterImg;
+  const flyerImg = mediaUrl(eventoPrincipal?.bannerUrl);
 
   return (
     <div>
-      {/* Hero: arte inteira (sem crop) + marca/CTA abaixo no mobile */}
-      <section className="relative overflow-hidden bg-[#070a12]">
+      {/* Hero: poster do filme (não o flyer quadrado) */}
+      <section className="relative min-h-[88vh] overflow-hidden bg-[#070a12]">
         <img
-          src={heroImg}
+          src={posterImg}
           alt=""
           aria-hidden
-          className="pointer-events-none absolute inset-0 hidden h-full w-full scale-110 object-cover opacity-40 blur-2xl lg:block"
+          className="absolute inset-0 h-full w-full scale-105 object-cover object-[center_18%] blur-2xl opacity-50"
         />
-        <div className="absolute inset-0 hidden bg-[#070a12]/50 lg:block" />
-        <div className="absolute inset-0 web-mask opacity-40" />
+        <div className="absolute inset-0 web-mask opacity-30" />
 
-        <div className="relative mx-auto grid max-w-6xl lg:grid-cols-2 lg:items-center lg:gap-8 lg:px-6 lg:py-10">
-          {/* Poster — largura total, altura natural (arte completa) */}
-          <div className="relative">
+        <div className="relative mx-auto flex min-h-[88vh] max-w-6xl flex-col lg:flex-row lg:items-end lg:gap-10 lg:px-6 lg:pb-14 lg:pt-8">
+          {/* Poster cinematográfico — sem moldura quadrada */}
+          <div className="relative flex-1">
+            <div className="pointer-events-none absolute -inset-8 bg-[radial-gradient(ellipse_at_center,rgba(225,29,46,0.28),transparent_65%)]" />
             <img
-              src={heroImg}
+              src={posterImg}
               alt="Homem-Aranha: Um novo dia"
-              className="animate-fade-in block h-auto w-full object-contain lg:mx-auto lg:max-h-[78vh] lg:w-auto lg:max-w-full lg:rounded-2xl lg:shadow-[0_20px_60px_rgba(0,0,0,0.55)] lg:ring-1 lg:ring-white/15"
+              className="animate-fade-in relative mx-auto h-[58vh] w-auto max-w-[100%] object-contain drop-shadow-[0_30px_60px_rgba(0,0,0,0.65)] sm:h-[64vh] lg:mx-0 lg:h-[78vh]"
             />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#070a12] to-transparent lg:hidden" />
           </div>
 
           {/* Marca + CTA */}
-          <div className="relative z-10 flex flex-col items-center px-4 pb-12 pt-6 text-center lg:items-start lg:pb-6 lg:pt-0 lg:text-left">
+          <div className="relative z-10 -mt-10 flex flex-col items-center px-5 pb-12 text-center lg:mt-0 lg:mb-8 lg:max-w-md lg:items-start lg:px-0 lg:pb-4 lg:text-left">
             <img
               src={logoImg}
               alt="CineGeração"
-              className="animate-swing animate-pulse-glow h-28 w-28 rounded-full object-cover shadow-[0_0_40px_rgba(225,29,46,0.45)] ring-4 ring-[#f5c542]/80 md:h-36 md:w-36"
+              className="animate-swing animate-pulse-glow h-24 w-24 rounded-full object-cover shadow-[0_0_40px_rgba(225,29,46,0.45)] ring-4 ring-[#f5c542]/70 md:h-28 md:w-28"
             />
-            <p className="animate-fade-up mt-5 font-display text-4xl text-white drop-shadow-lg md:text-5xl" style={{ animationDelay: '0.1s' }}>
+            <p
+              className="animate-fade-up mt-5 font-display text-4xl text-white drop-shadow-lg md:text-5xl"
+              style={{ animationDelay: '0.1s' }}
+            >
               CineGeração
             </p>
             <p
@@ -87,7 +90,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => document.getElementById('inscricao')?.scrollIntoView({ behavior: 'smooth' })}
-              className="animate-fade-up mt-7 rounded-xl bg-[#e11d2e] px-6 py-3 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-red-900/40 transition hover:bg-[#b01422]"
+              className="animate-fade-up mt-7 rounded-full bg-[#e11d2e] px-8 py-3.5 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-red-900/40 transition hover:bg-[#b01422]"
               style={{ animationDelay: '0.26s' }}
             >
               Quero participar
@@ -96,7 +99,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Formulário / escolha de evento */}
+      {/* Inscrição */}
       <section id="inscricao" className="mx-auto max-w-md px-4 py-10 animate-fade-up">
         <div className="mb-6 flex items-center gap-3">
           <span className="h-1 w-8 rounded-full bg-[#e11d2e]" />
@@ -110,27 +113,25 @@ export default function HomePage() {
         )}
 
         {!loading && eventos.length === 1 && (
-          <div className="space-y-4">
-            <div className="overflow-hidden rounded-3xl border border-[#e11d2e]/15 bg-white/95 shadow-[0_12px_40px_rgba(11,16,32,0.08)] dark:border-white/10 dark:bg-slate-900/85">
-              {(mediaUrl(eventos[0].bannerUrl) || posterImg) && (
-                <img
-                  src={mediaUrl(eventos[0].bannerUrl) || posterImg}
-                  alt=""
-                  className="h-auto w-full bg-[#070a12] object-contain"
-                />
-              )}
-              <div className="p-5">
-                <p className="font-semibold tracking-tight">{eventos[0].nome}</p>
-                <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-[var(--color-ink-soft)] dark:text-slate-400">
-                  {eventos[0].descricao}
-                </p>
-                <p className="mt-3 text-sm font-medium text-[var(--color-ink)] dark:text-white">
-                  {formatDate(eventos[0].data)} · {eventos[0].horario} · {formatMoney(eventos[0].valor)}
-                </p>
-              </div>
+          <div className="space-y-5">
+            {flyerImg && (
+              <img
+                src={flyerImg}
+                alt=""
+                className="h-auto w-full object-contain shadow-[0_18px_50px_rgba(11,16,32,0.18)]"
+              />
+            )}
+            <div className="space-y-2 px-1">
+              <p className="font-semibold tracking-tight">{eventos[0].nome}</p>
+              <p className="whitespace-pre-line text-sm leading-relaxed text-[var(--color-ink-soft)] dark:text-slate-400">
+                {eventos[0].descricao}
+              </p>
+              <p className="text-sm font-medium text-[var(--color-ink)] dark:text-white">
+                {formatDate(eventos[0].data)} · {eventos[0].horario} · {formatMoney(eventos[0].valor)}
+              </p>
             </div>
             <Button
-              className="w-full shadow-md shadow-red-900/15"
+              className="w-full rounded-full shadow-md shadow-red-900/15"
               disabled={eventos[0].vagasRestantes <= 0}
               onClick={() => navigate(`/evento/${eventos[0].id}/inscrever`)}
             >
@@ -144,7 +145,7 @@ export default function HomePage() {
             {eventos.map((ev) => (
               <label
                 key={ev.id}
-                className={`flex cursor-pointer gap-3 rounded-xl border px-4 py-3 transition ${
+                className={`flex cursor-pointer gap-3 rounded-2xl border px-4 py-3 transition ${
                   selected === ev.id
                     ? 'border-[#e11d2e] bg-[#e11d2e]/5'
                     : 'border-black/10 bg-white/90 dark:border-white/15 dark:bg-slate-900/70'
@@ -166,7 +167,7 @@ export default function HomePage() {
                 </span>
               </label>
             ))}
-            <Button className="mt-2 w-full" disabled={!selected} onClick={irParaFormulario}>
+            <Button className="mt-2 w-full rounded-full" disabled={!selected} onClick={irParaFormulario}>
               Continuar
             </Button>
           </div>
