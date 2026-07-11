@@ -9,7 +9,7 @@ export default function LoginPage() {
   const { login, supabaseConfigured } = useAuth();
   const navigate = useNavigate();
   const { register, handleSubmit, formState: { errors } } = useForm({
-    defaultValues: { email: 'efserafimflu@gmail.com' },
+    defaultValues: { email: '', senha: '' },
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -31,6 +31,7 @@ export default function LoginPage() {
     <div className="bg-page flex min-h-screen items-center justify-center px-4">
       <form
         onSubmit={handleSubmit(onSubmit)}
+        autoComplete="off"
         className="animate-fade-up w-full max-w-md space-y-4 rounded-2xl border border-black/5 bg-white/90 p-8 shadow-sm dark:border-white/10 dark:bg-slate-900/80"
       >
         <div className="flex items-center gap-3">
@@ -38,7 +39,7 @@ export default function LoginPage() {
           <div>
             <p className="font-display text-2xl text-[#e11d2e]">CineGeração</p>
             <h1 className="text-sm font-medium text-[var(--color-ink-soft)]">
-              {supabaseConfigured ? 'Login (Supabase)' : 'Acesso administrativo'}
+              Acesso administrativo
             </h1>
           </div>
         </div>
@@ -46,12 +47,14 @@ export default function LoginPage() {
         <Input
           label="E-mail"
           type="email"
+          autoComplete="username"
           {...register('email', { required: 'Obrigatório' })}
           error={errors.email?.message}
         />
         <Input
           label="Senha"
           type="password"
+          autoComplete="current-password"
           {...register('senha', { required: 'Obrigatório' })}
           error={errors.senha?.message}
         />
@@ -59,11 +62,11 @@ export default function LoginPage() {
         <Button type="submit" disabled={loading} className="w-full">
           {loading ? 'Entrando...' : 'Entrar'}
         </Button>
-        <p className="text-center text-xs text-[var(--color-ink-soft)]">
-          {supabaseConfigured
-            ? 'Use o usuário criado em Authentication no Supabase (ou o admin local).'
-            : <>Use <strong>admin@cinegeracao.local</strong> / <strong>Admin@123</strong></>}
-        </p>
+        {supabaseConfigured && (
+          <p className="text-center text-xs text-[var(--color-ink-soft)]">
+            Cadastre o usuário em Supabase → Authentication → Users (Auto Confirm).
+          </p>
+        )}
       </form>
     </div>
   );

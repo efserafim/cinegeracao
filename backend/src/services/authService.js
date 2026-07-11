@@ -47,8 +47,7 @@ async function loginComSenha(email, senha, ip) {
   };
 }
 
-async function loginComSupabase(accessToken, ip) {
-  const user = await verificarTokenSupabase(accessToken);
+async function garantirAdminDoSupabase(user) {
   const email = (user.email || '').toLowerCase();
   if (!email) {
     const err = new Error('Usuário Supabase sem e-mail');
@@ -56,19 +55,43 @@ async function loginComSupabase(accessToken, ip) {
     throw err;
   }
 
-  const adminUser = await prisma.admin.findUnique({ where: { email } });
-  if (!adminUser || !adminUser.ativo) {
-    const err = new Error('Este e-mail não tem permissão de administrador. Cadastre-o na tabela admins.');
+  let adminUser = await prisma.admin.findUnique({ where: { email } });
+
+  if (!adminUser) {
+    const nome =
+      user.user_metadata?.nome ||
+      user.user_metadata?.full_name ||
+      email.split('@')[0];
+    const senhaHash = await bcrypt.hash(`supabase_${user.id}_${Date.now()}`, 12);
+    adminUser = await prisma.admin.create({
+      data: {
+        email,
+        nome: String(nome).slice(0, 120),
+        senhaHash,
+        ativo: true,
+      },
+    });
+  }
+
+  if (!adminUser.ativo) {
+    const err = new Error('Administrador desativado');
     err.status = 403;
     throw err;
   }
+
+  return adminUser;
+}
+
+async function loginComSupabase(accessToken, ip) {
+  const user = await verificarTokenSupabase(accessToken);
+  const adminUser = await garantirAdminDoSupabase(user);
 
   await registrarLog({
     adminId: adminUser.id,
     acao: 'LOGIN_SUPABASE',
     entidade: 'Admin',
     entidadeId: adminUser.id,
-    detalhes: { supabaseUserId: user.id, email },
+    detalhes: { supabaseUserId: user.id, email: adminUser.email },
     ip,
   });
 
@@ -118,13 +141,7 @@ async function resolverAdminDoToken(token) {
   if (supabaseAuthConfigurado()) {
     try {
       const user = await verificarTokenSupabase(token);
-      const email = (user.email || '').toLowerCase();
-      const adminUser = await prisma.admin.findUnique({ where: { email } });
-      if (!adminUser || !adminUser.ativo) {
-        const err = new Error('Sem permissão de administrador');
-        err.status = 403;
-        throw err;
-      }
+      const adminUser = await garantirAdminDoSupabase(user);
       return {
         id: adminUser.id,
         email: adminUser.email,
