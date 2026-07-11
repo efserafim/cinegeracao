@@ -4,6 +4,7 @@ import api, { formatDate, formatMoney, mediaUrl } from '../services/api';
 import { Button, Loading } from '../components/ui';
 import { logoImg, posterImg } from '../assets/brand';
 import ContatosDuvidas from '../components/ContatosDuvidas';
+import CinemaMapa from '../components/CinemaMapa';
 
 /**
  * Entrada pública temática Homem-Aranha + formulário.
@@ -190,7 +191,8 @@ export default function HomePage() {
           </Link>
         </p>
 
-        <div className="mt-8">
+        <div className="mt-8 space-y-4">
+          <CinemaMapa />
           <ContatosDuvidas />
         </div>
       </section>

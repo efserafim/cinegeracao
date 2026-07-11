@@ -5,6 +5,7 @@ import api, { formatDate, formatMoney, mediaUrl } from '../services/api';
 import { Button, Input, Loading } from '../components/ui';
 import { logoImg, posterImg } from '../assets/brand';
 import ContatosDuvidas from '../components/ContatosDuvidas';
+import CinemaMapa from '../components/CinemaMapa';
 
 export default function InscricaoPage() {
   const { id } = useParams();
@@ -123,7 +124,8 @@ export default function InscricaoPage() {
         </form>
       )}
 
-      <div className="mt-8">
+      <div className="mt-8 space-y-4">
+        <CinemaMapa />
         <ContatosDuvidas />
       </div>
     </div>
