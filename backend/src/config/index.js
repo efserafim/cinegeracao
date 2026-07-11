@@ -6,7 +6,12 @@ require('dotenv').config();
 const config = {
   env: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT) || 3001,
+  /** Uma URL ou várias separadas por vírgula */
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+  frontendOrigins: (process.env.FRONTEND_URL || 'http://localhost:5173')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
 
   jwt: {
     secret: process.env.JWT_SECRET || 'dev_secret_change_me',

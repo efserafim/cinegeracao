@@ -24,7 +24,12 @@ const app = express();
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(
   cors({
-    origin: config.frontendUrl,
+    origin(origin, callback) {
+      // Requests sem Origin (healthcheck, curl, mobile)
+      if (!origin) return callback(null, true);
+      if (config.frontendOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error(`CORS bloqueado para origem: ${origin}`));
+    },
     credentials: true,
   }),
 );
