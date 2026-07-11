@@ -64,6 +64,15 @@ async function confirmar(req, res, next) {
   }
 }
 
+async function reprocessarOcr(req, res, next) {
+  try {
+    const data = await inscricaoService.reprocessarOcr(req.params.id);
+    return success(res, data, 'OCR reprocessado');
+  } catch (err) {
+    return next(err);
+  }
+}
+
 async function recusar(req, res, next) {
   try {
     const data = await inscricaoService.recusarPagamento(
@@ -181,6 +190,7 @@ module.exports = {
   listar,
   obterAdmin,
   confirmar,
+  reprocessarOcr,
   recusar,
   cancelar,
   excluir,

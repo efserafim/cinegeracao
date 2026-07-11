@@ -1,10 +1,25 @@
 /**
  * Serviço de OCR – Tesseract.js (padrão) ou Google Vision (opcional).
+ * PDF: extrai texto nativo; se vazio, rasteriza a 1ª página e lê com Tesseract.
  */
 const path = require('path');
 const fs = require('fs');
+const Module = require('module');
 const sharp = require('sharp');
 const Tesseract = require('tesseract.js');
+const { createCanvas, DOMMatrix, Path2D, ImageData } = require('@napi-rs/canvas');
+
+// pdfjs-dist tenta carregar o pacote "canvas"; mapeamos para @napi-rs/canvas
+const origRequire = Module.prototype.require;
+Module.prototype.require = function patchedRequire(id) {
+  if (id === 'canvas') return require('@napi-rs/canvas');
+  return origRequire.apply(this, arguments);
+};
+if (typeof global.DOMMatrix === 'undefined') global.DOMMatrix = DOMMatrix;
+if (typeof global.Path2D === 'undefined') global.Path2D = Path2D;
+if (typeof global.ImageData === 'undefined') global.ImageData = ImageData;
+
+const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
 const config = require('../config');
 const { parseComprovanteOcr, avaliarAlerta } = require('../utils/ocrParser');
 
@@ -19,6 +34,55 @@ async function preprocessImage(filePath) {
     .normalize()
     .sharpen()
     .toFile(outPath);
+  return outPath;
+}
+
+async function loadPdf(pdfPath) {
+  const data = new Uint8Array(fs.readFileSync(pdfPath));
+  return pdfjsLib.getDocument({
+    data,
+    useSystemFonts: true,
+    disableWorker: true,
+    isEvalSupported: false,
+  }).promise;
+}
+
+/**
+ * Extrai texto embutido do PDF (comprovantes com texto selecionável).
+ */
+async function extractPdfText(pdfPath) {
+  const doc = await loadPdf(pdfPath);
+  let text = '';
+  const max = Math.min(doc.numPages, 3);
+  for (let i = 1; i <= max; i += 1) {
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    text += `${content.items.map((it) => it.str).join(' ')}\n`;
+  }
+  try { await doc.destroy(); } catch { /* ignore */ }
+  return text.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Converte a primeira página do PDF em PNG para o Tesseract.
+ */
+async function pdfFirstPageToPng(pdfPath) {
+  const doc = await loadPdf(pdfPath);
+  const page = await doc.getPage(1);
+  const viewport = page.getViewport({ scale: 2.5 });
+  const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
+  const context = canvas.getContext('2d');
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  await page.render({
+    canvasContext: context,
+    viewport,
+  }).promise;
+
+  const outPath = pdfPath.replace(/\.pdf$/i, '_page1.png');
+  fs.writeFileSync(outPath, canvas.toBuffer('image/png'));
+  try { await doc.destroy(); } catch { /* ignore */ }
   return outPath;
 }
 
@@ -65,35 +129,46 @@ async function ocrGoogleVision(imagePath) {
 
 /**
  * Processa comprovante e retorna campos + alerta.
- * PDF: Tesseract não lê PDF e pode derrubar o processo via worker —
- * marca OCR_FALHOU para conferência manual (upload ainda é aceito).
  */
 async function processarComprovante(filePath, mimeType, valorEsperado) {
   let texto = '';
   let processedPath = null;
+  let pdfRasterPath = null;
   const looksPdf =
     mimeType === 'application/pdf'
     || String(filePath).toLowerCase().endsWith('.pdf');
 
   try {
     if (looksPdf) {
-      console.warn('[OCR] PDF – OCR automático ignorado (conferência manual)');
-      const campos = parseComprovanteOcr('');
-      return { ...campos, alerta: 'OCR_FALHOU' };
-    }
+      console.info('[OCR] PDF – tentando extrair texto nativo');
+      texto = await extractPdfText(filePath);
 
-    processedPath = await preprocessImage(filePath);
-    if (config.ocr.provider === 'google_vision') {
-      texto = await ocrGoogleVision(processedPath);
+      if (texto.length < 20) {
+        console.info('[OCR] PDF – pouco texto; rasterizando 1ª página');
+        pdfRasterPath = await pdfFirstPageToPng(filePath);
+        processedPath = await preprocessImage(pdfRasterPath);
+        if (config.ocr.provider === 'google_vision') {
+          texto = await ocrGoogleVision(processedPath);
+        } else {
+          texto = await ocrTesseract(processedPath);
+        }
+      }
     } else {
-      texto = await ocrTesseract(processedPath);
+      processedPath = await preprocessImage(filePath);
+      if (config.ocr.provider === 'google_vision') {
+        texto = await ocrGoogleVision(processedPath);
+      } else {
+        texto = await ocrTesseract(processedPath);
+      }
     }
   } catch (err) {
     console.error('[OCR] Erro:', err.message);
     texto = '';
   } finally {
-    if (processedPath && fs.existsSync(processedPath)) {
-      try { fs.unlinkSync(processedPath); } catch { /* ignore */ }
+    for (const p of [processedPath, pdfRasterPath]) {
+      if (p && fs.existsSync(p)) {
+        try { fs.unlinkSync(p); } catch { /* ignore */ }
+      }
     }
   }
 

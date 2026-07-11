@@ -234,6 +234,73 @@ async function enviarComprovante(codigo, file) {
 }
 
 /**
+ * Reprocessa OCR do comprovante já enviado (útil para PDF / falhas anteriores).
+ */
+async function reprocessarOcr(id) {
+  const path = require('path');
+  const fs = require('fs');
+
+  const inscricao = await prisma.inscricao.findUnique({
+    where: { id },
+    include: {
+      pagamento: { include: { comprovante: true } },
+      evento: true,
+    },
+  });
+
+  if (!inscricao) {
+    const err = new Error('Inscrição não encontrada');
+    err.status = 404;
+    throw err;
+  }
+
+  const comprovante = inscricao.pagamento?.comprovante;
+  if (!comprovante?.arquivoUrl) {
+    const err = new Error('Nenhum comprovante para processar');
+    err.status = 400;
+    throw err;
+  }
+
+  const relative = comprovante.arquivoUrl.replace(/^\//, '');
+  const resolved = path.resolve(process.cwd(), relative);
+
+  if (!fs.existsSync(resolved)) {
+    const err = new Error('Arquivo do comprovante não encontrado no servidor');
+    err.status = 404;
+    throw err;
+  }
+
+  const ocr = await processarComprovante(
+    resolved,
+    comprovante.mimeType,
+    Number(inscricao.pagamento.valorEsperado),
+  );
+
+  await prisma.pagamento.update({
+    where: { id: inscricao.pagamento.id },
+    data: {
+      valorDetectado: ocr.valor,
+      dataDetectada: ocr.data,
+      horaDetectada: ocr.hora,
+      nomeRecebedor: ocr.nomeRecebedor,
+      instituicao: ocr.instituicao,
+      idTransacao: ocr.idTransacao,
+      textoOcr: ocr.textoOcr,
+      alerta: ocr.alerta,
+    },
+  });
+
+  if (['COMPROVANTE_ENVIADO', 'OCR_PROCESSADO', 'AGUARDANDO_CONFIRMACAO'].includes(inscricao.status)) {
+    await prisma.inscricao.update({
+      where: { id: inscricao.id },
+      data: { status: 'AGUARDANDO_CONFIRMACAO' },
+    });
+  }
+
+  return buscarAdmin(id);
+}
+
+/**
  * Lista inscrições de um evento com filtros de pesquisa.
  */
 async function listarPorEvento(eventoId, filtros = {}) {
@@ -624,6 +691,7 @@ module.exports = {
   criarInscricao,
   buscarPorCodigo,
   enviarComprovante,
+  reprocessarOcr,
   listarPorEvento,
   buscarAdmin,
   confirmarPagamento,
