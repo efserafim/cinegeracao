@@ -62,19 +62,17 @@ export default function InscricaoPage() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-8 animate-fade-up">
-      <div className="relative mb-6 overflow-hidden rounded-3xl bg-[#070a12] shadow-[0_16px_40px_rgba(7,10,18,0.28)] ring-1 ring-black/10">
+      <div className="mb-6 overflow-hidden rounded-3xl bg-[#070a12] shadow-[0_16px_40px_rgba(7,10,18,0.28)] ring-1 ring-black/10">
         <img
           src={bannerSrc}
           alt=""
-          className="mx-auto h-48 w-auto max-w-full object-contain sm:h-56"
+          className="block h-auto w-full object-contain"
         />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-4 pb-4 pt-14">
-          <div className="flex items-center gap-2.5">
-            <img src={logoImg} alt="" className="h-12 w-12 rounded-full ring-2 ring-[#f5c542]/90" />
-            <div>
-              <p className="font-display text-lg text-white">Inscrição</p>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-[#f5c542]">CineGeração</p>
-            </div>
+        <div className="flex items-center gap-2.5 border-t border-white/10 px-4 py-3">
+          <img src={logoImg} alt="" className="h-12 w-12 rounded-full ring-2 ring-[#f5c542]/90" />
+          <div>
+            <p className="font-display text-lg text-white">Inscrição</p>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-[#f5c542]">CineGeração</p>
           </div>
         </div>
       </div>

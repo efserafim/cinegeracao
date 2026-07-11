@@ -37,9 +37,8 @@ export default function HomePage() {
 
   return (
     <div>
-      {/* Hero: no mobile cobre a tela; no desktop mostra o poster inteiro ao lado */}
+      {/* Hero: arte inteira (sem crop) + marca/CTA abaixo no mobile */}
       <section className="relative overflow-hidden bg-[#070a12]">
-        {/* Fundo desfocado (desktop) para preencher laterais sem crop agressivo */}
         <img
           src={heroImg}
           alt=""
@@ -49,25 +48,14 @@ export default function HomePage() {
         <div className="absolute inset-0 hidden bg-[#070a12]/50 lg:block" />
         <div className="absolute inset-0 web-mask opacity-40" />
 
-        <div className="relative mx-auto grid min-h-[78vh] max-w-6xl lg:grid-cols-2 lg:items-center lg:gap-8 lg:px-6 lg:py-10">
-          {/* Poster */}
-          <div className="relative min-h-[52vh] lg:min-h-[70vh]">
-            {/* Mobile: crop mais suave no centro */}
+        <div className="relative mx-auto grid max-w-6xl lg:grid-cols-2 lg:items-center lg:gap-8 lg:px-6 lg:py-10">
+          {/* Poster — largura total, altura natural (arte completa) */}
+          <div className="relative">
             <img
               src={heroImg}
               alt="Homem-Aranha: Um novo dia"
-              className="absolute inset-0 h-full w-full object-cover object-[center_25%] lg:hidden"
+              className="animate-fade-in block h-auto w-full object-contain lg:mx-auto lg:max-h-[78vh] lg:w-auto lg:max-w-full lg:rounded-2xl lg:shadow-[0_20px_60px_rgba(0,0,0,0.55)] lg:ring-1 lg:ring-white/15"
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-[#070a12] lg:hidden" />
-
-            {/* Desktop: poster vertical inteiro */}
-            <div className="relative hidden h-full items-center justify-center lg:flex">
-              <img
-                src={heroImg}
-                alt="Homem-Aranha: Um novo dia"
-                className="animate-fade-in max-h-[70vh] w-auto max-w-full rounded-2xl object-contain shadow-[0_20px_60px_rgba(0,0,0,0.55)] ring-1 ring-white/15"
-              />
-            </div>
           </div>
 
           {/* Marca + CTA */}
@@ -128,7 +116,7 @@ export default function HomePage() {
                 <img
                   src={mediaUrl(eventos[0].bannerUrl) || posterImg}
                   alt=""
-                  className="h-52 w-full object-cover object-top sm:h-60"
+                  className="h-auto w-full bg-[#070a12] object-contain"
                 />
               )}
               <div className="p-5">

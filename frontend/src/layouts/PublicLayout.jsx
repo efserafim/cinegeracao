@@ -43,8 +43,6 @@ export default function PublicLayout() {
           <p className="mt-3 leading-relaxed">
             Paróquia Santo Antônio · Bacaxá · Saquarema/RJ
             <br />
-            Cinema MaxiMovie · Bacaxá, Saquarema
-            <br />
             Dúvidas: Eduardo (22) 99247-3724 · Lavínia (22) 99818-7602
           </p>
         </div>
