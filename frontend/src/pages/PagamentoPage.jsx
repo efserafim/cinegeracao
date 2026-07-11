@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Copy, Check, Upload, Banknote, User, KeyRound } from 'lucide-react';
-import QRCode from 'qrcode';
 import api, { formatMoney, STATUS_LABELS } from '../services/api';
 import { Button, Loading, StatusBadge } from '../components/ui';
 import ContatosDuvidas from '../components/ContatosDuvidas';
+import { chavePixImg } from '../assets/brand';
 
 export default function PagamentoPage() {
   const { codigo } = useParams();
@@ -15,7 +15,6 @@ export default function PagamentoPage() {
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
-  const [qrDataUrl, setQrDataUrl] = useState('');
 
   useEffect(() => {
     sessionStorage.removeItem(`pix_${codigo}`);
@@ -35,16 +34,6 @@ export default function PagamentoPage() {
   const chavePix = inscricao?.evento?.chavePix || '';
   const favorecido = inscricao?.evento?.nomeFavorecido || '';
   const valor = inscricao?.valor;
-
-  useEffect(() => {
-    if (!chavePix) {
-      setQrDataUrl('');
-      return;
-    }
-    QRCode.toDataURL(chavePix, { margin: 2, width: 280, errorCorrectionLevel: 'M' })
-      .then(setQrDataUrl)
-      .catch(() => setQrDataUrl(''));
-  }, [chavePix]);
 
   async function copyPix() {
     if (!chavePix) return;
@@ -109,17 +98,11 @@ export default function PagamentoPage() {
             <div className="space-y-5 p-5">
               <div>
                 <p className="mb-2 text-center text-xs text-white/60">1. Escaneie o QR Code no app do seu banco</p>
-                {qrDataUrl ? (
-                  <img
-                    src={qrDataUrl}
-                    alt="QR Code PIX"
-                    className="mx-auto w-full max-w-[240px] rounded-2xl bg-white p-3"
-                  />
-                ) : (
-                  <div className="mx-auto flex h-48 max-w-[240px] items-center justify-center rounded-2xl bg-white/10 text-sm text-white/50">
-                    Gerando QR...
-                  </div>
-                )}
+                <img
+                  src={chavePixImg}
+                  alt="QR Code PIX"
+                  className="mx-auto w-full max-w-[240px] rounded-2xl bg-white p-3 object-contain"
+                />
               </div>
 
               <div className="rounded-2xl bg-white/5 p-4">
