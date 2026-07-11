@@ -4,7 +4,7 @@
 const QRCode = require('qrcode');
 const prisma = require('../config/prisma');
 const { gerarCodigoInscricao } = require('../utils/codes');
-const { onlyDigits } = require('../utils/sanitize');
+const { onlyDigits, normalizarWhatsApp } = require('../utils/sanitize');
 const { gerarLinkWhatsApp } = require('../utils/whatsapp');
 const { processarComprovante } = require('./ocrService');
 const { criarIngresso } = require('./ingressoService');
@@ -30,10 +30,55 @@ async function criarInscricao(eventoId, dados) {
     throw err;
   }
 
+  const telefone = normalizarWhatsApp(dados.telefone);
+  if (!telefone || telefone.length < 10) {
+    const err = new Error('Informe um WhatsApp válido com DDD');
+    err.status = 400;
+    throw err;
+  }
+
+  // Evita duplicar inscrição pelo mesmo WhatsApp no mesmo evento
+  const sufixo = telefone.slice(-11);
+  const existente = await prisma.inscricao.findFirst({
+    where: {
+      eventoId,
+      status: { not: 'CANCELADA' },
+      participante: {
+        OR: [
+          { telefone },
+          { telefone: { endsWith: sufixo } },
+          ...(telefone.length >= 10 ? [{ telefone: { endsWith: telefone.slice(-10) } }] : []),
+        ],
+      },
+    },
+    include: {
+      participante: true,
+      evento: true,
+      pagamento: { include: { comprovante: true } },
+      ingresso: true,
+    },
+    orderBy: { criadoEm: 'desc' },
+  });
+
+  if (existente) {
+    const err = new Error(
+      'Já existe uma inscrição com este WhatsApp neste evento. Use o código abaixo ou fale com Eduardo/Lavínia se precisar de ajuda.',
+    );
+    err.status = 409;
+    err.data = {
+      duplicada: true,
+      codigo: existente.codigo,
+      status: existente.status,
+      nome: existente.participante?.nome,
+      inscricao: formatInscricao(existente),
+    };
+    throw err;
+  }
+
   const participante = await prisma.participante.create({
     data: {
       nome: dados.nome,
-      telefone: onlyDigits(dados.telefone),
+      telefone,
       email: dados.email || null,
       paroquia: dados.paroquia,
       cidade: dados.cidade,

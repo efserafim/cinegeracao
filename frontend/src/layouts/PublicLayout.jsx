@@ -36,10 +36,15 @@ export default function PublicLayout() {
       <main>
         <Outlet />
       </main>
-      <footer className="border-t border-black/5 px-4 py-6 dark:border-white/10">
+      <footer className="border-t border-black/5 px-4 py-8 dark:border-white/10">
         <div className="mx-auto max-w-md text-center text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
-          <p className="font-medium text-[var(--color-ink)] dark:text-white">CineGeração</p>
-          <p className="mt-1">Dúvidas: Eduardo (22) 99247-3724 · Lavínia (22) 99818-7602</p>
+          <p className="font-display text-base text-[var(--color-ink)] dark:text-white">CineGeração</p>
+          <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[#e11d2e]/80">Homem-Aranha: Um novo dia</p>
+          <p className="mt-3 leading-relaxed">
+            Cinema MaxiMovie · Bacaxá, Saquarema
+            <br />
+            Dúvidas: Eduardo (22) 99247-3724 · Lavínia (22) 99818-7602
+          </p>
         </div>
       </footer>
     </div>

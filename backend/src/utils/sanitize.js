@@ -30,4 +30,15 @@ function onlyDigits(value) {
   return String(value).replace(/\D/g, '');
 }
 
-module.exports = { sanitizeString, sanitizeObject, onlyDigits };
+/**
+ * Normaliza WhatsApp para comparação (remove 55 do país).
+ * Ex.: 5522992473724 → 22992473724
+ */
+function normalizarWhatsApp(value) {
+  let d = onlyDigits(value);
+  if (!d) return d;
+  if (d.startsWith('55') && d.length >= 12) d = d.slice(2);
+  return d;
+}
+
+module.exports = { sanitizeString, sanitizeObject, onlyDigits, normalizarWhatsApp };

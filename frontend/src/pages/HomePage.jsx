@@ -123,26 +123,26 @@ export default function HomePage() {
 
         {!loading && eventos.length === 1 && (
           <div className="space-y-4">
-            <div className="overflow-hidden rounded-2xl border border-[#e11d2e]/20 bg-white/90 dark:border-white/10 dark:bg-slate-900/80">
+            <div className="overflow-hidden rounded-3xl border border-[#e11d2e]/15 bg-white/95 shadow-[0_12px_40px_rgba(11,16,32,0.08)] dark:border-white/10 dark:bg-slate-900/85">
               {(mediaUrl(eventos[0].bannerUrl) || posterImg) && (
                 <img
                   src={mediaUrl(eventos[0].bannerUrl) || posterImg}
                   alt=""
-                  className="h-48 w-full object-cover object-top sm:h-56"
+                  className="h-52 w-full object-cover object-top sm:h-60"
                 />
               )}
-              <div className="p-4">
-                <p className="font-semibold">{eventos[0].nome}</p>
-                <p className="mt-1 whitespace-pre-line text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
+              <div className="p-5">
+                <p className="font-semibold tracking-tight">{eventos[0].nome}</p>
+                <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-[var(--color-ink-soft)] dark:text-slate-400">
                   {eventos[0].descricao}
                 </p>
-                <p className="mt-2 text-sm font-medium">
+                <p className="mt-3 text-sm font-medium text-[var(--color-ink)] dark:text-white">
                   {formatDate(eventos[0].data)} · {eventos[0].horario} · {formatMoney(eventos[0].valor)}
                 </p>
               </div>
             </div>
             <Button
-              className="w-full"
+              className="w-full shadow-md shadow-red-900/15"
               disabled={eventos[0].vagasRestantes <= 0}
               onClick={() => navigate(`/evento/${eventos[0].id}/inscrever`)}
             >

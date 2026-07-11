@@ -21,7 +21,7 @@ function errorHandler(err, _req, res, _next) {
 
   const status = err.status || err.statusCode || 500;
   const message = status < 500 || err.expose ? err.message : 'Erro interno do servidor';
-  return fail(res, message, status);
+  return fail(res, message, status, err.errors || null, err.data || null);
 }
 
 module.exports = { notFound, errorHandler };
