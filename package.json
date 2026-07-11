@@ -1,0 +1,19 @@
+{
+  "name": "cinegeracao",
+  "version": "1.0.0",
+  "description": "Sistema de inscrição para eventos com pagamento via PIX",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "start": "npm run start --prefix backend",
+    "setup": "npm install && npm install --prefix backend && npm install --prefix frontend && npm run prisma:generate --prefix backend",
+    "prisma:migrate": "npm run prisma:migrate --prefix backend",
+    "prisma:seed": "npm run prisma:seed --prefix backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

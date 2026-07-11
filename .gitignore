@@ -1,0 +1,16 @@
+node_modules
+dist
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+.vscode
+.idea
+uploads/banners/*
+uploads/comprovantes/*
+!uploads/banners/.gitkeep
+!uploads/comprovantes/.gitkeep
+frontend/android
+frontend/resources
+*.apk

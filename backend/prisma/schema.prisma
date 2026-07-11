@@ -1,0 +1,263 @@
+// =============================================================================
+// Schema Prisma – Sistema de Inscrição de Eventos com PIX
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Administradores do sistema
+// -----------------------------------------------------------------------------
+model Admin {
+  id           String   @id @default(uuid())
+  nome         String
+  email        String   @unique
+  senhaHash    String   @map("senha_hash")
+  totpSecret   String?  @map("totp_secret")
+  totpEnabled  Boolean  @default(false) @map("totp_enabled")
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  logs             Log[]
+  validacoesTicket ValidacaoTicket[]
+
+  @@map("admins")
+}
+
+// -----------------------------------------------------------------------------
+// Status possíveis de um evento
+// -----------------------------------------------------------------------------
+enum StatusEvento {
+  RASCUNHO
+  ABERTO
+  ENCERRADO
+  CANCELADO
+}
+
+// -----------------------------------------------------------------------------
+// Eventos
+// -----------------------------------------------------------------------------
+model Evento {
+  id              String       @id @default(uuid())
+  nome            String
+  descricao       String       @db.Text
+  bannerUrl       String?      @map("banner_url")
+  valor           Decimal      @db.Decimal(10, 2)
+  data            DateTime     @db.Date
+  horario         String
+  local           String
+  cidade          String
+  vagasMaximas    Int          @map("vagas_maximas")
+  chavePix        String       @map("chave_pix")
+  nomeFavorecido  String       @map("nome_favorecido")
+  status          StatusEvento @default(ABERTO)
+  criadoEm        DateTime     @default(now()) @map("criado_em")
+  atualizadoEm    DateTime     @updatedAt @map("atualizado_em")
+
+  inscricoes Inscricao[]
+
+  @@index([status])
+  @@index([data])
+  @@map("eventos")
+}
+
+// -----------------------------------------------------------------------------
+// Participantes (dados pessoais reutilizáveis)
+// -----------------------------------------------------------------------------
+model Participante {
+  id           String   @id @default(uuid())
+  nome         String
+  telefone     String
+  email        String?
+  paroquia     String
+  cidade       String
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  inscricoes Inscricao[]
+
+  @@index([telefone])
+  @@index([nome])
+  @@index([cidade])
+  @@index([paroquia])
+  @@map("participantes")
+}
+
+// -----------------------------------------------------------------------------
+// Fluxo de status da inscrição
+// -----------------------------------------------------------------------------
+enum StatusInscricao {
+  AGUARDANDO_PAGAMENTO
+  COMPROVANTE_ENVIADO
+  OCR_PROCESSADO
+  AGUARDANDO_CONFIRMACAO
+  PAGAMENTO_CONFIRMADO
+  INGRESSO_LIBERADO
+  PAGAMENTO_RECUSADO
+  CANCELADA
+}
+
+// -----------------------------------------------------------------------------
+// Inscrições
+// -----------------------------------------------------------------------------
+model Inscricao {
+  id             String           @id @default(uuid())
+  codigo         String           @unique // código público da inscrição
+  eventoId       String           @map("evento_id")
+  participanteId String           @map("participante_id")
+  status         StatusInscricao  @default(AGUARDANDO_PAGAMENTO)
+  valor          Decimal          @db.Decimal(10, 2)
+  observacao     String?          @db.Text
+  criadoEm       DateTime         @default(now()) @map("criado_em")
+  atualizadoEm   DateTime         @updatedAt @map("atualizado_em")
+
+  evento       Evento       @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  participante Participante @relation(fields: [participanteId], references: [id], onDelete: Restrict)
+  pagamento    Pagamento?
+  ingresso     Ingresso?
+
+  @@index([eventoId])
+  @@index([status])
+  @@index([criadoEm])
+  @@map("inscricoes")
+}
+
+// -----------------------------------------------------------------------------
+// Flags de alerta do OCR / conferência
+// -----------------------------------------------------------------------------
+enum AlertaPagamento {
+  NENHUM
+  VALOR_INCORRETO
+  NECESSITA_CONFERENCIA
+  OCR_FALHOU
+}
+
+// -----------------------------------------------------------------------------
+// Pagamentos (1:1 com inscrição)
+// -----------------------------------------------------------------------------
+model Pagamento {
+  id                String          @id @default(uuid())
+  inscricaoId       String          @unique @map("inscricao_id")
+  valorEsperado     Decimal         @map("valor_esperado") @db.Decimal(10, 2)
+  valorDetectado    Decimal?        @map("valor_detectado") @db.Decimal(10, 2)
+  dataDetectada     DateTime?       @map("data_detectada")
+  horaDetectada     String?         @map("hora_detectada")
+  nomeRecebedor     String?         @map("nome_recebedor")
+  instituicao       String?
+  idTransacao       String?         @map("id_transacao")
+  textoOcr          String?         @map("texto_ocr") @db.Text
+  alerta            AlertaPagamento @default(NENHUM)
+  confirmadoEm      DateTime?       @map("confirmado_em")
+  recusadoEm        DateTime?       @map("recusado_em")
+  criadoEm          DateTime        @default(now()) @map("criado_em")
+  atualizadoEm      DateTime        @updatedAt @map("atualizado_em")
+
+  inscricao   Inscricao    @relation(fields: [inscricaoId], references: [id], onDelete: Cascade)
+  comprovante Comprovante?
+
+  @@map("pagamentos")
+}
+
+// -----------------------------------------------------------------------------
+// Comprovantes enviados
+// -----------------------------------------------------------------------------
+model Comprovante {
+  id          String   @id @default(uuid())
+  pagamentoId String   @unique @map("pagamento_id")
+  arquivoUrl  String   @map("arquivo_url")
+  mimeType    String   @map("mime_type")
+  tamanhoBytes Int     @map("tamanho_bytes")
+  criadoEm    DateTime @default(now()) @map("criado_em")
+
+  pagamento Pagamento @relation(fields: [pagamentoId], references: [id], onDelete: Cascade)
+
+  @@map("comprovantes")
+}
+
+// -----------------------------------------------------------------------------
+// Status do ingresso digital
+// -----------------------------------------------------------------------------
+enum StatusIngresso {
+  VALIDO
+  UTILIZADO
+  CANCELADO
+}
+
+// -----------------------------------------------------------------------------
+// Ingressos digitais
+// -----------------------------------------------------------------------------
+model Ingresso {
+  id           String         @id @default(uuid())
+  inscricaoId  String         @unique @map("inscricao_id")
+  codigo       String         @unique // alfanumérico único
+  qrPayload    String         @map("qr_payload") // conteúdo do QR Code
+  status       StatusIngresso @default(VALIDO)
+  liberadoEm   DateTime       @default(now()) @map("liberado_em")
+  utilizadoEm  DateTime?      @map("utilizado_em")
+  criadoEm     DateTime       @default(now()) @map("criado_em")
+  atualizadoEm DateTime       @updatedAt @map("atualizado_em")
+
+  inscricao   Inscricao         @relation(fields: [inscricaoId], references: [id], onDelete: Cascade)
+  validacoes  ValidacaoTicket[]
+
+  @@index([codigo])
+  @@map("ingressos")
+}
+
+// -----------------------------------------------------------------------------
+// Leituras de QR Code na entrada
+// -----------------------------------------------------------------------------
+model ValidacaoTicket {
+  id          String   @id @default(uuid())
+  ingressoId  String   @map("ingresso_id")
+  adminId     String?  @map("admin_id")
+  resultado   String   // AUTORIZADO | JA_UTILIZADO | CANCELADO | INVALIDO
+  lidoEm      DateTime @default(now()) @map("lido_em")
+  observacao  String?
+
+  ingresso Ingresso @relation(fields: [ingressoId], references: [id], onDelete: Cascade)
+  admin    Admin?   @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([ingressoId])
+  @@index([lidoEm])
+  @@map("validacoes_ticket")
+}
+
+// -----------------------------------------------------------------------------
+// Logs de auditoria
+// -----------------------------------------------------------------------------
+model Log {
+  id         String   @id @default(uuid())
+  adminId    String?  @map("admin_id")
+  acao       String
+  entidade   String?
+  entidadeId String?  @map("entidade_id")
+  detalhes   String?  @db.Text
+  ip         String?
+  criadoEm   DateTime @default(now()) @map("criado_em")
+
+  admin Admin? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([acao])
+  @@index([criadoEm])
+  @@map("logs")
+}
+
+// -----------------------------------------------------------------------------
+// Configurações gerais do sistema (chave/valor)
+// -----------------------------------------------------------------------------
+model Configuracao {
+  id        String   @id @default(uuid())
+  chave     String   @unique
+  valor     String   @db.Text
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  @@map("configuracoes")
+}
