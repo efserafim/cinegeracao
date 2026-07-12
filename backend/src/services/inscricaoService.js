@@ -418,7 +418,12 @@ async function confirmarPagamento(id, adminId, ip) {
     data: { status: "INGRESSO_LIBERADO" }
   });
   const dataFmt = new Date(inscricao.evento.data).toLocaleDateString("pt-BR");
-  const codigosIngresso = ingressos.map((ig) => ig.codigo).filter(Boolean).join(", ");
+  const pessoasPorId = Object.fromEntries((inscricao.pessoas || []).map((p) => [p.id, p]));
+  const ticketsEmail = ingressos.map((ig, idx) => ({
+    codigo: ig.codigo,
+    nome: pessoasPorId[ig.pessoaId]?.nome || inscricao.pessoas?.[idx]?.nome || inscricao.participante.nome
+  }));
+  const codigosIngresso = ticketsEmail.map((t) => t.codigo).filter(Boolean).join(", ");
   const ingresso = ingressos[0];
   let emailResult = { sent: false, reason: "Participante sem e-mail" };
   if (inscricao.participante.email) {
@@ -433,7 +438,9 @@ async function confirmarPagamento(id, adminId, ip) {
         cidade: inscricao.evento.cidade,
         codigoIngresso: codigosIngresso,
         codigoInscricao: inscricao.codigo,
-        chegada: "17h10"
+        chegada: "17h10",
+        tickets: ticketsEmail,
+        quantidade: ticketsEmail.length || inscricao.quantidade || 1
       });
     } catch (emailErr) {
       console.error("[confirmarPagamento] email:", emailErr);
