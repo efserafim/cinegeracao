@@ -14,17 +14,15 @@ const MAX_INGRESSOS = 10;
 export default function InscricaoPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+  const { register, handleSubmit, watch, setValue, getValues, formState: { errors } } = useForm({
     defaultValues: {
       metodoPagamento: "PIX",
       quantidade: 1,
-      pessoas: [""]
+      pessoas: []
     }
   });
   const metodoPagamento = watch("metodoPagamento");
   const quantidade = Number(watch("quantidade") || 1);
-  const pessoas = watch("pessoas") || [];
-  const nomeResponsavel = watch("nome") || "";
   const [evento, setEvento] = useState(null);
   const [loadingEvento, setLoadingEvento] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -36,19 +34,12 @@ export default function InscricaoPage() {
   }, [id]);
 
   useEffect(() => {
-    const atual = Array.isArray(pessoas) ? [...pessoas] : [];
-    while (atual.length < quantidade) atual.push("");
-    while (atual.length > quantidade) atual.pop();
-    if (atual.length !== pessoas.length) setValue("pessoas", atual);
-  }, [quantidade]);
-
-  useEffect(() => {
-    if (quantidade >= 1 && nomeResponsavel && (!pessoas[0] || pessoas[0] === "")) {
-      const next = [...(pessoas || [])];
-      next[0] = nomeResponsavel;
-      setValue("pessoas", next, { shouldDirty: false });
-    }
-  }, [nomeResponsavel]);
+    const extras = Math.max(0, quantidade - 1);
+    const atual = [...(getValues("pessoas") || [])];
+    while (atual.length < extras) atual.push("");
+    while (atual.length > extras) atual.pop();
+    setValue("pessoas", atual);
+  }, [quantidade, getValues, setValue]);
 
   function alterarQuantidade(delta) {
     if (!evento) return;
@@ -63,9 +54,11 @@ export default function InscricaoPage() {
     setDuplicata(null);
     try {
       const qtd = Number(values.quantidade) || 1;
-      const listaPessoas = (values.pessoas || []).slice(0, qtd).map((p) => String(p || "").trim());
-      if (listaPessoas.length !== qtd || listaPessoas.some((p) => !p)) {
-        setError(`Informe o nome de cada uma das ${qtd} pessoa(s)`);
+      const responsavel = String(values.nome || "").trim();
+      const extras = (values.pessoas || []).slice(0, Math.max(0, qtd - 1)).map((p) => String(p || "").trim());
+      const listaPessoas = [responsavel, ...extras];
+      if (!responsavel || listaPessoas.length !== qtd || listaPessoas.some((p) => !p)) {
+        setError(qtd === 1 ? "Informe o nome do responsável" : `Informe o nome de cada uma das ${qtd} pessoas`);
         setLoading(false);
         return;
       }
@@ -73,7 +66,7 @@ export default function InscricaoPage() {
         ...values,
         quantidade: qtd,
         pessoas: listaPessoas,
-        nome: values.nome || listaPessoas[0]
+        nome: responsavel
       };
       const { data } = await api.post(`/inscricoes/evento/${id}`, payload);
       const codigo = data.data.inscricao.codigo;
@@ -274,20 +267,23 @@ export default function InscricaoPage() {
               <input type="hidden" {...register("quantidade", { valueAsNumber: true })} />
             </div>
 
-            <div className="space-y-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)] dark:text-slate-400">
-                Nome de cada pessoa
-              </p>
-              {Array.from({ length: quantidade }).map((_, idx) => (
-                <Input
-                  key={idx}
-                  label={`Ingresso ${idx + 1}${idx === 0 ? " (você)" : ""}`}
-                  className={fieldClass}
-                  {...register(`pessoas.${idx}`, { required: "Obrigatório" })}
-                  error={errors.pessoas?.[idx]?.message}
-                />
-              ))}
-            </div>
+            {quantidade > 1 && <div className="space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)] dark:text-slate-400">
+                  Nome das outras pessoas
+                </p>
+                <p className="text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
+                  O ingresso 1 usa o nome do responsável. Informe quem mais vai:
+                </p>
+                {Array.from({ length: quantidade - 1 }).map((_, idx) => (
+                  <Input
+                    key={idx}
+                    label={`Ingresso ${idx + 2}`}
+                    className={fieldClass}
+                    {...register(`pessoas.${idx}`, { required: "Obrigatório" })}
+                    error={errors.pessoas?.[idx]?.message}
+                  />
+                ))}
+              </div>}
 
             <div className="space-y-2 pt-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)] dark:text-slate-400">
