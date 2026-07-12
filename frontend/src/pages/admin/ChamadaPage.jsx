@@ -47,6 +47,7 @@ export default function ChamadaPage() {
   const [loadingLista, setLoadingLista] = useState(false);
   const [q, setQ] = useState("");
   const [filtro, setFiltro] = useState("todos");
+  const [ordem, setOrdem] = useState("az");
   const [savingCodigo, setSavingCodigo] = useState(null);
   const [error, setError] = useState("");
 
@@ -86,7 +87,7 @@ export default function ChamadaPage() {
 
   const filtradas = useMemo(() => {
     const termo = q.trim().toLowerCase();
-    return pessoas.filter((p) => {
+    const lista = pessoas.filter((p) => {
       const presente = Boolean(p.presenteEm);
       if (filtro === "presentes" && !presente) return false;
       if (filtro === "faltam" && presente) return false;
@@ -98,7 +99,9 @@ export default function ChamadaPage() {
         (p.cidade || "").toLowerCase().includes(termo)
       );
     });
-  }, [pessoas, q, filtro]);
+    const sorted = [...lista].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }));
+    return ordem === "za" ? sorted.reverse() : sorted;
+  }, [pessoas, q, filtro, ordem]);
 
   const presentes = pessoas.filter((p) => Boolean(p.presenteEm)).length;
   const total = pessoas.length;
@@ -174,6 +177,17 @@ export default function ChamadaPage() {
             <option value="todos">Todos</option>
             <option value="faltam">Faltam</option>
             <option value="presentes">Presentes</option>
+          </select>
+        </label>
+        <label className="block min-w-[160px] space-y-1.5">
+          <span className="text-sm font-medium text-[var(--color-ink-soft)]">Ordem</span>
+          <select
+            className="w-full rounded-xl border border-black/10 bg-white px-3 py-2.5 text-sm dark:border-white/15 dark:bg-slate-900"
+            value={ordem}
+            onChange={(e) => setOrdem(e.target.value)}
+          >
+            <option value="az">Alfabética (A-Z)</option>
+            <option value="za">Alfabética (Z-A)</option>
           </select>
         </label>
         <Button variant="secondary" onClick={() => loadLista()}>
