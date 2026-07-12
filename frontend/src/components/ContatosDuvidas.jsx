@@ -12,25 +12,26 @@ function formatTel(digits) {
 }
 
 /**
- * Bloco de contatos para dúvidas (WhatsApp).
+ * Bloco de contatos para dúvidas (WhatsApp) — layout aberto, sem “card” rígido.
  */
 export default function ContatosDuvidas({ variant = 'light' }) {
   const dark = variant === 'dark';
 
   return (
-    <div
-      className={`rounded-2xl border p-4 ${
-        dark
-          ? 'border-white/10 bg-white/5 text-white'
-          : 'border-black/5 bg-white/90 dark:border-white/10 dark:bg-slate-900/80'
-      }`}
-    >
-      <p className={`text-xs font-semibold uppercase tracking-widest ${dark ? 'text-[#f5c542]' : 'text-[#e11d2e]'}`}>
+    <div className={dark ? 'text-white' : ''}>
+      <p className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${dark ? 'text-[#f5c542]' : 'text-[#e11d2e]'}`}>
         Dúvidas? Fale conosco
       </p>
-      <ul className="mt-3 space-y-2">
+      <ul className="mt-4 space-y-3">
         {CONTATOS.map((c) => (
-          <li key={c.telefone} className="flex items-center justify-between gap-3 text-sm">
+          <li
+            key={c.telefone}
+            className={`flex items-center justify-between gap-3 rounded-[1.25rem] px-4 py-3 text-sm ${
+              dark
+                ? 'bg-white/8'
+                : 'bg-white/65 ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10'
+            }`}
+          >
             <span>
               <strong>{c.nome}</strong>
               <span className={dark ? 'text-white/60' : 'text-[var(--color-ink-soft)]'}> · {formatTel(c.telefone)}</span>
@@ -39,7 +40,7 @@ export default function ContatosDuvidas({ variant = 'light' }) {
               href={`https://wa.me/${c.whatsapp}?text=${encodeURIComponent(`Olá, ${c.nome}! Tenho uma dúvida sobre o CineGeração.`)}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+              className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
             >
               <MessageCircle size={14} /> WhatsApp
             </a>

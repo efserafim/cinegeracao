@@ -87,15 +87,16 @@
 
   .bg-page {
     background:
-      radial-gradient(ellipse 70% 45% at 50% -5%, rgba(225, 29, 46, 0.14), transparent 60%),
-      radial-gradient(ellipse 50% 35% at 100% 10%, rgba(26, 108, 255, 0.12), transparent 55%),
+      radial-gradient(ellipse 80% 50% at 10% 0%, rgba(225, 29, 46, 0.1), transparent 55%),
+      radial-gradient(ellipse 60% 40% at 100% 15%, rgba(26, 108, 255, 0.1), transparent 50%),
+      radial-gradient(ellipse 50% 30% at 50% 100%, rgba(245, 197, 66, 0.06), transparent 55%),
       var(--color-sand);
   }
 
   .dark .bg-page {
     background:
-      radial-gradient(ellipse 70% 45% at 50% -5%, rgba(225, 29, 46, 0.22), transparent 60%),
-      radial-gradient(ellipse 50% 35% at 100% 10%, rgba(26, 108, 255, 0.16), transparent 55%),
+      radial-gradient(ellipse 80% 50% at 10% 0%, rgba(225, 29, 46, 0.18), transparent 55%),
+      radial-gradient(ellipse 60% 40% at 100% 15%, rgba(26, 108, 255, 0.14), transparent 50%),
       #070a12;
   }
 
