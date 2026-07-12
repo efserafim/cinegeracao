@@ -133,6 +133,18 @@
     animation: pulseGlow 2.8s ease-in-out infinite;
   }
 
+  .animate-confirm-pop {
+    animation: confirmPop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-confirm-check {
+    animation: confirmCheck 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+  }
+
+  .animate-confirm-fade {
+    animation: fadeIn 0.25s ease-out both;
+  }
+
   
   .spider-mark-ink,
   .spider-mark-auto {
@@ -179,4 +191,16 @@
 @keyframes spideyFloat {
   0%, 100% { transform: translateY(0) rotate(-2deg); }
   50% { transform: translateY(-14px) rotate(2deg); }
+}
+
+@keyframes confirmPop {
+  0% { opacity: 0; transform: scale(0.7); }
+  70% { opacity: 1; transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes confirmCheck {
+  0% { opacity: 0; transform: scale(0.4) rotate(-20deg); }
+  60% { opacity: 1; transform: scale(1.15) rotate(4deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
 }

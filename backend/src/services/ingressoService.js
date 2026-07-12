@@ -75,7 +75,7 @@ async function gerarQrDataUrl(ingresso) {
 }
 
 async function buscarPorCodigoInscricao(codigoInscricao) {
-  const inscricao = await prisma.inscricao.findUnique({
+  let inscricao = await prisma.inscricao.findUnique({
     where: { codigo: codigoInscricao },
     include: {
       participante: true,
@@ -90,7 +90,40 @@ async function buscarPorCodigoInscricao(codigoInscricao) {
       }
     }
   });
-  if (!inscricao || !inscricao.ingressos?.length) {
+  if (!inscricao) {
+    const err = new Error("Ingresso não encontrado");
+    err.status = 404;
+    throw err;
+  }
+
+  const precisaGerar =
+    ["INGRESSO_LIBERADO", "PAGAMENTO_CONFIRMADO"].includes(inscricao.status) &&
+    (
+      !inscricao.ingressos?.length ||
+      (inscricao.pessoas || []).some((p) => !p.ingresso) ||
+      (inscricao.quantidade || 1) > (inscricao.ingressos?.length || 0)
+    );
+
+  if (precisaGerar) {
+    await criarIngressos(inscricao.id);
+    inscricao = await prisma.inscricao.findUnique({
+      where: { codigo: codigoInscricao },
+      include: {
+        participante: true,
+        evento: true,
+        pessoas: {
+          orderBy: { ordem: "asc" },
+          include: { ingresso: true }
+        },
+        ingressos: {
+          include: { pessoa: true },
+          orderBy: { criadoEm: "asc" }
+        }
+      }
+    });
+  }
+
+  if (!inscricao.ingressos?.length) {
     const err = new Error("Ingresso não encontrado");
     err.status = 404;
     throw err;

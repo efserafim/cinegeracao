@@ -1,18 +1,23 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { Check } from "lucide-react";
 import api, { formatDate, formatMoney, mediaUrl, ALERTA_LABELS } from "../../services/api";
 import { Button, Loading, StatusBadge, TextArea } from "../../components/ui";
+
 export default function ComprovantePage() {
   const { id } = useParams();
   const [item, setItem] = useState(null);
   const [obs, setObs] = useState("");
   const [loading, setLoading] = useState(true);
+  const [confirmando, setConfirmando] = useState(false);
+  const [showConfirmAnim, setShowConfirmAnim] = useState(false);
   const [msg, setMsg] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [emailInfo, setEmailInfo] = useState(null);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [ocrBusy, setOcrBusy] = useState(false);
   const [ocrTried, setOcrTried] = useState(false);
+
   async function load() {
     setLoading(true);
     try {
@@ -23,13 +28,16 @@ export default function ComprovantePage() {
       setLoading(false);
     }
   }
+
   useEffect(() => {
     setOcrTried(false);
     load();
   }, [id]);
+
   const comprovante = item?.pagamento?.comprovante;
   const arquivo = comprovante?.arquivoUrl;
   const isPdf = comprovante?.mimeType === "application/pdf" || String(arquivo || "").toLowerCase().endsWith(".pdf");
+
   useEffect(() => {
     let revoked;
     setPdfUrl(null);
@@ -50,6 +58,7 @@ export default function ComprovantePage() {
       if (revoked) URL.revokeObjectURL(revoked);
     };
   }, [arquivo, isPdf]);
+
   useEffect(() => {
     if (!item || ocrTried || ocrBusy) return;
     const alerta = item.pagamento?.alerta;
@@ -65,34 +74,49 @@ export default function ComprovantePage() {
     }).catch(() => {
     }).finally(() => setOcrBusy(false));
   }, [item, id, ocrTried, ocrBusy]);
+
   async function confirmar() {
-    const { data } = await api.post(`/inscricoes/${id}/confirmar`);
-    setItem(data.data);
-    setWhatsapp(data.data.whatsappLink || "");
-    setEmailInfo(data.data.emailResult || null);
-    const er = data.data.emailResult;
-    if (er?.sent) {
-      setMsg(`Pagamento confirmado. E-mail enviado para ${er.to}.`);
-    } else {
-      setMsg(`Pagamento confirmado. E-mail não enviado: ${er?.reason || "verifique o SMTP"}.`);
+    setConfirmando(true);
+    try {
+      const { data } = await api.post(`/inscricoes/${id}/confirmar`);
+      setItem(data.data);
+      setWhatsapp(data.data.whatsappLink || "");
+      setEmailInfo(data.data.emailResult || null);
+      const er = data.data.emailResult;
+      const qtd = data.data.quantidade || data.data.ingressos?.length || 1;
+      if (er?.sent) {
+        setMsg(`Pagamento confirmado. ${qtd} ingresso(s) liberado(s). E-mail enviado para ${er.to}.`);
+      } else {
+        setMsg(`Pagamento confirmado. ${qtd} ingresso(s) liberado(s). E-mail não enviado: ${er?.reason || "verifique o SMTP"}.`);
+      }
+      setShowConfirmAnim(true);
+      window.setTimeout(() => setShowConfirmAnim(false), 2800);
+    } catch (err) {
+      setMsg(err.response?.data?.message || "Falha ao confirmar pagamento.");
+    } finally {
+      setConfirmando(false);
     }
   }
+
   async function recusar() {
     const { data } = await api.post(`/inscricoes/${id}/recusar`, { observacao: obs });
     setItem(data.data);
     setMsg("Pagamento recusado.");
   }
+
   async function cancelar() {
     if (!confirm("Cancelar inscrição?")) return;
     const { data } = await api.post(`/inscricoes/${id}/cancelar`, { observacao: obs });
     setItem(data.data);
     setMsg("Inscrição cancelada.");
   }
+
   async function salvarObs() {
     const { data } = await api.patch(`/inscricoes/${id}/observacao`, { observacao: obs });
     setItem(data.data);
     setMsg("Observação salva.");
   }
+
   async function reprocessarOcr() {
     setOcrBusy(true);
     try {
@@ -105,10 +129,45 @@ export default function ComprovantePage() {
       setOcrBusy(false);
     }
   }
+
   if (loading) return <Loading />;
   if (!item) return <p>Não encontrado</p>;
+
   const p = item.pagamento;
-  return <div className="space-y-6">
+  const ingressos = item.ingressos?.length
+    ? item.ingressos
+    : item.ingresso
+      ? [item.ingresso]
+      : [];
+  const pessoas = item.pessoas || [];
+
+  return (
+    <div className="space-y-6">
+      {showConfirmAnim && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 animate-confirm-fade">
+          <div className="w-full max-w-sm rounded-[1.75rem] bg-[#070a12] px-6 py-8 text-center text-white shadow-2xl ring-1 ring-[#e11d2e]/40 animate-confirm-pop">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/20 ring-4 ring-emerald-400/40 animate-confirm-check">
+              <Check size={40} className="text-emerald-400" strokeWidth={3} />
+            </div>
+            <p className="mt-5 font-display text-3xl tracking-wide">Confirmado!</p>
+            <p className="mt-2 text-sm text-white/75">
+              {(item.quantidade || ingressos.length || 1) > 1
+                ? `${item.quantidade || ingressos.length} ingressos liberados`
+                : "Ingresso liberado"}
+            </p>
+            {pessoas.length > 0 && (
+              <ul className="mt-4 space-y-1 text-left text-sm text-white/85">
+                {pessoas.map((pessoa) => (
+                  <li key={pessoa.id || pessoa.nome} className="rounded-xl bg-white/5 px-3 py-2">
+                    · {pessoa.nome}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Link to={`/admin/eventos/${item.evento?.id}/inscritos`} className="text-sm text-[var(--color-forest)]">
@@ -122,37 +181,55 @@ export default function ComprovantePage() {
         </div>
       </div>
 
-      {msg && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
+      {msg && (
+        <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
           {msg}
-        </p>}
+        </p>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-black/5 bg-white/80 p-4 dark:border-white/10 dark:bg-slate-900/70">
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-display text-xl">Comprovante</h2>
-            {arquivo && <a
-    href={mediaUrl(arquivo)}
-    target="_blank"
-    rel="noreferrer"
-    className="text-sm text-[var(--color-forest)] underline"
-  >
+            {arquivo && (
+              <a
+                href={mediaUrl(arquivo)}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm text-[var(--color-forest)] underline"
+              >
                 Abrir em nova aba
-              </a>}
+              </a>
+            )}
           </div>
 
-          {arquivo ? isPdf ? <div className="mt-4 overflow-hidden rounded-xl border border-black/10 bg-slate-950 dark:border-white/10">
-                {pdfUrl ? <iframe
-    title="Comprovante PDF"
-    src={`${pdfUrl}#view=FitH`}
-    className="h-[70vh] w-full bg-white"
-  /> : <p className="p-6 text-sm text-slate-300">Carregando PDF…</p>}
-              </div> : <img
-    src={mediaUrl(arquivo)}
-    alt="Comprovante"
-    className="mt-4 max-h-[70vh] w-full rounded-xl object-contain"
-  /> : <p className="mt-4 text-sm text-[var(--color-ink-soft)]">
-              {p?.metodo === "DINHEIRO" ? "Pagamento em dinheiro — confirme quando receber o valor." : "Nenhum comprovante enviado."}
-            </p>}
+          {arquivo ? (
+            isPdf ? (
+              <div className="mt-4 overflow-hidden rounded-xl border border-black/10 bg-slate-950 dark:border-white/10">
+                {pdfUrl ? (
+                  <iframe
+                    title="Comprovante PDF"
+                    src={`${pdfUrl}#view=FitH`}
+                    className="h-[70vh] w-full bg-white"
+                  />
+                ) : (
+                  <p className="p-6 text-sm text-slate-300">Carregando PDF…</p>
+                )}
+              </div>
+            ) : (
+              <img
+                src={mediaUrl(arquivo)}
+                alt="Comprovante"
+                className="mt-4 max-h-[70vh] w-full rounded-xl object-contain"
+              />
+            )
+          ) : (
+            <p className="mt-4 text-sm text-[var(--color-ink-soft)]">
+              {p?.metodo === "DINHEIRO"
+                ? "Pagamento em dinheiro — confirme quando receber o valor."
+                : "Nenhum comprovante enviado."}
+            </p>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -163,72 +240,132 @@ export default function ComprovantePage() {
               <p>E-mail: {item.participante?.email || "—"}</p>
               <p>Paróquia: {item.participante?.paroquia || "—"}</p>
               <p>Cidade: {item.participante?.cidade}</p>
-              <p>Valor: {formatMoney(item.valor)}{item.quantidade > 1 ? ` (${item.quantidade} ingressos)` : ""}</p>
+              <p>
+                Valor: {formatMoney(item.valor)}
+                {item.quantidade > 1 ? ` (${item.quantidade} ingressos)` : ""}
+              </p>
               <p>Pagamento: {p?.metodo === "DINHEIRO" ? "Dinheiro" : "PIX"}</p>
               <p>Evento: {item.evento?.nome}</p>
-              {item.pessoas?.length > 0 && <div className="pt-2">
-                  <p className="font-medium">Pessoas nos ingressos</p>
-                  <ul className="mt-1 list-inside list-disc text-[var(--color-ink-soft)]">
-                    {item.pessoas.map((pessoa) => <li key={pessoa.id || pessoa.nome}>{pessoa.nome}</li>)}
-                  </ul>
-                </div>}
             </dl>
           </div>
+
+          {pessoas.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="font-display text-xl">Ingressos / nomes</h2>
+              <div className="grid gap-3">
+                {pessoas.map((pessoa, idx) => {
+                  const ingresso =
+                    pessoa.ingresso ||
+                    ingressos.find((ig) => ig.pessoaId === pessoa.id || ig.nome === pessoa.nome);
+                  return (
+                    <div
+                      key={pessoa.id || `${pessoa.nome}-${idx}`}
+                      className="rounded-2xl border border-black/5 bg-white/80 p-4 dark:border-white/10 dark:bg-slate-900/70"
+                    >
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#e11d2e]">
+                        Ingresso {idx + 1}
+                      </p>
+                      <p className="mt-1 font-medium text-[var(--color-ink)] dark:text-white">{pessoa.nome}</p>
+                      {ingresso?.codigo ? (
+                        <Link
+                          className="mt-2 inline-block text-sm text-[var(--color-forest)] underline"
+                          to={`/ingresso/${item.codigo}`}
+                        >
+                          {ingresso.codigo}
+                        </Link>
+                      ) : (
+                        <p className="mt-2 text-xs text-[var(--color-ink-soft)]">Aguardando liberação</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="rounded-2xl border border-black/5 bg-white/80 p-4 dark:border-white/10 dark:bg-slate-900/70">
             <div className="flex items-center justify-between gap-2">
               <h2 className="font-display text-xl">Resultado do OCR</h2>
-              {arquivo && <Button variant="secondary" onClick={reprocessarOcr} disabled={ocrBusy}>
+              {arquivo && (
+                <Button variant="secondary" onClick={reprocessarOcr} disabled={ocrBusy}>
                   {ocrBusy ? "Lendo…" : "Reprocessar OCR"}
-                </Button>}
+                </Button>
+              )}
             </div>
-            {ocrBusy && <p className="mt-2 text-xs text-[var(--color-ink-soft)]">Processando leitura do comprovante…</p>}
-            {p ? <dl className="mt-3 space-y-1 text-sm">
-                <p>Alerta: <strong>{ALERTA_LABELS[p.alerta] || p.alerta}</strong></p>
+            {ocrBusy && (
+              <p className="mt-2 text-xs text-[var(--color-ink-soft)]">Processando leitura do comprovante…</p>
+            )}
+            {p ? (
+              <dl className="mt-3 space-y-1 text-sm">
+                <p>
+                  Alerta: <strong>{ALERTA_LABELS[p.alerta] || p.alerta}</strong>
+                </p>
                 <p>Valor detectado: {p.valorDetectado != null ? formatMoney(p.valorDetectado) : "—"}</p>
                 <p>Data: {p.dataDetectada ? formatDate(p.dataDetectada) : "—"}</p>
                 <p>Hora: {p.horaDetectada || "—"}</p>
                 <p>Recebedor: {p.nomeRecebedor || "—"}</p>
                 <p>Instituição: {p.instituicao || "—"}</p>
                 <p>ID/NSU: {p.idTransacao || "—"}</p>
-                {p.textoOcr && <details className="mt-2" open>
+                {p.textoOcr && (
+                  <details className="mt-2" open>
                     <summary className="cursor-pointer text-[var(--color-forest)]">Texto OCR completo</summary>
                     <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-lg bg-black/5 p-2 text-xs dark:bg-white/5">
                       {p.textoOcr}
                     </pre>
-                  </details>}
-              </dl> : <p className="mt-3 text-sm">Sem pagamento vinculado.</p>}
+                  </details>
+                )}
+              </dl>
+            ) : (
+              <p className="mt-3 text-sm">Sem pagamento vinculado.</p>
+            )}
           </div>
 
           <TextArea label="Observação" rows={3} value={obs} onChange={(e) => setObs(e.target.value)} />
 
           <div className="flex flex-wrap gap-2">
-            <Button onClick={confirmar}>Confirmar pagamento</Button>
-            <Button variant="danger" onClick={recusar}>Recusar</Button>
-            <Button variant="secondary" onClick={salvarObs}>Editar observação</Button>
-            <Button variant="ghost" onClick={cancelar}>Cancelar inscrição</Button>
+            <Button onClick={confirmar} disabled={confirmando}>
+              {confirmando ? "Confirmando…" : "Confirmar pagamento"}
+            </Button>
+            <Button variant="danger" onClick={recusar}>
+              Recusar
+            </Button>
+            <Button variant="secondary" onClick={salvarObs}>
+              Editar observação
+            </Button>
+            <Button variant="ghost" onClick={cancelar}>
+              Cancelar inscrição
+            </Button>
           </div>
 
-          {whatsapp && <a
-    href={whatsapp}
-    target="_blank"
-    rel="noreferrer"
-    className="inline-flex rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
-  >
+          {whatsapp && (
+            <a
+              href={whatsapp}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
+            >
               Enviar confirmação no WhatsApp
-            </a>}
+            </a>
+          )}
 
-          {emailInfo && <p className={`text-sm ${emailInfo.sent ? "text-emerald-700" : "text-amber-700"}`}>
-              {emailInfo.sent ? `E-mail automático enviado para ${emailInfo.to}` : `E-mail automático não enviado: ${emailInfo.reason}`}
-            </p>}
+          {emailInfo && (
+            <p className={`text-sm ${emailInfo.sent ? "text-emerald-700" : "text-amber-700"}`}>
+              {emailInfo.sent
+                ? `E-mail automático enviado para ${emailInfo.to}`
+                : `E-mail automático não enviado: ${emailInfo.reason}`}
+            </p>
+          )}
 
-          {item.ingresso && <p className="text-sm">
-              Ingresso:{" "}
+          {ingressos.length > 0 && (
+            <p className="text-sm">
+              Ver todos os ingressos:{" "}
               <Link className="text-[var(--color-forest)] underline" to={`/ingresso/${item.codigo}`}>
-                {item.ingresso.codigo}
+                abrir página pública
               </Link>
-            </p>}
+            </p>
+          )}
         </div>
       </div>
-    </div>;
+    </div>
+  );
 }

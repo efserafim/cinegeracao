@@ -60,29 +60,30 @@ export default function IngressoPage() {
   }];
 
   return (
-    <div className="mx-auto max-w-md space-y-6 px-4 py-10 animate-fade-up">
+    <div className="mx-auto max-w-md space-y-6 px-4 py-10">
       {tickets.length > 1 && (
-        <div className="text-center">
+        <div className="text-center animate-fade-up">
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#e11d2e]">
             {tickets.length} ingressos
           </p>
           <p className="mt-1 text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
-            Cada pessoa tem o próprio QR Code abaixo
+            Cada pessoa tem o próprio cartão e QR Code abaixo
           </p>
         </div>
       )}
       {tickets.map((t, idx) => (
-        <TicketCard
-          key={t.codigo}
-          ticket={t}
-          evento={ticket.evento}
-          data={ticket.data}
-          horario={ticket.horario}
-          local={ticket.local}
-          cidade={ticket.cidade}
-          index={idx}
-          total={tickets.length}
-        />
+        <div key={t.codigo} className="animate-fade-up" style={{ animationDelay: `${idx * 0.08}s` }}>
+          <TicketCard
+            ticket={t}
+            evento={ticket.evento}
+            data={ticket.data}
+            horario={ticket.horario}
+            local={ticket.local}
+            cidade={ticket.cidade}
+            index={idx}
+            total={tickets.length}
+          />
+        </div>
       ))}
     </div>
   );
