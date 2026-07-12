@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Modo escuro por classe no <html> (Tailwind v4) */
+
 @custom-variant dark (&:where(.dark *));
 
 @theme {
@@ -36,7 +36,7 @@
     color: #eef2ff;
   }
 
-  /* Scrollbar estilo Homem-Aranha (Chrome / Edge / Safari) */
+  
   *::-webkit-scrollbar {
     width: 16px;
     height: 16px;
@@ -133,7 +133,7 @@
     animation: pulseGlow 2.8s ease-in-out infinite;
   }
 
-  /* Aranha branca → vermelha no claro (não depende do tema para “funcionar”) */
+  
   .spider-mark-ink,
   .spider-mark-auto {
     filter: brightness(0) saturate(100%) invert(14%) sepia(95%) saturate(5400%) hue-rotate(346deg) brightness(0.95);

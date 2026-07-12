@@ -1,62 +1,107 @@
-/**
- * Serviço de ingressos digitais e validação de entrada.
- */
-const QRCode = require('qrcode');
-const prisma = require('../config/prisma');
-const { gerarCodigoIngresso } = require('../utils/codes');
-const { registrarLog } = require('./logService');
+const QRCode = require("qrcode");
+const prisma = require("../config/prisma");
+const { gerarCodigoIngresso } = require("../utils/codes");
+const { registrarLog } = require("./logService");
 
-/**
- * Cria ingresso após confirmação de pagamento.
- */
-async function criarIngresso(inscricaoId) {
-  const existente = await prisma.ingresso.findUnique({ where: { inscricaoId } });
-  if (existente) return existente;
-
-  const codigo = gerarCodigoIngresso();
-  const qrPayload = JSON.stringify({ tipo: 'ingresso', codigo, inscricaoId });
-
-  return prisma.ingresso.create({
-    data: {
-      inscricaoId,
-      codigo,
-      qrPayload,
-      status: 'VALIDO',
-    },
+async function criarIngressos(inscricaoId) {
+  const inscricao = await prisma.inscricao.findUnique({
+    where: { id: inscricaoId },
+    include: {
+      participante: true,
+      pessoas: { orderBy: { ordem: "asc" }, include: { ingresso: true } },
+      ingressos: true
+    }
   });
+  if (!inscricao) {
+    const err = new Error("Inscrição não encontrada");
+    err.status = 404;
+    throw err;
+  }
+
+  let pessoas = inscricao.pessoas || [];
+  if (pessoas.length === 0) {
+    const pessoa = await prisma.inscricaoPessoa.create({
+      data: {
+        inscricaoId,
+        nome: inscricao.participante?.nome || "Participante",
+        ordem: 0
+      }
+    });
+    pessoas = [pessoa];
+  }
+
+  const criados = [];
+  for (const pessoa of pessoas) {
+    if (pessoa.ingresso) {
+      criados.push(pessoa.ingresso);
+      continue;
+    }
+    const codigo = gerarCodigoIngresso();
+    const qrPayload = JSON.stringify({
+      tipo: "ingresso",
+      codigo,
+      inscricaoId,
+      pessoaId: pessoa.id
+    });
+    const ingresso = await prisma.ingresso.create({
+      data: {
+        inscricaoId,
+        pessoaId: pessoa.id,
+        codigo,
+        qrPayload,
+        status: "VALIDO"
+      }
+    });
+    criados.push(ingresso);
+  }
+
+  if (criados.length === 0 && inscricao.ingressos.length > 0) {
+    return inscricao.ingressos;
+  }
+  return criados;
 }
 
-/**
- * Gera Data URL do QR Code do ingresso.
- */
+async function criarIngresso(inscricaoId) {
+  const list = await criarIngressos(inscricaoId);
+  return list[0] || null;
+}
+
 async function gerarQrDataUrl(ingresso) {
   return QRCode.toDataURL(ingresso.qrPayload, {
-    errorCorrectionLevel: 'M',
+    errorCorrectionLevel: "M",
     margin: 2,
-    width: 280,
+    width: 280
   });
 }
 
-/**
- * Busca ingresso completo para exibição pública (via código da inscrição).
- */
 async function buscarPorCodigoInscricao(codigoInscricao) {
   const inscricao = await prisma.inscricao.findUnique({
     where: { codigo: codigoInscricao },
     include: {
       participante: true,
       evento: true,
-      ingresso: true,
-    },
+      pessoas: { orderBy: { ordem: "asc" } },
+      ingressos: {
+        include: { pessoa: true },
+        orderBy: { criadoEm: "asc" }
+      }
+    }
   });
-
-  if (!inscricao || !inscricao.ingresso) {
-    const err = new Error('Ingresso não encontrado');
+  if (!inscricao || !inscricao.ingressos?.length) {
+    const err = new Error("Ingresso não encontrado");
     err.status = 404;
     throw err;
   }
 
-  const qrDataUrl = await gerarQrDataUrl(inscricao.ingresso);
+  const tickets = [];
+  for (const ingresso of inscricao.ingressos) {
+    tickets.push({
+      nome: ingresso.pessoa?.nome || inscricao.participante.nome,
+      codigo: ingresso.codigo,
+      status: ingresso.status,
+      qrDataUrl: await gerarQrDataUrl(ingresso)
+    });
+  }
 
   return {
     nome: inscricao.participante.nome,
@@ -65,101 +110,89 @@ async function buscarPorCodigoInscricao(codigoInscricao) {
     horario: inscricao.evento.horario,
     local: inscricao.evento.local,
     cidade: inscricao.evento.cidade,
-    codigo: inscricao.ingresso.codigo,
-    status: inscricao.ingresso.status,
-    qrDataUrl,
+    quantidade: inscricao.quantidade || tickets.length,
+    codigo: tickets[0].codigo,
+    status: tickets[0].status,
+    qrDataUrl: tickets[0].qrDataUrl,
+    tickets
   };
 }
 
-/**
- * Valida leitura de QR Code na entrada do evento.
- */
 async function validarEntrada({ codigoOuPayload, adminId, ip }) {
   let codigo = codigoOuPayload;
-
-  // Aceita JSON do QR ou código puro
   try {
     const parsed = JSON.parse(codigoOuPayload);
     if (parsed?.codigo) codigo = parsed.codigo;
   } catch {
-    // texto puro
   }
-
-  // Também aceita payload "TKT-XXXX"
   codigo = String(codigo).trim();
-
   const ingresso = await prisma.ingresso.findUnique({
     where: { codigo },
     include: {
+      pessoa: true,
       inscricao: {
-        include: { participante: true, evento: true },
-      },
-    },
+        include: { participante: true, evento: true }
+      }
+    }
   });
-
   if (!ingresso) {
     return {
-      resultado: 'INVALIDO',
-      mensagem: 'Ingresso não encontrado',
-      tela: 'vermelha',
+      resultado: "INVALIDO",
+      mensagem: "Ingresso não encontrado",
+      tela: "vermelha"
     };
   }
-
   let resultado;
   let mensagem;
   let tela;
-
-  if (ingresso.status === 'CANCELADO') {
-    resultado = 'CANCELADO';
-    mensagem = 'Ingresso cancelado';
-    tela = 'vermelha';
-  } else if (ingresso.status === 'UTILIZADO') {
-    resultado = 'JA_UTILIZADO';
-    mensagem = 'Ingresso já utilizado';
-    tela = 'vermelha';
+  if (ingresso.status === "CANCELADO") {
+    resultado = "CANCELADO";
+    mensagem = "Ingresso cancelado";
+    tela = "vermelha";
+  } else if (ingresso.status === "UTILIZADO") {
+    resultado = "JA_UTILIZADO";
+    mensagem = "Ingresso já utilizado";
+    tela = "vermelha";
   } else {
-    resultado = 'AUTORIZADO';
-    mensagem = 'Entrada autorizada';
-    tela = 'verde';
-
+    resultado = "AUTORIZADO";
+    mensagem = "Entrada autorizada";
+    tela = "verde";
     await prisma.ingresso.update({
       where: { id: ingresso.id },
-      data: { status: 'UTILIZADO', utilizadoEm: new Date() },
+      data: { status: "UTILIZADO", utilizadoEm: new Date() }
     });
   }
-
   await prisma.validacaoTicket.create({
     data: {
       ingressoId: ingresso.id,
       adminId: adminId || null,
-      resultado,
-    },
+      resultado
+    }
   });
-
   await registrarLog({
     adminId,
-    acao: 'VALIDACAO_INGRESSO',
-    entidade: 'Ingresso',
+    acao: "VALIDACAO_INGRESSO",
+    entidade: "Ingresso",
     entidadeId: ingresso.id,
     detalhes: { resultado, codigo: ingresso.codigo },
-    ip,
+    ip
   });
-
   return {
     resultado,
     mensagem,
     tela,
-    nome: ingresso.inscricao.participante.nome,
+    nome: ingresso.pessoa?.nome || ingresso.inscricao.participante.nome,
     evento: ingresso.inscricao.evento.nome,
-    status: resultado === 'AUTORIZADO' ? 'UTILIZADO' : ingresso.status,
+    status: resultado === "AUTORIZADO" ? "UTILIZADO" : ingresso.status,
     codigo: ingresso.codigo,
-    lidoEm: new Date(),
+    lidoEm: new Date()
   };
 }
 
 module.exports = {
   criarIngresso,
+  criarIngressos,
   gerarQrDataUrl,
   buscarPorCodigoInscricao,
-  validarEntrada,
+  validarEntrada
 };

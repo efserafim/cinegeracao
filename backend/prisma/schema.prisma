@@ -1,7 +1,3 @@
-// =============================================================================
-// Schema Prisma – Sistema de Inscrição de Eventos com PIX
-// =============================================================================
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,9 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// -----------------------------------------------------------------------------
-// Administradores do sistema
-// -----------------------------------------------------------------------------
+
 model Admin {
   id           String   @id @default(uuid())
   nome         String
@@ -31,9 +25,7 @@ model Admin {
   @@map("admins")
 }
 
-// -----------------------------------------------------------------------------
-// Status possíveis de um evento
-// -----------------------------------------------------------------------------
+
 enum StatusEvento {
   RASCUNHO
   ABERTO
@@ -41,9 +33,7 @@ enum StatusEvento {
   CANCELADO
 }
 
-// -----------------------------------------------------------------------------
-// Eventos
-// -----------------------------------------------------------------------------
+
 model Evento {
   id              String       @id @default(uuid())
   nome            String
@@ -68,9 +58,7 @@ model Evento {
   @@map("eventos")
 }
 
-// -----------------------------------------------------------------------------
-// Participantes (dados pessoais reutilizáveis)
-// -----------------------------------------------------------------------------
+
 model Participante {
   id           String   @id @default(uuid())
   nome         String
@@ -90,9 +78,7 @@ model Participante {
   @@map("participantes")
 }
 
-// -----------------------------------------------------------------------------
-// Fluxo de status da inscrição
-// -----------------------------------------------------------------------------
+
 enum StatusInscricao {
   AGUARDANDO_PAGAMENTO
   COMPROVANTE_ENVIADO
@@ -104,24 +90,24 @@ enum StatusInscricao {
   CANCELADA
 }
 
-// -----------------------------------------------------------------------------
-// Inscrições
-// -----------------------------------------------------------------------------
+
 model Inscricao {
   id             String           @id @default(uuid())
-  codigo         String           @unique // código público da inscrição
+  codigo         String           @unique
   eventoId       String           @map("evento_id")
   participanteId String           @map("participante_id")
   status         StatusInscricao  @default(AGUARDANDO_PAGAMENTO)
   valor          Decimal          @db.Decimal(10, 2)
+  quantidade     Int              @default(1)
   observacao     String?          @db.Text
   criadoEm       DateTime         @default(now()) @map("criado_em")
   atualizadoEm   DateTime         @updatedAt @map("atualizado_em")
 
-  evento       Evento       @relation(fields: [eventoId], references: [id], onDelete: Cascade)
-  participante Participante @relation(fields: [participanteId], references: [id], onDelete: Restrict)
+  evento       Evento            @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  participante Participante      @relation(fields: [participanteId], references: [id], onDelete: Restrict)
   pagamento    Pagamento?
-  ingresso     Ingresso?
+  pessoas      InscricaoPessoa[]
+  ingressos    Ingresso[]
 
   @@index([eventoId])
   @@index([status])
@@ -129,9 +115,20 @@ model Inscricao {
   @@map("inscricoes")
 }
 
-// -----------------------------------------------------------------------------
-// Flags de alerta do OCR / conferência
-// -----------------------------------------------------------------------------
+model InscricaoPessoa {
+  id          String @id @default(uuid())
+  inscricaoId String @map("inscricao_id")
+  nome        String
+  ordem       Int    @default(0)
+
+  inscricao Inscricao @relation(fields: [inscricaoId], references: [id], onDelete: Cascade)
+  ingresso  Ingresso?
+
+  @@index([inscricaoId])
+  @@map("inscricao_pessoas")
+}
+
+
 enum AlertaPagamento {
   NENHUM
   VALOR_INCORRETO
@@ -139,17 +136,13 @@ enum AlertaPagamento {
   OCR_FALHOU
 }
 
-// -----------------------------------------------------------------------------
-// Forma de pagamento
-// -----------------------------------------------------------------------------
+
 enum MetodoPagamento {
   PIX
   DINHEIRO
 }
 
-// -----------------------------------------------------------------------------
-// Pagamentos (1:1 com inscrição)
-// -----------------------------------------------------------------------------
+
 model Pagamento {
   id                String          @id @default(uuid())
   inscricaoId       String          @unique @map("inscricao_id")
@@ -174,9 +167,7 @@ model Pagamento {
   @@map("pagamentos")
 }
 
-// -----------------------------------------------------------------------------
-// Comprovantes enviados
-// -----------------------------------------------------------------------------
+
 model Comprovante {
   id          String   @id @default(uuid())
   pagamentoId String   @unique @map("pagamento_id")
@@ -190,44 +181,41 @@ model Comprovante {
   @@map("comprovantes")
 }
 
-// -----------------------------------------------------------------------------
-// Status do ingresso digital
-// -----------------------------------------------------------------------------
+
 enum StatusIngresso {
   VALIDO
   UTILIZADO
   CANCELADO
 }
 
-// -----------------------------------------------------------------------------
-// Ingressos digitais
-// -----------------------------------------------------------------------------
+
 model Ingresso {
   id           String         @id @default(uuid())
-  inscricaoId  String         @unique @map("inscricao_id")
-  codigo       String         @unique // alfanumérico único
-  qrPayload    String         @map("qr_payload") // conteúdo do QR Code
+  inscricaoId  String         @map("inscricao_id")
+  pessoaId     String?        @unique @map("pessoa_id")
+  codigo       String         @unique
+  qrPayload    String         @map("qr_payload")
   status       StatusIngresso @default(VALIDO)
   liberadoEm   DateTime       @default(now()) @map("liberado_em")
   utilizadoEm  DateTime?      @map("utilizado_em")
   criadoEm     DateTime       @default(now()) @map("criado_em")
   atualizadoEm DateTime       @updatedAt @map("atualizado_em")
 
-  inscricao   Inscricao         @relation(fields: [inscricaoId], references: [id], onDelete: Cascade)
-  validacoes  ValidacaoTicket[]
+  inscricao  Inscricao         @relation(fields: [inscricaoId], references: [id], onDelete: Cascade)
+  pessoa     InscricaoPessoa?  @relation(fields: [pessoaId], references: [id], onDelete: SetNull)
+  validacoes ValidacaoTicket[]
 
+  @@index([inscricaoId])
   @@index([codigo])
   @@map("ingressos")
 }
 
-// -----------------------------------------------------------------------------
-// Leituras de QR Code na entrada
-// -----------------------------------------------------------------------------
+
 model ValidacaoTicket {
   id          String   @id @default(uuid())
   ingressoId  String   @map("ingresso_id")
   adminId     String?  @map("admin_id")
-  resultado   String   // AUTORIZADO | JA_UTILIZADO | CANCELADO | INVALIDO
+  resultado   String
   lidoEm      DateTime @default(now()) @map("lido_em")
   observacao  String?
 
@@ -239,9 +227,7 @@ model ValidacaoTicket {
   @@map("validacoes_ticket")
 }
 
-// -----------------------------------------------------------------------------
-// Logs de auditoria
-// -----------------------------------------------------------------------------
+
 model Log {
   id         String   @id @default(uuid())
   adminId    String?  @map("admin_id")
@@ -259,9 +245,7 @@ model Log {
   @@map("logs")
 }
 
-// -----------------------------------------------------------------------------
-// Configurações gerais do sistema (chave/valor)
-// -----------------------------------------------------------------------------
+
 model Configuracao {
   id        String   @id @default(uuid())
   chave     String   @unique

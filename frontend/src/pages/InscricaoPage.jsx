@@ -1,52 +1,90 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { Ticket } from 'lucide-react';
-import api, { formatDate, formatMoney, mediaUrl, STATUS_LABELS } from '../services/api';
-import { Button, Input, Loading, StatusBadge } from '../components/ui';
-import { logoImg, posterImg } from '../assets/brand';
-import ContatosDuvidas from '../components/ContatosDuvidas';
-import CinemaMapa from '../components/CinemaMapa';
-import SpiderMark from '../components/SpiderMark';
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { Minus, Plus, Ticket } from "lucide-react";
+import api, { formatDate, formatMoney, mediaUrl, STATUS_LABELS } from "../services/api";
+import { Button, Input, Loading, StatusBadge } from "../components/ui";
+import { logoImg, posterImg } from "../assets/brand";
+import ContatosDuvidas from "../components/ContatosDuvidas";
+import CinemaMapa from "../components/CinemaMapa";
+import SpiderMark from "../components/SpiderMark";
 
-/**
- * Formulário de inscrição — visual Homem-Aranha alinhado à home.
- */
+const MAX_INGRESSOS = 10;
+
 export default function InscricaoPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
-    defaultValues: { metodoPagamento: 'PIX' },
+    defaultValues: {
+      metodoPagamento: "PIX",
+      quantidade: 1,
+      pessoas: [""]
+    }
   });
-  const metodoPagamento = watch('metodoPagamento');
+  const metodoPagamento = watch("metodoPagamento");
+  const quantidade = Number(watch("quantidade") || 1);
+  const pessoas = watch("pessoas") || [];
+  const nomeResponsavel = watch("nome") || "";
   const [evento, setEvento] = useState(null);
   const [loadingEvento, setLoadingEvento] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [duplicata, setDuplicata] = useState(null);
 
   useEffect(() => {
-    api.get(`/eventos/publicos/${id}`)
-      .then((res) => setEvento(res.data.data))
-      .catch((err) => setError(err.response?.data?.message || 'Evento não encontrado'))
-      .finally(() => setLoadingEvento(false));
+    api.get(`/eventos/publicos/${id}`).then((res) => setEvento(res.data.data)).catch((err) => setError(err.response?.data?.message || "Evento não encontrado")).finally(() => setLoadingEvento(false));
   }, [id]);
+
+  useEffect(() => {
+    const atual = Array.isArray(pessoas) ? [...pessoas] : [];
+    while (atual.length < quantidade) atual.push("");
+    while (atual.length > quantidade) atual.pop();
+    if (atual.length !== pessoas.length) setValue("pessoas", atual);
+  }, [quantidade]);
+
+  useEffect(() => {
+    if (quantidade >= 1 && nomeResponsavel && (!pessoas[0] || pessoas[0] === "")) {
+      const next = [...(pessoas || [])];
+      next[0] = nomeResponsavel;
+      setValue("pessoas", next, { shouldDirty: false });
+    }
+  }, [nomeResponsavel]);
+
+  function alterarQuantidade(delta) {
+    if (!evento) return;
+    const max = Math.min(MAX_INGRESSOS, Math.max(1, evento.vagasRestantes || 1));
+    const next = Math.min(max, Math.max(1, quantidade + delta));
+    setValue("quantidade", next);
+  }
 
   async function onSubmit(values) {
     setLoading(true);
-    setError('');
+    setError("");
     setDuplicata(null);
     try {
-      const { data } = await api.post(`/inscricoes/evento/${id}`, values);
+      const qtd = Number(values.quantidade) || 1;
+      const listaPessoas = (values.pessoas || []).slice(0, qtd).map((p) => String(p || "").trim());
+      if (listaPessoas.length !== qtd || listaPessoas.some((p) => !p)) {
+        setError(`Informe o nome de cada uma das ${qtd} pessoa(s)`);
+        setLoading(false);
+        return;
+      }
+      const payload = {
+        ...values,
+        quantidade: qtd,
+        pessoas: listaPessoas,
+        nome: values.nome || listaPessoas[0]
+      };
+      const { data } = await api.post(`/inscricoes/evento/${id}`, payload);
       const codigo = data.data.inscricao.codigo;
       navigate(`/inscricao/${codigo}`);
     } catch (err) {
       const payload = err.response?.data;
       if (err.response?.status === 409 && payload?.data?.duplicada) {
         setDuplicata(payload.data);
-        setError('');
+        setError("");
       } else {
-        setError(payload?.message || 'Erro ao criar inscrição');
+        setError(payload?.message || "Erro ao criar inscrição");
       }
     } finally {
       setLoading(false);
@@ -54,28 +92,24 @@ export default function InscricaoPage() {
   }
 
   if (loadingEvento) return <Loading />;
-
   if (!evento) {
-    return (
-      <div className="mx-auto max-w-md px-5 py-20 text-center">
+    return <div className="mx-auto max-w-md px-5 py-20 text-center">
         <SpiderMark className="mx-auto mb-4 h-12 w-12 opacity-70" />
-        <p className="text-red-600">{error || 'Evento não encontrado'}</p>
+        <p className="text-red-600">{error || "Evento não encontrado"}</p>
         <Link to="/" className="mt-4 inline-block text-sm text-[#e11d2e] underline">Voltar</Link>
-      </div>
-    );
+      </div>;
   }
 
   const esgotado = evento.vagasRestantes <= 0;
   const bannerSrc = mediaUrl(evento.bannerUrl) || posterImg;
-  const fieldClass =
-    '!rounded-[1.25rem] border-0 bg-white/80 px-4 py-3 shadow-sm ring-1 ring-black/5 focus:ring-2 dark:bg-white/5 dark:ring-white/10';
+  const fieldClass = "!rounded-[1.25rem] border-0 bg-white/80 px-4 py-3 shadow-sm ring-1 ring-black/5 focus:ring-2 dark:bg-white/5 dark:ring-white/10";
+  const maxQtd = Math.min(MAX_INGRESSOS, Math.max(1, evento.vagasRestantes || 1));
+  const total = Number(evento.valor) * quantidade;
 
-  return (
-    <div className="relative overflow-hidden">
+  return <div className="relative overflow-hidden">
       <SpiderMark className="pointer-events-none absolute -right-12 top-32 h-48 w-48 rotate-6 opacity-[0.06]" />
       <SpiderMark className="pointer-events-none absolute -left-10 bottom-40 h-40 w-40 -rotate-12 opacity-[0.05]" />
 
-      {/* Cabeçalho cinematográfico */}
       <section className="relative overflow-hidden bg-[#070a12] pt-20">
         <div className="pointer-events-none absolute inset-0 web-mask opacity-30" />
         <div className="pointer-events-none absolute -left-16 top-10 h-56 w-56 rounded-full bg-[#e11d2e]/25 blur-3xl" />
@@ -84,11 +118,7 @@ export default function InscricaoPage() {
 
         <div className="relative mx-auto max-w-lg px-5 pb-10 pt-4 text-center sm:px-6">
           <div className="flex items-center justify-center gap-3">
-            <img
-              src={logoImg}
-              alt=""
-              className="h-14 w-14 rounded-full object-cover ring-4 ring-[#e11d2e]/70"
-            />
+            <img src={logoImg} alt="" className="h-14 w-14 rounded-full object-cover ring-4 ring-[#e11d2e]/70" />
             <SpiderMark tone="light" className="h-10 w-10 animate-pulse-glow" />
           </div>
           <p className="mt-4 flex items-center justify-center gap-2 font-display text-3xl tracking-wide text-white">
@@ -108,7 +138,7 @@ export default function InscricaoPage() {
             </p>
             <p className="text-white/65">{evento.local}</p>
             <p className="pt-1 font-semibold text-[#f5c542]">
-              {formatMoney(evento.valor)} · {evento.vagasRestantes} vagas
+              {formatMoney(evento.valor)} / ingresso · {evento.vagasRestantes} vagas
             </p>
           </div>
         </div>
@@ -128,12 +158,9 @@ export default function InscricaoPage() {
           </h1>
         </div>
 
-        {esgotado ? (
-          <p className="rounded-[1.25rem] bg-amber-50 px-5 py-4 text-center text-sm text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+        {esgotado ? <p className="rounded-[1.25rem] bg-amber-50 px-5 py-4 text-center text-sm text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
             Vagas esgotadas para este evento.
-          </p>
-        ) : duplicata ? (
-          <div className="space-y-5">
+          </p> : duplicata ? <div className="space-y-5">
             <div className="rounded-[1.75rem] bg-[#f5c542]/12 p-5 ring-1 ring-[#f5c542]/35">
               <div className="flex items-start gap-3">
                 <Ticket className="mt-0.5 shrink-0 text-[#e11d2e]" size={20} />
@@ -154,12 +181,10 @@ export default function InscricaoPage() {
                 </div>
                 <p className="text-[11px] uppercase tracking-widest text-[var(--color-ink-soft)]">Seu código</p>
                 <p className="mt-1 font-mono text-2xl font-bold tracking-wide text-[#e11d2e]">{duplicata.codigo}</p>
-                {duplicata.status && (
-                  <p className="mt-2 flex items-center justify-center gap-2 text-xs">
+                {duplicata.status && <p className="mt-2 flex items-center justify-center gap-2 text-xs">
                     <StatusBadge status={duplicata.status} />
                     <span className="text-[var(--color-ink-soft)]">{STATUS_LABELS[duplicata.status]}</span>
-                  </p>
-                )}
+                  </p>}
               </div>
               <Button className="mt-4 w-full !rounded-full" onClick={() => navigate(`/inscricao/${duplicata.codigo}`)}>
                 Continuar com este código
@@ -173,29 +198,27 @@ export default function InscricaoPage() {
               </button>
             </div>
             <ContatosDuvidas />
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          </div> : <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input
-              label="Nome completo"
+              label="Nome do responsável"
               className={fieldClass}
-              {...register('nome', { required: 'Obrigatório' })}
+              {...register("nome", { required: "Obrigatório" })}
               error={errors.nome?.message}
             />
             <Input
               label="WhatsApp (com DDD)"
               placeholder="22999999999"
               className={fieldClass}
-              {...register('telefone', { required: 'Obrigatório' })}
+              {...register("telefone", { required: "Obrigatório" })}
               error={errors.telefone?.message}
             />
             <Input
               label="E-mail"
               type="email"
               className={fieldClass}
-              {...register('email', {
-                required: 'Obrigatório para receber a confirmação',
-                pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'E-mail inválido' },
+              {...register("email", {
+                required: "Obrigatório para receber a confirmação",
+                pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "E-mail inválido" }
               })}
               error={errors.email?.message}
             />
@@ -203,15 +226,67 @@ export default function InscricaoPage() {
               <Input
                 label="Paróquia"
                 className={fieldClass}
-                {...register('paroquia', { required: 'Obrigatório' })}
+                {...register("paroquia", { required: "Obrigatório" })}
                 error={errors.paroquia?.message}
               />
               <Input
                 label="Cidade"
                 className={fieldClass}
-                {...register('cidade', { required: 'Obrigatório' })}
+                {...register("cidade", { required: "Obrigatório" })}
                 error={errors.cidade?.message}
               />
+            </div>
+
+            <div className="rounded-[1.25rem] bg-white/80 p-4 shadow-sm ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)] dark:text-slate-400">
+                    Quantidade de ingressos
+                  </p>
+                  <p className="mt-1 text-sm text-[var(--color-ink)] dark:text-white">
+                    Total: <strong className="text-[#e11d2e]">{formatMoney(total)}</strong>
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => alterarQuantidade(-1)}
+                    disabled={quantidade <= 1}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#e11d2e]/10 text-[#e11d2e] disabled:opacity-40"
+                    aria-label="Diminuir"
+                  >
+                    <Minus size={16} />
+                  </button>
+                  <span className="min-w-[2rem] text-center font-display text-2xl text-[var(--color-ink)] dark:text-white">
+                    {quantidade}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => alterarQuantidade(1)}
+                    disabled={quantidade >= maxQtd}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#e11d2e] text-white disabled:opacity-40"
+                    aria-label="Aumentar"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+              <input type="hidden" {...register("quantidade", { valueAsNumber: true })} />
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)] dark:text-slate-400">
+                Nome de cada pessoa
+              </p>
+              {Array.from({ length: quantidade }).map((_, idx) => (
+                <Input
+                  key={idx}
+                  label={`Ingresso ${idx + 1}${idx === 0 ? " (você)" : ""}`}
+                  className={fieldClass}
+                  {...register(`pessoas.${idx}`, { required: "Obrigatório" })}
+                  error={errors.pessoas?.[idx]?.message}
+                />
+              ))}
             </div>
 
             <div className="space-y-2 pt-1">
@@ -221,12 +296,8 @@ export default function InscricaoPage() {
               <div className="grid gap-2 sm:grid-cols-2">
                 <button
                   type="button"
-                  onClick={() => setValue('metodoPagamento', 'PIX')}
-                  className={`rounded-[1.25rem] px-4 py-3 text-left text-sm transition ring-1 ${
-                    metodoPagamento === 'PIX'
-                      ? 'bg-[#e11d2e]/10 ring-[#e11d2e] font-semibold text-[var(--color-ink)] dark:text-white'
-                      : 'bg-white/70 ring-black/5 dark:bg-white/5 dark:ring-white/10'
-                  }`}
+                  onClick={() => setValue("metodoPagamento", "PIX")}
+                  className={`rounded-[1.25rem] px-4 py-3 text-left text-sm transition ring-1 ${metodoPagamento === "PIX" ? "bg-[#e11d2e]/10 ring-[#e11d2e] font-semibold text-[var(--color-ink)] dark:text-white" : "bg-white/70 ring-black/5 dark:bg-white/5 dark:ring-white/10"}`}
                 >
                   <span className="block font-semibold">PIX</span>
                   <span className="mt-0.5 block text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
@@ -235,12 +306,8 @@ export default function InscricaoPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setValue('metodoPagamento', 'DINHEIRO')}
-                  className={`rounded-[1.25rem] px-4 py-3 text-left text-sm transition ring-1 ${
-                    metodoPagamento === 'DINHEIRO'
-                      ? 'bg-[#e11d2e]/10 ring-[#e11d2e] font-semibold text-[var(--color-ink)] dark:text-white'
-                      : 'bg-white/70 ring-black/5 dark:bg-white/5 dark:ring-white/10'
-                  }`}
+                  onClick={() => setValue("metodoPagamento", "DINHEIRO")}
+                  className={`rounded-[1.25rem] px-4 py-3 text-left text-sm transition ring-1 ${metodoPagamento === "DINHEIRO" ? "bg-[#e11d2e]/10 ring-[#e11d2e] font-semibold text-[var(--color-ink)] dark:text-white" : "bg-white/70 ring-black/5 dark:bg-white/5 dark:ring-white/10"}`}
                 >
                   <span className="block font-semibold">Dinheiro</span>
                   <span className="mt-0.5 block text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
@@ -248,7 +315,7 @@ export default function InscricaoPage() {
                   </span>
                 </button>
               </div>
-              <input type="hidden" {...register('metodoPagamento')} />
+              <input type="hidden" {...register("metodoPagamento")} />
             </div>
 
             {error && <p className="text-center text-sm text-red-600">{error}</p>}
@@ -256,16 +323,15 @@ export default function InscricaoPage() {
             <Button type="submit" disabled={loading} className="mt-2 w-full !rounded-full py-3.5 shadow-md shadow-red-900/15">
               <SpiderMark tone="light" className="h-4 w-4" />
               {loading
-                ? 'Gerando...'
-                : metodoPagamento === 'DINHEIRO'
-                  ? 'Confirmar inscrição em dinheiro'
-                  : 'Continuar para o PIX'}
+                ? "Gerando..."
+                : metodoPagamento === "DINHEIRO"
+                  ? `Confirmar ${quantidade} ingresso${quantidade > 1 ? "s" : ""} em dinheiro`
+                  : `Continuar para o PIX · ${formatMoney(total)}`}
             </Button>
             <p className="text-center text-[11px] leading-relaxed text-[var(--color-ink-soft)] dark:text-slate-400">
               Já se inscreveu? Use o mesmo WhatsApp para recuperar seu código, ou fale com Eduardo/Lavínia.
             </p>
-          </form>
-        )}
+          </form>}
 
         <div className="mt-12 space-y-8">
           <CinemaMapa />
@@ -278,6 +344,5 @@ export default function InscricaoPage() {
           </Link>
         </p>
       </section>
-    </div>
-  );
+    </div>;
 }

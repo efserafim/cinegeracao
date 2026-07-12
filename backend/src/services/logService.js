@@ -1,8 +1,4 @@
-/**
- * Serviço de auditoria – registra ações no banco.
- */
-const prisma = require('../config/prisma');
-
+const prisma = require("../config/prisma");
 async function registrarLog({ adminId, acao, entidade, entidadeId, detalhes, ip }) {
   try {
     await prisma.log.create({
@@ -11,13 +7,12 @@ async function registrarLog({ adminId, acao, entidade, entidadeId, detalhes, ip 
         acao,
         entidade: entidade || null,
         entidadeId: entidadeId || null,
-        detalhes: typeof detalhes === 'string' ? detalhes : JSON.stringify(detalhes || {}),
-        ip: ip || null,
-      },
+        detalhes: typeof detalhes === "string" ? detalhes : JSON.stringify(detalhes || {}),
+        ip: ip || null
+      }
     });
   } catch (err) {
-    console.error('[LOG] Falha ao registrar log:', err.message);
+    console.error("[LOG] Falha ao registrar log:", err.message);
   }
 }
-
 module.exports = { registrarLog };

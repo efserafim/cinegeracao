@@ -1,91 +1,64 @@
-/**
- * Aplicação Express – middlewares, rotas e segurança.
- */
-const path = require('path');
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const swaggerUi = require('swagger-ui-express');
-
-const config = require('./config');
-const swaggerSpec = require('./docs/swagger');
-const { xssSanitize } = require('./middlewares/xss');
-const { notFound, errorHandler } = require('./middlewares/error');
-
-const authRoutes = require('./routes/authRoutes');
-const eventoRoutes = require('./routes/eventoRoutes');
-const inscricaoRoutes = require('./routes/inscricaoRoutes');
-const ingressoRoutes = require('./routes/ingressoRoutes');
-
+const path = require("path");
+const express = require("express");
+const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const swaggerUi = require("swagger-ui-express");
+const config = require("./config");
+const swaggerSpec = require("./docs/swagger");
+const { xssSanitize } = require("./middlewares/xss");
+const { notFound, errorHandler } = require("./middlewares/error");
+const authRoutes = require("./routes/authRoutes");
+const eventoRoutes = require("./routes/eventoRoutes");
+const inscricaoRoutes = require("./routes/inscricaoRoutes");
+const ingressoRoutes = require("./routes/ingressoRoutes");
 const app = express();
-
-// Segurança HTTP
-app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 const allowedOrigins = new Set(
-  config.frontendOrigins
-    .map((o) => o.replace(/\/$/, ''))
-    .concat(['https://cinegeracao.netlify.app', 'http://localhost:5173']),
+  config.frontendOrigins.map((o) => o.replace(/\/$/, "")).concat(["https://cinegeracao.netlify.app", "http://localhost:5173"])
 );
-
 app.use(
   cors({
     origin(origin, callback) {
       if (!origin) return callback(null, true);
-      const normalized = origin.replace(/\/$/, '');
+      const normalized = origin.replace(/\/$/, "");
       if (allowedOrigins.has(normalized)) return callback(null, true);
-      console.warn('[CORS] origem não permitida:', origin, '| permitidas:', [...allowedOrigins]);
-      // false = bloqueia sem quebrar o preflight com 500
+      console.warn("[CORS] origem não permitida:", origin, "| permitidas:", [...allowedOrigins]);
       return callback(null, false);
     },
-    credentials: true,
-  }),
+    credentials: true
+  })
 );
-
-// Rate limit geral + mais restrito no login
 app.use(
-  '/api/',
+  "/api/",
   rateLimit({
-    windowMs: 15 * 60 * 1000,
+    windowMs: 15 * 60 * 1e3,
     max: 500,
     standardHeaders: true,
-    legacyHeaders: false,
-  }),
+    legacyHeaders: false
+  })
 );
-
 app.use(
-  '/api/auth/login',
+  "/api/auth/login",
   rateLimit({
-    windowMs: 15 * 60 * 1000,
+    windowMs: 15 * 60 * 1e3,
     max: 30,
-    message: { success: false, message: 'Muitas tentativas de login. Tente novamente mais tarde.' },
-  }),
+    message: { success: false, message: "Muitas tentativas de login. Tente novamente mais tarde." }
+  })
 );
-
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(xssSanitize);
-
-// Arquivos estáticos (banners e comprovantes)
-app.use('/uploads', express.static(path.resolve(process.cwd(), config.upload.dir)));
-
-// Swagger
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.get('/api/docs.json', (_req, res) => res.json(swaggerSpec));
-
-// Healthcheck
-app.get('/api/health', (_req, res) => {
-  res.json({ success: true, message: 'OK', env: config.env });
+app.use("/uploads", express.static(path.resolve(process.cwd(), config.upload.dir)));
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get("/api/docs.json", (_req, res) => res.json(swaggerSpec));
+app.get("/api/health", (_req, res) => {
+  res.json({ success: true, message: "OK", env: config.env });
 });
-
-// Rotas
-app.use('/api/auth', authRoutes);
-app.use('/api/eventos', eventoRoutes);
-app.use('/api/inscricoes', inscricaoRoutes);
-app.use('/api/ingressos', ingressoRoutes);
-
+app.use("/api/auth", authRoutes);
+app.use("/api/eventos", eventoRoutes);
+app.use("/api/inscricoes", inscricaoRoutes);
+app.use("/api/ingressos", ingressoRoutes);
 app.use(notFound);
 app.use(errorHandler);
-
 module.exports = app;

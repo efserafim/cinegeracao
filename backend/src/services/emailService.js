@@ -1,16 +1,9 @@
-/**
- * E-mail automático via SMTP (Nodemailer).
- * Disparado quando o admin confirma o pagamento.
- */
-const nodemailer = require('nodemailer');
-const config = require('../config');
-
+const nodemailer = require("nodemailer");
+const config = require("../config");
 let transporter = null;
-
 function smtpConfigurado() {
   return Boolean(config.smtp.host && config.smtp.user && config.smtp.pass);
 }
-
 function getTransporter() {
   if (!smtpConfigurado()) return null;
   if (!transporter) {
@@ -20,16 +13,12 @@ function getTransporter() {
       secure: config.smtp.secure,
       auth: {
         user: config.smtp.user,
-        pass: config.smtp.pass,
-      },
+        pass: config.smtp.pass
+      }
     });
   }
   return transporter;
 }
-
-/**
- * Envia e-mail de confirmação com dados do evento e link do ingresso.
- */
 async function enviarConfirmacaoInscricao({
   para,
   nome,
@@ -40,15 +29,13 @@ async function enviarConfirmacaoInscricao({
   cidade,
   codigoIngresso,
   codigoInscricao,
-  chegada,
+  chegada
 }) {
   if (!para) {
-    return { sent: false, reason: 'Participante sem e-mail' };
+    return { sent: false, reason: "Participante sem e-mail" };
   }
-
-  const baseUrl = (config.frontendUrl || 'http://localhost:5173').replace(/\/$/, '');
+  const baseUrl = (config.frontendUrl || "http://localhost:5173").replace(/\/$/, "");
   const linkIngresso = `${baseUrl}/ingresso/${codigoInscricao}`;
-
   const subject = `Ingresso confirmado – ${evento}`;
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#111">
@@ -62,8 +49,8 @@ async function enviarConfirmacaoInscricao({
         <ul style="line-height:1.7;padding-left:18px">
           <li><strong>Filme / evento:</strong> ${evento}</li>
           <li><strong>Data:</strong> ${data}</li>
-          <li><strong>Sessão:</strong> ${horario}${chegada ? ` · Chegada ${chegada}` : ''}</li>
-          <li><strong>Local:</strong> ${local}${cidade ? ` – ${cidade}` : ''}</li>
+          <li><strong>Sessão:</strong> ${horario}${chegada ? ` · Chegada ${chegada}` : ""}</li>
+          <li><strong>Local:</strong> ${local}${cidade ? ` – ${cidade}` : ""}</li>
           <li><strong>Código do ingresso:</strong> ${codigoIngresso}</li>
         </ul>
         <p style="margin:24px 0">
@@ -76,26 +63,23 @@ async function enviarConfirmacaoInscricao({
       </div>
     </div>
   `;
-
   const tx = getTransporter();
   if (!tx) {
     console.warn(`[EMAIL] SMTP não configurado – não enviado para ${para}`);
-    return { sent: false, reason: 'SMTP não configurado no servidor' };
+    return { sent: false, reason: "SMTP não configurado no servidor" };
   }
-
   try {
     await tx.sendMail({
       from: config.smtp.from,
       to: para,
       subject,
-      html,
+      html
     });
     console.log(`[EMAIL] Confirmação enviada para ${para}`);
     return { sent: true, to: para };
   } catch (err) {
-    console.error('[EMAIL] Falha ao enviar:', err.message);
+    console.error("[EMAIL] Falha ao enviar:", err.message);
     return { sent: false, reason: err.message };
   }
 }
-
 module.exports = { enviarConfirmacaoInscricao, smtpConfigurado };

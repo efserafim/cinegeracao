@@ -1,48 +1,36 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import api, { formatDate, formatMoney, mediaUrl } from '../services/api';
-import { Button, Loading } from '../components/ui';
-import { logoImg, posterImg } from '../assets/brand';
-import ContatosDuvidas from '../components/ContatosDuvidas';
-import CinemaMapa from '../components/CinemaMapa';
-import SpiderMark from '../components/SpiderMark';
-
-/**
- * Home temática Homem-Aranha: teia, aranha sem fundo, poster e inscrição.
- */
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import api, { formatDate, formatMoney, mediaUrl } from "../services/api";
+import { Button, Loading } from "../components/ui";
+import { logoImg, posterImg } from "../assets/brand";
+import ContatosDuvidas from "../components/ContatosDuvidas";
+import CinemaMapa from "../components/CinemaMapa";
+import SpiderMark from "../components/SpiderMark";
 export default function HomePage() {
   const [eventos, setEventos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState('');
+  const [selected, setSelected] = useState("");
   const navigate = useNavigate();
-
   useEffect(() => {
-    api.get('/eventos/publicos')
-      .then((res) => {
-        const list = res.data.data || [];
-        setEventos(list);
-        if (list.length > 0) setSelected(list[0].id);
-      })
-      .catch(() => setEventos([]))
-      .finally(() => setLoading(false));
+    api.get("/eventos/publicos").then((res) => {
+      const list = res.data.data || [];
+      setEventos(list);
+      if (list.length > 0) setSelected(list[0].id);
+    }).catch(() => setEventos([])).finally(() => setLoading(false));
   }, []);
-
   function irParaFormulario() {
     if (!selected) return;
     navigate(`/evento/${selected}/inscrever`);
   }
-
   const eventoPrincipal = eventos[0];
   const flyerImg = mediaUrl(eventoPrincipal?.bannerUrl);
-
-  return (
-    <div>
+  return <div>
       <section className="relative min-h-[92svh] overflow-hidden bg-[#070a12]">
         <img
-          src={posterImg}
-          alt="Homem-Aranha: Um novo dia"
-          className="absolute inset-0 h-full w-full object-cover object-[center_22%] animate-fade-in"
-        />
+    src={posterImg}
+    alt="Homem-Aranha: Um novo dia"
+    className="absolute inset-0 h-full w-full object-cover object-[center_22%] animate-fade-in"
+  />
         <div className="absolute inset-0 web-mask opacity-40" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#070a12]/70 via-[#070a12]/35 to-[#070a12]" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#070a12]/85 via-[#070a12]/40 to-transparent" />
@@ -54,30 +42,30 @@ export default function HomePage() {
 
         <div className="relative z-10 mx-auto flex min-h-[92svh] max-w-6xl flex-col justify-end px-5 pb-20 pt-28 sm:px-8 lg:pb-24">
           <div className="max-w-lg">
-            <div className="animate-fade-up" style={{ animationDelay: '0.05s' }}>
+            <div className="animate-fade-up" style={{ animationDelay: "0.05s" }}>
               <img
-                src={logoImg}
-                alt="CineGeração"
-                className="animate-pulse-glow h-16 w-16 rounded-full object-cover ring-4 ring-[#e11d2e]/70 sm:h-20 sm:w-20"
-              />
+    src={logoImg}
+    alt="CineGeração"
+    className="animate-pulse-glow h-16 w-16 rounded-full object-cover ring-4 ring-[#e11d2e]/70 sm:h-20 sm:w-20"
+  />
             </div>
 
             <p
-              className="animate-fade-up mt-5 font-display text-5xl leading-none tracking-wide text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.55)] sm:text-6xl"
-              style={{ animationDelay: '0.1s' }}
-            >
+    className="animate-fade-up mt-5 font-display text-5xl leading-none tracking-wide text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.55)] sm:text-6xl"
+    style={{ animationDelay: "0.1s" }}
+  >
               CINEGERAÇÃO
             </p>
             <p
-              className="animate-fade-up mt-2 font-display text-xl uppercase tracking-[0.08em] text-[#f5c542] sm:text-2xl"
-              style={{ animationDelay: '0.14s' }}
-            >
+    className="animate-fade-up mt-2 font-display text-xl uppercase tracking-[0.08em] text-[#f5c542] sm:text-2xl"
+    style={{ animationDelay: "0.14s" }}
+  >
               Homem-Aranha: Um novo dia
             </p>
             <h1
-              className="animate-fade-up mt-4 max-w-sm text-sm font-medium leading-relaxed text-white/90 sm:text-base"
-              style={{ animationDelay: '0.18s' }}
-            >
+    className="animate-fade-up mt-4 max-w-sm text-sm font-medium leading-relaxed text-white/90 sm:text-base"
+    style={{ animationDelay: "0.18s" }}
+  >
               Cinema MaxiMovie · Bacaxá, Saquarema
               <br />
               Sessão 18h10 · Chegada 17h10
@@ -85,11 +73,11 @@ export default function HomePage() {
               Pipoca P + Guaravita inclusos
             </h1>
             <button
-              type="button"
-              onClick={() => document.getElementById('inscricao')?.scrollIntoView({ behavior: 'smooth' })}
-              className="animate-fade-up mt-8 inline-flex items-center gap-2 rounded-full bg-[#e11d2e] px-8 py-3.5 text-sm font-bold uppercase tracking-wide text-white shadow-[0_12px_32px_rgba(225,29,46,0.5)] transition hover:bg-[#b01422]"
-              style={{ animationDelay: '0.26s' }}
-            >
+    type="button"
+    onClick={() => document.getElementById("inscricao")?.scrollIntoView({ behavior: "smooth" })}
+    className="animate-fade-up mt-8 inline-flex items-center gap-2 rounded-full bg-[#e11d2e] px-8 py-3.5 text-sm font-bold uppercase tracking-wide text-white shadow-[0_12px_32px_rgba(225,29,46,0.5)] transition hover:bg-[#b01422]"
+    style={{ animationDelay: "0.26s" }}
+  >
               <SpiderMark tone="light" className="h-5 w-5" />
               Quero participar
             </button>
@@ -118,17 +106,12 @@ export default function HomePage() {
 
           {loading && <Loading />}
 
-          {!loading && eventos.length === 0 && (
-            <p className="text-center text-sm text-[var(--color-ink-soft)] dark:text-slate-400">Nenhum evento aberto no momento.</p>
-          )}
+          {!loading && eventos.length === 0 && <p className="text-center text-sm text-[var(--color-ink-soft)] dark:text-slate-400">Nenhum evento aberto no momento.</p>}
 
-          {!loading && eventos.length === 1 && (
-            <div className="space-y-6">
-              {flyerImg && (
-                <div className="relative overflow-hidden rounded-[1.75rem] shadow-[0_24px_60px_rgba(11,16,32,0.12)] ring-1 ring-[#e11d2e]/20 dark:shadow-[0_24px_60px_rgba(225,29,46,0.18)]">
+          {!loading && eventos.length === 1 && <div className="space-y-6">
+              {flyerImg && <div className="relative overflow-hidden rounded-[1.75rem] shadow-[0_24px_60px_rgba(11,16,32,0.12)] ring-1 ring-[#e11d2e]/20 dark:shadow-[0_24px_60px_rgba(225,29,46,0.18)]">
                   <img src={flyerImg} alt="" className="block h-auto w-full object-contain" />
-                </div>
-              )}
+                </div>}
               <div className="space-y-2 text-center">
                 <p className="font-semibold tracking-tight text-[var(--color-ink)] dark:text-white">{eventos[0].nome}</p>
                 <p className="whitespace-pre-line text-sm leading-relaxed text-[var(--color-ink-soft)] dark:text-slate-400">
@@ -139,50 +122,41 @@ export default function HomePage() {
                 </p>
               </div>
               <Button
-                className="w-full !rounded-full py-3.5 shadow-md shadow-red-900/15"
-                disabled={eventos[0].vagasRestantes <= 0}
-                onClick={() => navigate(`/evento/${eventos[0].id}/inscrever`)}
-              >
-                {eventos[0].vagasRestantes <= 0 ? 'Vagas esgotadas' : 'Preencher formulário'}
+    className="w-full !rounded-full py-3.5 shadow-md shadow-red-900/15"
+    disabled={eventos[0].vagasRestantes <= 0}
+    onClick={() => navigate(`/evento/${eventos[0].id}/inscrever`)}
+  >
+                {eventos[0].vagasRestantes <= 0 ? "Vagas esgotadas" : "Preencher formulário"}
               </Button>
-            </div>
-          )}
+            </div>}
 
-          {!loading && eventos.length > 1 && (
-            <div className="space-y-3">
-              {eventos.map((ev) => (
-                <label
-                  key={ev.id}
-                  className={`flex cursor-pointer gap-3 rounded-[1.25rem] px-4 py-3.5 transition ${
-                    selected === ev.id
-                      ? 'bg-[#e11d2e]/8 ring-2 ring-[#e11d2e]/40'
-                      : 'bg-white/70 ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10'
-                  }`}
-                >
+          {!loading && eventos.length > 1 && <div className="space-y-3">
+              {eventos.map((ev) => <label
+    key={ev.id}
+    className={`flex cursor-pointer gap-3 rounded-[1.25rem] px-4 py-3.5 transition ${selected === ev.id ? "bg-[#e11d2e]/8 ring-2 ring-[#e11d2e]/40" : "bg-white/70 ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10"}`}
+  >
                   <input
-                    type="radio"
-                    name="evento"
-                    className="mt-1 accent-[#e11d2e]"
-                    checked={selected === ev.id}
-                    onChange={() => setSelected(ev.id)}
-                  />
+    type="radio"
+    name="evento"
+    className="mt-1 accent-[#e11d2e]"
+    checked={selected === ev.id}
+    onChange={() => setSelected(ev.id)}
+  />
                   <span className="min-w-0 flex-1">
                     <span className="block font-medium text-[var(--color-ink)] dark:text-white">{ev.nome}</span>
                     <span className="mt-0.5 block text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
                       {formatDate(ev.data)} · {ev.horario} · {formatMoney(ev.valor)}
-                      {ev.vagasRestantes <= 0 ? ' · esgotado' : ''}
+                      {ev.vagasRestantes <= 0 ? " · esgotado" : ""}
                     </span>
                   </span>
-                </label>
-              ))}
+                </label>)}
               <Button className="mt-2 w-full !rounded-full" disabled={!selected} onClick={irParaFormulario}>
                 Continuar
               </Button>
-            </div>
-          )}
+            </div>}
 
           <p className="mt-8 text-center text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
-            Já tem código?{' '}
+            Já tem código?{" "}
             <Link to="/consultar" className="font-semibold text-[#e11d2e] underline">
               Consultar inscrição
             </Link>
@@ -194,6 +168,5 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-    </div>
-  );
+    </div>;
 }
