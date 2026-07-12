@@ -16,7 +16,7 @@ import api, { formatDate, formatMoney } from "../../services/api";
 import { Loading, Button } from "../../components/ui";
 import SpiderMark from "../../components/SpiderMark";
 const STATUS_EVENTO = {
-  ABERTO: { label: "Aberto", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200" },
+  ABERTO: { label: "Online", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200" },
   ENCERRADO: { label: "Encerrado", className: "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200" },
   RASCUNHO: { label: "Rascunho", className: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200" }
 };
@@ -62,7 +62,13 @@ function EventoCard({ ev }) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-display text-xl text-[var(--color-ink)] dark:text-white">{ev.nome}</h2>
-            <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${st.className}`}>
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${st.className}`}>
+              {ev.status === "ABERTO" && (
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                </span>
+              )}
               {st.label}
             </span>
           </div>
