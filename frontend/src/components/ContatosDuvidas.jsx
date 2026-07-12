@@ -12,29 +12,23 @@ function formatTel(digits) {
 }
 
 /**
- * Bloco de contatos para dúvidas (WhatsApp) — layout aberto, sem “card” rígido.
+ * Contatos WhatsApp — respeita modo claro/escuro.
  */
-export default function ContatosDuvidas({ variant = 'light' }) {
-  const dark = variant === 'dark';
-
+export default function ContatosDuvidas() {
   return (
-    <div className={dark ? 'text-white' : ''}>
-      <p className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${dark ? 'text-[#f5c542]' : 'text-[#e11d2e]'}`}>
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#e11d2e] dark:text-[#f5c542]">
         Dúvidas? Fale conosco
       </p>
       <ul className="mt-4 space-y-3">
         {CONTATOS.map((c) => (
           <li
             key={c.telefone}
-            className={`flex items-center justify-between gap-3 rounded-[1.25rem] px-4 py-3 text-sm ${
-              dark
-                ? 'bg-white/10'
-                : 'bg-white/65 ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10'
-            }`}
+            className="flex items-center justify-between gap-3 rounded-[1.25rem] bg-white/70 px-4 py-3 text-sm ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10"
           >
-            <span>
+            <span className="text-[var(--color-ink)] dark:text-white">
               <strong>{c.nome}</strong>
-              <span className={dark ? 'text-white/60' : 'text-[var(--color-ink-soft)]'}> · {formatTel(c.telefone)}</span>
+              <span className="text-[var(--color-ink-soft)] dark:text-white/60"> · {formatTel(c.telefone)}</span>
             </span>
             <a
               href={`https://wa.me/${c.whatsapp}?text=${encodeURIComponent(`Olá, ${c.nome}! Tenho uma dúvida sobre o CineGeração.`)}`}

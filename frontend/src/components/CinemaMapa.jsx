@@ -7,23 +7,21 @@ const MAPS_EMBED =
   'https://maps.google.com/maps?q=Maximovie+Bacax%C3%A1+Saquarema+Rua+Beatriz+Amaral+Pereira+106&hl=pt-BR&z=16&output=embed';
 
 /**
- * Mapa do Cinema MaxiMovie Bacaxá — sem moldura quadrada rígida.
+ * Mapa MaxiMovie — respeita modo claro/escuro.
  */
-export default function CinemaMapa({ variant = 'light' }) {
-  const dark = variant === 'dark';
-
+export default function CinemaMapa() {
   return (
-    <div className={dark ? 'text-white' : ''}>
+    <div>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${dark ? 'text-[#f5c542]' : 'text-[#e11d2e]'}`}>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#e11d2e] dark:text-[#f5c542]">
             Como chegar
           </p>
-          <p className="mt-2 flex items-start gap-1.5 text-sm font-medium">
+          <p className="mt-2 flex items-start gap-1.5 text-sm font-medium text-[var(--color-ink)] dark:text-white">
             <MapPin size={16} className="mt-0.5 shrink-0 text-[#e11d2e]" />
             <span>
               Cinema MaxiMovie
-              <span className={`mt-0.5 block text-xs font-normal ${dark ? 'text-white/60' : 'text-[var(--color-ink-soft)]'}`}>
+              <span className="mt-0.5 block text-xs font-normal text-[var(--color-ink-soft)] dark:text-white/60">
                 Rua Beatriz Amaral Pereira, 106 – Bacaxá – Saquarema/RJ
               </span>
             </span>
@@ -33,11 +31,7 @@ export default function CinemaMapa({ variant = 'light' }) {
           href={MAPS_LINK}
           target="_blank"
           rel="noreferrer"
-          className={`inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold ${
-            dark
-              ? 'bg-white/10 text-white hover:bg-white/15'
-              : 'bg-[#e11d2e]/10 text-[#e11d2e] hover:bg-[#e11d2e]/15'
-          }`}
+          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#e11d2e]/10 px-3 py-1.5 text-xs font-semibold text-[#e11d2e] hover:bg-[#e11d2e]/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
         >
           Abrir mapa <ExternalLink size={12} />
         </a>

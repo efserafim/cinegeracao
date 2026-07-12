@@ -140,6 +140,15 @@
   .animate-pulse-glow {
     animation: pulseGlow 2.8s ease-in-out infinite;
   }
+
+  .spider-mark-ink,
+  .spider-mark-auto {
+    filter: brightness(0) saturate(100%) invert(14%) sepia(95%) saturate(5400%) hue-rotate(346deg) brightness(0.95);
+  }
+
+  .dark .spider-mark-auto {
+    filter: none;
+  }
 }
 
 @keyframes fadeUp {
