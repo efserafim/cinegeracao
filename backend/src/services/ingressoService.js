@@ -77,7 +77,7 @@ async function criarIngressos(inscricaoId) {
           where: { inscricaoId },
           orderBy: { criadoEm: "asc" }
         });
-        if (existente) {
+        if (existente && !usados.has(existente.id)) {
           const atualizado = await prisma.ingresso.update({
             where: { id: existente.id },
             data: { pessoaId: pessoa.id }
@@ -86,6 +86,12 @@ async function criarIngressos(inscricaoId) {
           criados.push(atualizado);
           continue;
         }
+        const errUnique = new Error(
+          "Não foi possível gerar múltiplos ingressos: índice único antigo ainda ativo no banco. Aguarde o redeploy (migration drop index) e tente novamente."
+        );
+        errUnique.status = 500;
+        errUnique.expose = true;
+        throw errUnique;
       }
       err.status = err.status || 500;
       err.expose = true;

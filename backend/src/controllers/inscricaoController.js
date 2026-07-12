@@ -51,6 +51,7 @@ async function confirmar(req, res, next) {
     const data = await inscricaoService.confirmarPagamento(req.params.id, req.admin.id, req.ip);
     return success(res, data, "Pagamento confirmado e ingresso liberado");
   } catch (err) {
+    err.expose = true;
     return next(err);
   }
 }

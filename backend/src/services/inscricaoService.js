@@ -434,7 +434,27 @@ async function confirmarPagamento(id, adminId, ip) {
     entidadeId: id,
     ip
   });
-  const result = await buscarAdmin(id);
+  const result = await buscarAdmin(id).catch((err) => {
+    console.error("[confirmarPagamento] buscarAdmin:", err);
+    return {
+      id: inscricao.id,
+      codigo: inscricao.codigo,
+      status: "INGRESSO_LIBERADO",
+      quantidade: ingressos.length,
+      participante: inscricao.participante,
+      evento: inscricao.evento,
+      ingressos: ingressos.map((ig) => ({
+        id: ig.id,
+        codigo: ig.codigo,
+        status: ig.status
+      })),
+      ingresso: {
+        id: ingresso.id,
+        codigo: ingresso.codigo,
+        status: ingresso.status
+      }
+    };
+  });
   return { ...result, whatsappLink, emailResult, ingresso };
 }
 async function recusarPagamento(id, observacao, adminId, ip) {
