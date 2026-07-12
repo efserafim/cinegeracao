@@ -12,19 +12,13 @@ export default function PublicLayout() {
       <header className="fixed inset-x-0 top-0 z-20 bg-gradient-to-b from-[#070a12]/95 via-[#070a12]/70 to-transparent">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 lg:px-6">
           <Link to="/" className="flex items-center gap-2.5">
-            <span className="relative flex h-10 w-10 items-center justify-center">
-              <img
-                src={logoImg}
-                alt="CineGeração"
-                className="h-10 w-10 rounded-full object-cover ring-2 ring-[#e11d2e]/80"
-              />
-              <SpiderMark tone="light" className="absolute -bottom-1 -right-1 h-4 w-4 drop-shadow-[0_0_6px_rgba(225,29,46,0.8)]" />
-            </span>
+            <img
+              src={logoImg}
+              alt="CineGeração"
+              className="h-10 w-10 rounded-full object-cover ring-2 ring-[#e11d2e]/80"
+            />
             <span className="leading-tight">
-              <span className="flex items-center gap-1.5">
-                <SpiderMark tone="light" className="h-3.5 w-3.5 opacity-90" />
-                <span className="font-display text-base tracking-wide text-white">CINEGERAÇÃO</span>
-              </span>
+              <span className="block font-display text-base tracking-wide text-white">CINEGERAÇÃO</span>
               <span className="block text-[10px] uppercase tracking-[0.18em] text-[#f5c542]">
                 Homem-Aranha: Um novo dia
               </span>

@@ -54,20 +54,18 @@ export default function HomePage() {
 
         <div className="relative z-10 mx-auto flex min-h-[92svh] max-w-6xl flex-col justify-end px-5 pb-20 pt-28 sm:px-8 lg:pb-24">
           <div className="max-w-lg">
-            <div className="animate-fade-up flex items-center gap-3" style={{ animationDelay: '0.05s' }}>
+            <div className="animate-fade-up" style={{ animationDelay: '0.05s' }}>
               <img
                 src={logoImg}
                 alt="CineGeração"
                 className="animate-pulse-glow h-16 w-16 rounded-full object-cover ring-4 ring-[#e11d2e]/70 sm:h-20 sm:w-20"
               />
-              <SpiderMark tone="light" className="h-12 w-12 sm:h-14 sm:w-14" glow />
             </div>
 
             <p
-              className="animate-fade-up mt-5 flex flex-wrap items-center gap-2 font-display text-5xl leading-none tracking-wide text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.55)] sm:text-6xl"
+              className="animate-fade-up mt-5 font-display text-5xl leading-none tracking-wide text-white drop-shadow-[0_4px_24px_rgba(0,0,0,0.55)] sm:text-6xl"
               style={{ animationDelay: '0.1s' }}
             >
-              <SpiderMark tone="light" className="h-8 w-8 sm:h-10 sm:w-10" />
               CINEGERAÇÃO
             </p>
             <p
