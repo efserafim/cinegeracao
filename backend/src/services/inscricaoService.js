@@ -8,6 +8,7 @@ const { criarIngressos } = require("./ingressoService");
 const { enviarConfirmacaoInscricao } = require("./emailService");
 const { registrarLog } = require("./logService");
 const { contarOcupadas, STATUS_OCUPAM_VAGA } = require("./eventoService");
+const { salvarComprovante } = require("./storageService");
 
 const MAX_INGRESSOS = 10;
 
@@ -185,7 +186,7 @@ async function enviarComprovante(codigo, file) {
     err.status = 400;
     throw err;
   }
-  const arquivoUrl = `/uploads/comprovantes/${file.filename}`;
+  const arquivoUrl = await salvarComprovante(file);
   if (inscricao.pagamento.comprovante) {
     await prisma.comprovante.update({
       where: { id: inscricao.pagamento.comprovante.id },
@@ -331,13 +332,24 @@ async function buscarAdmin(id) {
 async function confirmarPagamento(id, adminId, ip) {
   const inscricao = await prisma.inscricao.findUnique({
     where: { id },
-    include: { participante: true, evento: true, pagamento: true }
+    include: { participante: true, evento: true, pagamento: true, pessoas: true }
   });
   if (!inscricao) {
     const err = new Error("Inscrição não encontrada");
     err.status = 404;
     throw err;
   }
+  if (!inscricao.pagamento) {
+    const err = new Error("Pagamento não encontrado para esta inscrição");
+    err.status = 400;
+    throw err;
+  }
+  if (["CANCELADA"].includes(inscricao.status)) {
+    const err = new Error("Não é possível confirmar uma inscrição cancelada");
+    err.status = 400;
+    throw err;
+  }
+
   await prisma.$transaction([
     prisma.pagamento.update({
       where: { inscricaoId: id },
@@ -348,28 +360,55 @@ async function confirmarPagamento(id, adminId, ip) {
       data: { status: "PAGAMENTO_CONFIRMADO" }
     })
   ]);
-  const ingressos = await criarIngressos(id);
-  const ingresso = ingressos[0];
+
+  let ingressos;
+  try {
+    ingressos = await criarIngressos(id);
+  } catch (err) {
+    console.error("[confirmarPagamento] criarIngressos:", err);
+    const wrapped = new Error(
+      err?.code === "P2021" || /does not exist|Unknown arg|Unknown field/i.test(String(err.message))
+        ? "Banco desatualizado. Reinicie o serviço no Render para aplicar as migrations."
+        : err.message || "Falha ao gerar ingressos"
+    );
+    wrapped.status = 500;
+    wrapped.expose = true;
+    throw wrapped;
+  }
+
+  if (!Array.isArray(ingressos) || ingressos.length === 0) {
+    const err = new Error("Não foi possível gerar o(s) ingresso(s)");
+    err.status = 500;
+    err.expose = true;
+    throw err;
+  }
+
   await prisma.inscricao.update({
     where: { id },
     data: { status: "INGRESSO_LIBERADO" }
   });
   const dataFmt = new Date(inscricao.evento.data).toLocaleDateString("pt-BR");
-  const codigosIngresso = ingressos.map((ig) => ig.codigo).join(", ");
+  const codigosIngresso = ingressos.map((ig) => ig.codigo).filter(Boolean).join(", ");
+  const ingresso = ingressos[0];
   let emailResult = { sent: false, reason: "Participante sem e-mail" };
   if (inscricao.participante.email) {
-    emailResult = await enviarConfirmacaoInscricao({
-      para: inscricao.participante.email,
-      nome: inscricao.participante.nome,
-      evento: inscricao.evento.nome,
-      data: dataFmt,
-      horario: inscricao.evento.horario,
-      local: inscricao.evento.local,
-      cidade: inscricao.evento.cidade,
-      codigoIngresso: codigosIngresso,
-      codigoInscricao: inscricao.codigo,
-      chegada: "17h10"
-    });
+    try {
+      emailResult = await enviarConfirmacaoInscricao({
+        para: inscricao.participante.email,
+        nome: inscricao.participante.nome,
+        evento: inscricao.evento.nome,
+        data: dataFmt,
+        horario: inscricao.evento.horario,
+        local: inscricao.evento.local,
+        cidade: inscricao.evento.cidade,
+        codigoIngresso: codigosIngresso,
+        codigoInscricao: inscricao.codigo,
+        chegada: "17h10"
+      });
+    } catch (emailErr) {
+      console.error("[confirmarPagamento] email:", emailErr);
+      emailResult = { sent: false, reason: emailErr.message || "Falha no envio de e-mail" };
+    }
   }
   await registrarLog({
     adminId,

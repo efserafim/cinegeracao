@@ -6,7 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js",
+    "start": "npx prisma migrate deploy && npx prisma generate && node src/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
@@ -30,6 +30,7 @@
     "nodemailer": "^6.10.0",
     "pdfjs-dist": "^3.11.174",
     "pdfkit": "^0.16.0",
+    "prisma": "^6.5.0",
     "qrcode": "^1.5.4",
     "sharp": "^0.33.5",
     "speakeasy": "^2.0.0",
@@ -40,8 +41,7 @@
     "xss": "^1.0.15"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9",
-    "prisma": "^6.5.0"
+    "nodemon": "^3.1.9"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

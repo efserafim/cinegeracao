@@ -30,12 +30,27 @@ async function criarIngressos(inscricaoId) {
     pessoas = [pessoa];
   }
 
+  const usados = new Set();
   const criados = [];
+
   for (const pessoa of pessoas) {
     if (pessoa.ingresso) {
+      usados.add(pessoa.ingresso.id);
       criados.push(pessoa.ingresso);
       continue;
     }
+
+    const orfao = (inscricao.ingressos || []).find((ig) => !ig.pessoaId && !usados.has(ig.id));
+    if (orfao) {
+      const atualizado = await prisma.ingresso.update({
+        where: { id: orfao.id },
+        data: { pessoaId: pessoa.id }
+      });
+      usados.add(atualizado.id);
+      criados.push(atualizado);
+      continue;
+    }
+
     const codigo = gerarCodigoIngresso();
     const qrPayload = JSON.stringify({
       tipo: "ingresso",
@@ -43,19 +58,42 @@ async function criarIngressos(inscricaoId) {
       inscricaoId,
       pessoaId: pessoa.id
     });
-    const ingresso = await prisma.ingresso.create({
-      data: {
-        inscricaoId,
-        pessoaId: pessoa.id,
-        codigo,
-        qrPayload,
-        status: "VALIDO"
+
+    try {
+      const ingresso = await prisma.ingresso.create({
+        data: {
+          inscricaoId,
+          pessoaId: pessoa.id,
+          codigo,
+          qrPayload,
+          status: "VALIDO"
+        }
+      });
+      usados.add(ingresso.id);
+      criados.push(ingresso);
+    } catch (err) {
+      if (err?.code === "P2002") {
+        const existente = await prisma.ingresso.findFirst({
+          where: { inscricaoId },
+          orderBy: { criadoEm: "asc" }
+        });
+        if (existente) {
+          const atualizado = await prisma.ingresso.update({
+            where: { id: existente.id },
+            data: { pessoaId: pessoa.id }
+          });
+          usados.add(atualizado.id);
+          criados.push(atualizado);
+          continue;
+        }
       }
-    });
-    criados.push(ingresso);
+      err.status = err.status || 500;
+      err.expose = true;
+      throw err;
+    }
   }
 
-  if (criados.length === 0 && inscricao.ingressos.length > 0) {
+  if (criados.length === 0 && inscricao.ingressos?.length) {
     return inscricao.ingressos;
   }
   return criados;

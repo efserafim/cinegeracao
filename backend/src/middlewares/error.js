@@ -10,6 +10,9 @@ function errorHandler(err, _req, res, _next) {
   if (err.name === "MulterError") {
     return fail(res, err.message, 400);
   }
+  if (err.code === "P2021" || err.code === "P2022") {
+    return fail(res, "Banco desatualizado. Aguarde o redeploy aplicar as migrations e tente de novo.", 500);
+  }
   const status = err.status || err.statusCode || 500;
   const message = status < 500 || err.expose ? err.message : "Erro interno do servidor";
   return fail(res, message, status, err.errors || null, err.data || null);
