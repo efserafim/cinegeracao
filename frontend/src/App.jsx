@@ -14,6 +14,7 @@ import EventoFormPage from "./pages/admin/EventoFormPage.jsx";
 import InscritosPage from "./pages/admin/InscritosPage.jsx";
 import ComprovantePage from "./pages/admin/ComprovantePage.jsx";
 import ValidarPage from "./pages/admin/ValidarPage.jsx";
+import ChamadaPage from "./pages/admin/ChamadaPage.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 export default function App() {
   return <Routes>
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="eventos/:id/editar" element={<EventoFormPage />} />
         <Route path="eventos/:id/inscritos" element={<InscritosPage />} />
         <Route path="inscricoes/:id" element={<ComprovantePage />} />
+        <Route path="chamada" element={<ChamadaPage />} />
         <Route path="validar" element={<ValidarPage />} />
       </Route>
     </Routes>;

@@ -9,7 +9,8 @@ import {
   QrCode,
   ArrowRight,
   Pencil,
-  Ticket
+  Ticket,
+  ClipboardList
 } from "lucide-react";
 import api, { formatDate, formatMoney } from "../../services/api";
 import { Loading, Button } from "../../components/ui";
@@ -207,7 +208,7 @@ export default function DashboardPage() {
 
       <div>
         <h2 className="mb-3 font-display text-xl text-[var(--color-ink)] dark:text-white">Ações rápidas</h2>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Link
     to="/admin/eventos/novo"
     className="flex items-center gap-3 rounded-[1.25rem] bg-white/80 px-4 py-3 ring-1 ring-black/5 transition hover:ring-[#e11d2e]/30 dark:bg-slate-900/70 dark:ring-white/10"
@@ -226,6 +227,16 @@ export default function DashboardPage() {
             <span>
               <span className="block text-sm font-semibold">Ver inscritos</span>
               <span className="text-xs text-[var(--color-ink-soft)] dark:text-slate-400">Lista e comprovantes</span>
+            </span>
+          </Link>
+          <Link
+    to="/admin/chamada"
+    className="flex items-center gap-3 rounded-[1.25rem] bg-white/80 px-4 py-3 ring-1 ring-black/5 transition hover:ring-[#e11d2e]/30 dark:bg-slate-900/70 dark:ring-white/10"
+  >
+            <span className="rounded-2xl bg-emerald-500/15 p-2 text-emerald-600 dark:text-emerald-400"><ClipboardList size={18} /></span>
+            <span>
+              <span className="block text-sm font-semibold">Fazer chamada</span>
+              <span className="text-xs text-[var(--color-ink-soft)] dark:text-slate-400">Confirmar presença</span>
             </span>
           </Link>
           <Link

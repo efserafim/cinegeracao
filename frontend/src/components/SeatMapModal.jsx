@@ -5,16 +5,13 @@ import { Button } from "./ui";
 const ROWS = ["A", "B", "C", "D", "E", "F", "G", "H"];
 const COLS = 10;
 
-const OCUPADOS_FIXOS = new Set([
-  "A3", "A4", "B1", "B8", "C5", "C6", "D2", "D9",
-  "E4", "E5", "E6", "F1", "F10", "G3", "G7", "H5"
-]);
-
 export default function SeatMapModal({
   open,
   onClose,
   quantidade = 1,
   selected = [],
+  ocupadosExternos = [],
+  loadingOcupados = false,
   onConfirm
 }) {
   const [local, setLocal] = useState(selected);
@@ -23,7 +20,15 @@ export default function SeatMapModal({
     if (open) setLocal(selected.slice(0, quantidade));
   }, [open, selected, quantidade]);
 
-  const ocupados = useMemo(() => OCUPADOS_FIXOS, []);
+  const ocupados = useMemo(
+    () => new Set((ocupadosExternos || []).map((s) => String(s).toUpperCase())),
+    [ocupadosExternos]
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    setLocal((prev) => prev.filter((s) => !ocupados.has(s)).slice(0, quantidade));
+  }, [open, ocupados, quantidade]);
 
   function toggle(seat) {
     if (ocupados.has(seat)) return;
@@ -67,11 +72,15 @@ export default function SeatMapModal({
               <AlertTriangle size={14} className="mt-0.5 shrink-0" />
               <span>
                 Este mapa é apenas uma <strong>brincadeira de imersão</strong>.
-                Não corresponde ao mapa real do cinema e <strong>o assento escolhido não será reservado</strong>.
-                A distribuição real ocorre no dia do evento.
+                Não corresponde ao mapa real do cinema e <strong>não reserva lugar de verdade</strong>.
+                Assentos cinza já foram escolhidos por outra pessoa nesta brincadeira.
               </span>
             </p>
           </div>
+
+          {loadingOcupados ? (
+            <p className="text-center text-sm text-white/50">Atualizando mapa…</p>
+          ) : null}
 
           <div className="mx-auto w-full max-w-sm">
             <div className="mb-4 rounded-full bg-gradient-to-b from-white/25 to-white/5 px-6 py-2 text-center text-[10px] uppercase tracking-[0.25em] text-white/70">
@@ -91,12 +100,12 @@ export default function SeatMapModal({
                         <button
                           key={seat}
                           type="button"
-                          disabled={ocupado}
-                          title={ocupado ? "Indisponível (simulado)" : seat}
+                          disabled={ocupado || loadingOcupados}
+                          title={ocupado ? "Já escolhido" : seat}
                           onClick={() => toggle(seat)}
                           className={`aspect-square rounded-md text-[8px] font-semibold transition sm:text-[9px] ${
                             ocupado
-                              ? "cursor-not-allowed bg-white/10 text-white/20"
+                              ? "cursor-not-allowed bg-zinc-500/50 text-zinc-300/40"
                               : escolhido
                                 ? "bg-[#e11d2e] text-white shadow shadow-red-900/40 scale-105"
                                 : "bg-[#1a6cff]/35 text-white/80 hover:bg-[#1a6cff]/55"
@@ -119,7 +128,7 @@ export default function SeatMapModal({
                 <span className="h-3 w-3 rounded bg-[#e11d2e]" /> Seu lugar
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-3 w-3 rounded bg-white/10" /> Ocupado
+                <span className="h-3 w-3 rounded bg-zinc-500/50" /> Já escolhido
               </span>
             </div>
           </div>
@@ -137,7 +146,7 @@ export default function SeatMapModal({
             </Button>
             <Button
               className="flex-1"
-              disabled={local.length !== quantidade}
+              disabled={local.length !== quantidade || loadingOcupados}
               onClick={() => {
                 onConfirm?.(local);
                 onClose();

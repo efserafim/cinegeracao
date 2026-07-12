@@ -24,6 +24,31 @@ async function comVagas(evento) {
     valor: Number(evento.valor)
   };
 }
+async function listarAssentosSimulados(eventoId) {
+  const evento = await prisma.evento.findUnique({ where: { id: eventoId }, select: { id: true } });
+  if (!evento) {
+    const err = new Error("Evento não encontrado");
+    err.status = 404;
+    throw err;
+  }
+  const items = await prisma.inscricao.findMany({
+    where: {
+      eventoId,
+      status: { notIn: ["CANCELADA", "PAGAMENTO_RECUSADO"] },
+      assentosSimulados: { not: null }
+    },
+    select: { assentosSimulados: true }
+  });
+  const ocupados = new Set();
+  for (const item of items) {
+    String(item.assentosSimulados || "")
+      .split(/[,;\s]+/)
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean)
+      .forEach((s) => ocupados.add(s));
+  }
+  return { ocupados: [...ocupados] };
+}
 async function listarPublicos() {
   const eventos = await prisma.evento.findMany({
     where: { status: "ABERTO" },
@@ -134,6 +159,7 @@ async function excluir(id, adminId, ip) {
 }
 module.exports = {
   listarPublicos,
+  listarAssentosSimulados,
   listarTodos,
   buscarPorId,
   criar,

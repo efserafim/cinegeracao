@@ -284,10 +284,72 @@ async function validarEntrada({ codigoOuPayload, adminId, ip }) {
   };
 }
 
+async function marcarPresencaChamada({ codigo, presente = true, adminId, ip }) {
+  codigo = String(codigo || "").trim();
+  const ingresso = await prisma.ingresso.findUnique({
+    where: { codigo },
+    include: {
+      pessoa: true,
+      inscricao: { include: { participante: true, evento: true } }
+    }
+  });
+  if (!ingresso) {
+    const err = new Error("Ingresso não encontrado");
+    err.status = 404;
+    throw err;
+  }
+  if (ingresso.status === "CANCELADO") {
+    const err = new Error("Ingresso cancelado");
+    err.status = 400;
+    throw err;
+  }
+  const nome = ingresso.pessoa?.nome || ingresso.inscricao.participante.nome;
+  if (presente) {
+    const now = new Date();
+    const updated = await prisma.ingresso.update({
+      where: { id: ingresso.id },
+      data: { presenteEm: ingresso.presenteEm || now }
+    });
+    await registrarLog({
+      adminId,
+      acao: "CHAMADA_PRESENTE",
+      entidade: "Ingresso",
+      entidadeId: ingresso.id,
+      detalhes: { codigo: ingresso.codigo, nome },
+      ip
+    });
+    return {
+      presente: true,
+      codigo: ingresso.codigo,
+      nome,
+      presenteEm: updated.presenteEm
+    };
+  }
+  await prisma.ingresso.update({
+    where: { id: ingresso.id },
+    data: { presenteEm: null }
+  });
+  await registrarLog({
+    adminId,
+    acao: "CHAMADA_AUSENTE",
+    entidade: "Ingresso",
+    entidadeId: ingresso.id,
+    detalhes: { codigo: ingresso.codigo, nome },
+    ip
+  });
+  return {
+    presente: false,
+    codigo: ingresso.codigo,
+    nome,
+    presenteEm: null
+  };
+}
+
 module.exports = {
   criarIngresso,
   criarIngressos,
   gerarQrDataUrl,
   buscarPorCodigoInscricao,
-  validarEntrada
+  validarEntrada,
+  marcarPresencaChamada
 };

@@ -17,6 +17,14 @@ async function obterPublico(req, res, next) {
     return next(err);
   }
 }
+async function obterAssentosBrincadeira(req, res, next) {
+  try {
+    const data = await eventoService.listarAssentosSimulados(req.params.id);
+    return success(res, data);
+  } catch (err) {
+    return next(err);
+  }
+}
 async function listarAdmin(req, res, next) {
   try {
     const data = await eventoService.listarTodos(req.query);
@@ -81,6 +89,7 @@ async function excluir(req, res, next) {
 module.exports = {
   listarPublicos,
   obterPublico,
+  obterAssentosBrincadeira,
   listarAdmin,
   obterAdmin,
   criar,

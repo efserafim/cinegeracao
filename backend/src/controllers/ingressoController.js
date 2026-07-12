@@ -21,4 +21,18 @@ async function validar(req, res, next) {
     return next(err);
   }
 }
-module.exports = { obterPublico, validar };
+async function chamada(req, res, next) {
+  try {
+    const presente = req.body.presente !== false && req.body.presente !== "false";
+    const data = await ingressoService.marcarPresencaChamada({
+      codigo: req.body.codigo,
+      presente,
+      adminId: req.admin?.id,
+      ip: req.ip
+    });
+    return success(res, data, presente ? "Presença confirmada" : "Presença removida");
+  } catch (err) {
+    return next(err);
+  }
+}
+module.exports = { obterPublico, validar, chamada };

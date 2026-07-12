@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Calendar, QrCode, LogOut, Moon, Sun } from "lucide-react";
+import { LayoutDashboard, Calendar, QrCode, LogOut, Moon, Sun, ClipboardList } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { logoImg } from "../assets/brand";
@@ -7,6 +7,7 @@ import SpiderMark from "../components/SpiderMark";
 const links = [
   { to: "/admin", end: true, label: "Dashboard", short: "Início", icon: LayoutDashboard },
   { to: "/admin/eventos", label: "Eventos", short: "Eventos", icon: Calendar },
+  { to: "/admin/chamada", label: "Chamada", short: "Chamada", icon: ClipboardList },
   { to: "/admin/validar", label: "Validar entrada", short: "Validar", icon: QrCode }
 ];
 export default function AdminLayout() {

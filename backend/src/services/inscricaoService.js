@@ -7,7 +7,7 @@ const { processarComprovante } = require("./ocrService");
 const { criarIngressos } = require("./ingressoService");
 const { enviarConfirmacaoInscricao } = require("./emailService");
 const { registrarLog } = require("./logService");
-const { contarOcupadas, STATUS_OCUPAM_VAGA } = require("./eventoService");
+const { contarOcupadas, listarAssentosSimulados, STATUS_OCUPAM_VAGA } = require("./eventoService");
 const { salvarComprovante } = require("./storageService");
 
 const MAX_INGRESSOS = 10;
@@ -92,6 +92,35 @@ async function criarInscricao(eventoId, dados) {
   }
   const nomeResponsavel = String(dados.nome || pessoas[0]).trim();
   const valorTotal = Number(evento.valor) * quantidade;
+  const assentosPedidos = (() => {
+    const raw = dados.assentosSimulados ?? dados.assentosBrincadeira ?? dados.assentos;
+    if (Array.isArray(raw)) return raw.map((s) => String(s || "").trim().toUpperCase()).filter(Boolean);
+    if (typeof raw === "string") {
+      return raw.split(/[,;\s]+/).map((s) => s.trim().toUpperCase()).filter(Boolean);
+    }
+    return [];
+  })();
+  const assentosUnicos = [...new Set(assentosPedidos)];
+  if (assentosUnicos.length > 0 && assentosUnicos.length !== quantidade) {
+    const err = new Error(`Selecione exatamente ${quantidade} assento(s) no mapa`);
+    err.status = 400;
+    throw err;
+  }
+  let assentosSimulados = null;
+  if (assentosUnicos.length > 0) {
+    const { ocupados } = await listarAssentosSimulados(eventoId);
+    const ocupadosSet = new Set(ocupados);
+    const conflito = assentosUnicos.filter((s) => ocupadosSet.has(s));
+    if (conflito.length) {
+      const err = new Error(
+        `Assento(s) já escolhido(s) por outra pessoa: ${conflito.join(", ")}. Abra o mapa de novo e escolha outros.`
+      );
+      err.status = 409;
+      err.data = { assentosOcupados: ocupados };
+      throw err;
+    }
+    assentosSimulados = assentosUnicos.join(",");
+  }
   const participante = await prisma.participante.create({
     data: {
       nome: nomeResponsavel,
@@ -111,6 +140,7 @@ async function criarInscricao(eventoId, dados) {
       status: statusInicial,
       valor: valorTotal,
       quantidade,
+      assentosSimulados,
       observacao: metodo === "DINHEIRO" ? "Pagamento em dinheiro — aguardando confirmação do organizador." : null,
       pagamento: {
         create: {
@@ -693,7 +723,8 @@ function formatInscricao(i) {
       ? {
           id: p.ingresso.id,
           codigo: p.ingresso.codigo,
-          status: p.ingresso.status
+          status: p.ingresso.status,
+          presenteEm: p.ingresso.presenteEm || null
         }
       : null
   }));
@@ -703,6 +734,7 @@ function formatInscricao(i) {
     status: ig.status,
     liberadoEm: ig.liberadoEm,
     utilizadoEm: ig.utilizadoEm,
+    presenteEm: ig.presenteEm || null,
     pessoaId: ig.pessoaId || ig.pessoa?.id || null,
     nome: ig.pessoa?.nome || null
   }));
@@ -712,7 +744,8 @@ function formatInscricao(i) {
         codigo: ingressos[0].codigo,
         status: ingressos[0].status,
         liberadoEm: ingressos[0].liberadoEm,
-        utilizadoEm: ingressos[0].utilizadoEm
+        utilizadoEm: ingressos[0].utilizadoEm,
+        presenteEm: ingressos[0].presenteEm
       }
     : null;
   return {

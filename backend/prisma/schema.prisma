@@ -99,6 +99,7 @@ model Inscricao {
   status         StatusInscricao  @default(AGUARDANDO_PAGAMENTO)
   valor          Decimal          @db.Decimal(10, 2)
   quantidade     Int              @default(1)
+  assentosSimulados String?       @map("assentos_simulados")
   observacao     String?          @db.Text
   criadoEm       DateTime         @default(now()) @map("criado_em")
   atualizadoEm   DateTime         @updatedAt @map("atualizado_em")
@@ -198,6 +199,7 @@ model Ingresso {
   status       StatusIngresso @default(VALIDO)
   liberadoEm   DateTime       @default(now()) @map("liberado_em")
   utilizadoEm  DateTime?      @map("utilizado_em")
+  presenteEm   DateTime?      @map("presente_em")
   criadoEm     DateTime       @default(now()) @map("criado_em")
   atualizadoEm DateTime       @updatedAt @map("atualizado_em")
 

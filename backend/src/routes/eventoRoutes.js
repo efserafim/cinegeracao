@@ -6,6 +6,7 @@ const { authAdmin } = require("../middlewares/auth");
 const { uploadBanner } = require("../middlewares/upload");
 const router = Router();
 router.get("/publicos", eventoController.listarPublicos);
+router.get("/publicos/:id/assentos-brincadeira", eventoController.obterAssentosBrincadeira);
 router.get("/publicos/:id", eventoController.obterPublico);
 router.get("/", authAdmin, eventoController.listarAdmin);
 router.get("/:id", authAdmin, eventoController.obterAdmin);

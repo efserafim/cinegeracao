@@ -31,10 +31,31 @@ export default function InscricaoPage() {
   const [duplicata, setDuplicata] = useState(null);
   const [seatMapOpen, setSeatMapOpen] = useState(false);
   const [assentosBrincadeira, setAssentosBrincadeira] = useState([]);
+  const [assentosOcupados, setAssentosOcupados] = useState([]);
+  const [loadingAssentos, setLoadingAssentos] = useState(false);
 
   useEffect(() => {
     api.get(`/eventos/publicos/${id}`).then((res) => setEvento(res.data.data)).catch((err) => setError(err.response?.data?.message || "Evento não encontrado")).finally(() => setLoadingEvento(false));
   }, [id]);
+
+  async function carregarAssentosOcupados() {
+    setLoadingAssentos(true);
+    try {
+      const { data } = await api.get(`/eventos/publicos/${id}/assentos-brincadeira`);
+      const ocupados = data.data?.ocupados || [];
+      setAssentosOcupados(ocupados);
+      setAssentosBrincadeira((prev) => prev.filter((s) => !ocupados.includes(s)));
+    } catch {
+      setAssentosOcupados([]);
+    } finally {
+      setLoadingAssentos(false);
+    }
+  }
+
+  function abrirMapaAssentos() {
+    setSeatMapOpen(true);
+    carregarAssentosOcupados();
+  }
 
   useEffect(() => {
     const extras = Math.max(0, quantidade - 1);
@@ -73,7 +94,10 @@ export default function InscricaoPage() {
         ...values,
         quantidade: qtd,
         pessoas: listaPessoas,
-        nome: responsavel
+        nome: responsavel,
+        ...(assentosBrincadeira.length === qtd
+          ? { assentosSimulados: assentosBrincadeira }
+          : {})
       };
       const { data } = await api.post(`/inscricoes/evento/${id}`, payload);
       const codigo = data.data.inscricao.codigo;
@@ -85,6 +109,12 @@ export default function InscricaoPage() {
         setError("");
       } else {
         setError(payload?.message || "Erro ao criar inscrição");
+        if (payload?.data?.assentosOcupados) {
+          setAssentosOcupados(payload.data.assentosOcupados);
+          setAssentosBrincadeira((prev) =>
+            prev.filter((s) => !payload.data.assentosOcupados.includes(s))
+          );
+        }
       }
     } finally {
       setLoading(false);
@@ -286,13 +316,13 @@ export default function InscricaoPage() {
                       : "Abra o mapa e escolha só por diversão"}
                   </p>
                 </div>
-                <Button type="button" variant="secondary" className="!rounded-full" onClick={() => setSeatMapOpen(true)}>
+                <Button type="button" variant="secondary" className="!rounded-full" onClick={abrirMapaAssentos}>
                   <Armchair size={16} />
                   {assentosBrincadeira.length ? "Trocar assentos" : "Ver mapa"}
                 </Button>
               </div>
               <p className="mt-2 text-[11px] leading-relaxed text-[var(--color-ink-soft)] dark:text-slate-400">
-                Mapa fictício — não é o do cinema e não reserva lugar de verdade.
+                Mapa fictício — não é o do cinema. Assentos cinza já foram escolhidos por outras pessoas nesta brincadeira.
               </p>
             </div>
 
@@ -375,6 +405,8 @@ export default function InscricaoPage() {
         onClose={() => setSeatMapOpen(false)}
         quantidade={quantidade}
         selected={assentosBrincadeira}
+        ocupadosExternos={assentosOcupados.filter((s) => !assentosBrincadeira.includes(s))}
+        loadingOcupados={loadingAssentos}
         onConfirm={setAssentosBrincadeira}
       />
     </div>;

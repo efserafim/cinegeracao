@@ -12,4 +12,11 @@ router.post(
   validate,
   ingressoController.validar
 );
+router.post(
+  "/chamada",
+  authAdmin,
+  body("codigo").notEmpty().withMessage("Código obrigatório"),
+  validate,
+  ingressoController.chamada
+);
 module.exports = router;
