@@ -425,49 +425,61 @@ async function confirmarPagamento(id, adminId, ip) {
   }));
   const codigosIngresso = ticketsEmail.map((t) => t.codigo).filter(Boolean).join(", ");
   const ingresso = ingressos[0];
-  let emailResult = { sent: false, reason: "Participante sem e-mail" };
-  if (inscricao.participante.email) {
-    try {
-      // Não deixa o SMTP travar a confirmação do pagamento
-      emailResult = await Promise.race([
-        enviarConfirmacaoInscricao({
-          para: inscricao.participante.email,
-          nome: inscricao.participante.nome,
-          evento: inscricao.evento.nome,
-          data: dataFmt,
-          horario: inscricao.evento.horario,
-          local: inscricao.evento.local,
-          cidade: inscricao.evento.cidade,
-          codigoIngresso: codigosIngresso,
-          codigoInscricao: inscricao.codigo,
-          chegada: "17h10",
-          tickets: ticketsEmail,
-          quantidade: ticketsEmail.length || inscricao.quantidade || 1
-        }),
-        new Promise((resolve) =>
-          setTimeout(
-            () =>
-              resolve({
-                sent: false,
-                reason: "Tempo esgotado no SMTP. Pagamento já confirmado; tente reenviar o e-mail depois."
-              }),
-            13000
-          )
-        )
-      ]);
-    } catch (emailErr) {
-      console.error("[confirmarPagamento] email:", emailErr);
-      emailResult = { sent: false, reason: emailErr.message || "Falha no envio de e-mail" };
-    }
+  const emailPayload = inscricao.participante.email
+    ? {
+        para: inscricao.participante.email,
+        nome: inscricao.participante.nome,
+        evento: inscricao.evento.nome,
+        data: dataFmt,
+        horario: inscricao.evento.horario,
+        local: inscricao.evento.local,
+        cidade: inscricao.evento.cidade,
+        codigoIngresso: codigosIngresso,
+        codigoInscricao: inscricao.codigo,
+        chegada: "17h10",
+        tickets: ticketsEmail,
+        quantidade: ticketsEmail.length || inscricao.quantidade || 1
+      }
+    : null;
+
+  // E-mail em segundo plano: não bloqueia a resposta (evita timeout/CORS no browser)
+  let emailResult = emailPayload
+    ? { sent: false, queued: true, to: emailPayload.para, reason: "E-mail sendo enviado em segundo plano" }
+    : { sent: false, reason: "Participante sem e-mail" };
+
+  if (emailPayload) {
+    setImmediate(() => {
+      enviarConfirmacaoInscricao(emailPayload)
+        .then(async (result) => {
+          console.log("[confirmarPagamento] email async:", result);
+          try {
+            await registrarLog({
+              adminId,
+              acao: "EMAIL_CONFIRMACAO",
+              entidade: "Inscricao",
+              entidadeId: id,
+              detalhes: result,
+              ip
+            });
+          } catch (logErr) {
+            console.error("[confirmarPagamento] log email:", logErr.message);
+          }
+        })
+        .catch((emailErr) => {
+          console.error("[confirmarPagamento] email async:", emailErr.message || emailErr);
+        });
+    });
+  } else {
+    await registrarLog({
+      adminId,
+      acao: "EMAIL_CONFIRMACAO",
+      entidade: "Inscricao",
+      entidadeId: id,
+      detalhes: emailResult,
+      ip
+    });
   }
-  await registrarLog({
-    adminId,
-    acao: "EMAIL_CONFIRMACAO",
-    entidade: "Inscricao",
-    entidadeId: id,
-    detalhes: emailResult,
-    ip
-  });
+
   const whatsappLink = gerarLinkWhatsApp({
     telefone: inscricao.participante.telefone,
     nome: inscricao.participante.nome,

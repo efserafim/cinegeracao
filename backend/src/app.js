@@ -24,11 +24,13 @@ app.use(
     origin(origin, callback) {
       if (!origin) return callback(null, true);
       const normalized = origin.replace(/\/$/, "");
-      if (allowedOrigins.has(normalized)) return callback(null, true);
+      if (allowedOrigins.has(normalized)) return callback(null, normalized);
       console.warn("[CORS] origem não permitida:", origin, "| permitidas:", [...allowedOrigins]);
       return callback(null, false);
     },
-    credentials: true
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
 app.use(

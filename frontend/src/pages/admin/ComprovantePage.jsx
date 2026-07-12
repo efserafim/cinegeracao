@@ -87,14 +87,20 @@ export default function ComprovantePage() {
       const qtd = data.data.quantidade || data.data.ingressos?.length || 1;
       if (er?.sent) {
         setMsg(`Pagamento confirmado. ${qtd} ingresso(s) liberado(s). E-mail enviado para ${er.to}.`);
+      } else if (er?.queued) {
+        setMsg(`Pagamento confirmado. ${qtd} ingresso(s) liberado(s). E-mail a caminho de ${er.to || "o participante"}.`);
       } else {
         setMsg(`Pagamento confirmado. ${qtd} ingresso(s) liberado(s). E-mail não enviado: ${er?.reason || "verifique o SMTP"}.`);
       }
       setShowConfirmAnim(true);
       window.setTimeout(() => setShowConfirmAnim(false), 2800);
     } catch (err) {
-      if (err.code === "ECONNABORTED") {
-        setMsg("A confirmação demorou demais. Atualize a página e verifique se o ingresso já foi liberado.");
+      if (err.code === "ECONNABORTED" || err.message === "Network Error" || !err.response) {
+        setMsg("A conexão falhou ao confirmar. Atualize a página — se estiver “Ingresso liberado”, deu certo.");
+        try {
+          await load();
+        } catch {
+        }
       } else {
         setMsg(err.response?.data?.message || "Falha ao confirmar pagamento.");
       }
