@@ -603,11 +603,18 @@ async function dashboard(eventoId) {
  * Dashboard global (todos os eventos).
  */
 async function dashboardGlobal() {
-  const [eventos, inscritos, confirmadas, valor] = await Promise.all([
+  const [eventos, inscritos, confirmadas, pendentes, valor] = await Promise.all([
     prisma.evento.count(),
     prisma.inscricao.count(),
     prisma.inscricao.count({
       where: { status: { in: ['PAGAMENTO_CONFIRMADO', 'INGRESSO_LIBERADO'] } },
+    }),
+    prisma.inscricao.count({
+      where: {
+        status: {
+          in: ['AGUARDANDO_CONFIRMACAO', 'COMPROVANTE_ENVIADO', 'OCR_PROCESSADO'],
+        },
+      },
     }),
     prisma.inscricao.aggregate({
       where: { status: { in: ['PAGAMENTO_CONFIRMADO', 'INGRESSO_LIBERADO'] } },
@@ -619,6 +626,7 @@ async function dashboardGlobal() {
     eventos,
     inscritos,
     confirmadas,
+    pendentes,
     valorArrecadado: Number(valor._sum.valor || 0),
   };
 }
