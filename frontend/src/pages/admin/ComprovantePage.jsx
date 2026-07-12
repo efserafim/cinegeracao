@@ -11,6 +11,7 @@ export default function ComprovantePage() {
   const [loading, setLoading] = useState(true);
   const [confirmando, setConfirmando] = useState(false);
   const [liberando, setLiberando] = useState(false);
+  const [enviandoEmail, setEnviandoEmail] = useState(false);
   const [showConfirmAnim, setShowConfirmAnim] = useState(false);
   const [msg, setMsg] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -122,6 +123,25 @@ export default function ComprovantePage() {
       setMsg(err.response?.data?.message || "Falha ao liberar ingressos faltantes.");
     } finally {
       setLiberando(false);
+    }
+  }
+
+  async function reenviarEmail() {
+    setEnviandoEmail(true);
+    setMsg("");
+    try {
+      const { data } = await api.post(`/inscricoes/${id}/reenviar-email`, null, { timeout: 20000 });
+      const er = data.data;
+      setEmailInfo(er);
+      if (er?.sent) {
+        setMsg(`E-mail enviado para ${er.to}.`);
+      } else {
+        setMsg(`Falha no e-mail: ${er?.reason || data.message || "verifique o SMTP no Render"}`);
+      }
+    } catch (err) {
+      setMsg(err.response?.data?.message || "Falha ao reenviar e-mail.");
+    } finally {
+      setEnviandoEmail(false);
     }
   }
 
@@ -395,11 +415,27 @@ export default function ComprovantePage() {
             </a>
           )}
 
+          {(item.status === "INGRESSO_LIBERADO" || item.status === "PAGAMENTO_CONFIRMADO") && (
+            <Button variant="secondary" onClick={reenviarEmail} disabled={enviandoEmail}>
+              {enviandoEmail ? "Enviando e-mail…" : "Reenviar e-mail do ingresso"}
+            </Button>
+          )}
+
           {emailInfo && (
-            <p className={`text-sm ${emailInfo.sent ? "text-emerald-700" : "text-amber-700"}`}>
+            <p
+              className={`text-sm ${
+                emailInfo.sent
+                  ? "text-emerald-700 dark:text-emerald-300"
+                  : emailInfo.queued
+                    ? "text-sky-700 dark:text-sky-300"
+                    : "text-amber-700 dark:text-amber-300"
+              }`}
+            >
               {emailInfo.sent
-                ? `E-mail automático enviado para ${emailInfo.to}`
-                : `E-mail automático não enviado: ${emailInfo.reason}`}
+                ? `E-mail enviado para ${emailInfo.to}`
+                : emailInfo.queued
+                  ? `E-mail enfileirado para ${emailInfo.to || "o participante"} (envio em segundo plano). Use “Reenviar e-mail” para testar de novo.`
+                  : `E-mail não enviado: ${emailInfo.reason}`}
             </p>
           )}
 

@@ -10,10 +10,12 @@ function smtpConfigurado() {
 function getTransporter() {
   if (!smtpConfigurado()) return null;
   if (!transporter) {
+    const port = config.smtp.port;
     transporter = nodemailer.createTransport({
       host: config.smtp.host,
-      port: config.smtp.port,
-      secure: config.smtp.secure,
+      port,
+      secure: config.smtp.secure || port === 465,
+      requireTLS: !config.smtp.secure && port === 587,
       auth: {
         user: config.smtp.user,
         pass: config.smtp.pass
@@ -21,7 +23,7 @@ function getTransporter() {
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 15000,
-      tls: { minVersion: "TLSv1.2" }
+      tls: { minVersion: "TLSv1.2", rejectUnauthorized: true }
     });
   }
   return transporter;

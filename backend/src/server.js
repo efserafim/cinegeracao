@@ -25,6 +25,12 @@ async function start() {
     app.listen(config.port, () => {
       console.log(`API rodando em http://localhost:${config.port}`);
       console.log(`Swagger: http://localhost:${config.port}/api/docs`);
+      const { smtpConfigurado } = require("./services/emailService");
+      if (smtpConfigurado()) {
+        console.log(`[boot] SMTP OK → ${config.smtp.host}:${config.smtp.port} como ${config.smtp.user}`);
+      } else {
+        console.warn("[boot] SMTP NÃO configurado (faltam SMTP_HOST/USER/PASS)");
+      }
     });
   } catch (err) {
     console.error("Falha ao iniciar servidor:", err);

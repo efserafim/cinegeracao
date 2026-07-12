@@ -830,6 +830,68 @@ function formatInscricao(i) {
     ingressos
   };
 }
+async function reenviarEmailConfirmacao(id, adminId, ip) {
+  const inscricao = await prisma.inscricao.findUnique({
+    where: { id },
+    include: {
+      participante: true,
+      evento: true,
+      pessoas: { orderBy: { ordem: "asc" } },
+      ingressos: { include: { pessoa: true }, orderBy: { criadoEm: "asc" } }
+    }
+  });
+  if (!inscricao) {
+    const err = new Error("Inscrição não encontrada");
+    err.status = 404;
+    throw err;
+  }
+  if (!["INGRESSO_LIBERADO", "PAGAMENTO_CONFIRMADO"].includes(inscricao.status)) {
+    const err = new Error("Só é possível reenviar e-mail após confirmar o pagamento");
+    err.status = 400;
+    throw err;
+  }
+  if (!inscricao.participante?.email) {
+    return { sent: false, reason: "Participante sem e-mail cadastrado" };
+  }
+  let ingressos = inscricao.ingressos || [];
+  if (!ingressos.length) {
+    ingressos = await criarIngressos(id);
+  }
+  const pessoasPorId = Object.fromEntries((inscricao.pessoas || []).map((p) => [p.id, p]));
+  const ticketsEmail = ingressos.map((ig, idx) => ({
+    codigo: ig.codigo,
+    nome:
+      ig.pessoa?.nome ||
+      pessoasPorId[ig.pessoaId]?.nome ||
+      inscricao.pessoas?.[idx]?.nome ||
+      inscricao.participante.nome
+  }));
+  const dataFmt = new Date(inscricao.evento.data).toLocaleDateString("pt-BR");
+  const emailResult = await enviarConfirmacaoInscricao({
+    para: inscricao.participante.email,
+    nome: inscricao.participante.nome,
+    evento: inscricao.evento.nome,
+    data: dataFmt,
+    horario: inscricao.evento.horario,
+    local: inscricao.evento.local,
+    cidade: inscricao.evento.cidade,
+    codigoIngresso: ticketsEmail.map((t) => t.codigo).join(", "),
+    codigoInscricao: inscricao.codigo,
+    chegada: "17h10",
+    tickets: ticketsEmail,
+    quantidade: ticketsEmail.length || inscricao.quantidade || 1
+  });
+  await registrarLog({
+    adminId,
+    acao: "EMAIL_REENVIO",
+    entidade: "Inscricao",
+    entidadeId: id,
+    detalhes: emailResult,
+    ip
+  });
+  return emailResult;
+}
+
 module.exports = {
   criarInscricao,
   buscarPorCodigo,
@@ -839,6 +901,7 @@ module.exports = {
   buscarAdmin,
   confirmarPagamento,
   liberarIngressosFaltantes,
+  reenviarEmailConfirmacao,
   recusarPagamento,
   cancelar,
   excluir,

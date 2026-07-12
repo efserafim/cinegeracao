@@ -55,6 +55,19 @@ async function confirmar(req, res, next) {
     return next(err);
   }
 }
+async function reenviarEmail(req, res, next) {
+  try {
+    const data = await inscricaoService.reenviarEmailConfirmacao(req.params.id, req.admin.id, req.ip);
+    return success(
+      res,
+      data,
+      data.sent ? "E-mail reenviado" : "Não foi possível enviar o e-mail"
+    );
+  } catch (err) {
+    err.expose = true;
+    return next(err);
+  }
+}
 async function liberarIngressos(req, res, next) {
   try {
     const data = await inscricaoService.liberarIngressosFaltantes(req.params.id, req.admin.id, req.ip);
@@ -180,6 +193,7 @@ module.exports = {
   obterAdmin,
   confirmar,
   liberarIngressos,
+  reenviarEmail,
   reprocessarOcr,
   recusar,
   cancelar,
