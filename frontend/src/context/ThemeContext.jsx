@@ -2,14 +2,30 @@ import { createContext, useContext, useEffect, useState } from 'react';
 
 const ThemeContext = createContext(null);
 
+function readStoredTheme() {
+  try {
+    return localStorage.getItem('cg_theme') || 'light';
+  } catch {
+    return 'light';
+  }
+}
+
+function applyThemeClass(theme) {
+  const root = document.documentElement;
+  root.classList.toggle('dark', theme === 'dark');
+  root.style.colorScheme = theme === 'dark' ? 'dark' : 'light';
+}
+
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => localStorage.getItem('cg_theme') || 'light');
+  const [theme, setTheme] = useState(readStoredTheme);
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === 'dark') root.classList.add('dark');
-    else root.classList.remove('dark');
-    localStorage.setItem('cg_theme', theme);
+    applyThemeClass(theme);
+    try {
+      localStorage.setItem('cg_theme', theme);
+    } catch {
+      /* ignore */
+    }
   }, [theme]);
 
   const toggle = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));

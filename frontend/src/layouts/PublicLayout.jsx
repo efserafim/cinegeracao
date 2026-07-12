@@ -50,7 +50,7 @@ export default function PublicLayout() {
         <SpiderMark className="pointer-events-none absolute -left-8 bottom-0 h-28 w-28 -rotate-12 opacity-[0.07]" />
         <div className="relative mx-auto max-w-md text-center text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
           <div className="mb-3 flex items-center justify-center gap-2">
-            <SpiderMark className="h-6 w-6 animate-pulse-glow" />
+            <SpiderMark className="h-6 w-6" glow />
           </div>
           <p className="font-display text-lg tracking-wide text-[var(--color-ink)] dark:text-white">CINEGERAÇÃO</p>
           <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[#e11d2e]">Homem-Aranha: Um novo dia</p>

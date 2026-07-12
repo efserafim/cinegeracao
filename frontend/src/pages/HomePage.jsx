@@ -60,7 +60,7 @@ export default function HomePage() {
                 alt="CineGeração"
                 className="animate-pulse-glow h-16 w-16 rounded-full object-cover ring-4 ring-[#e11d2e]/70 sm:h-20 sm:w-20"
               />
-              <SpiderMark tone="light" className="animate-pulse-glow h-12 w-12 sm:h-14 sm:w-14" />
+              <SpiderMark tone="light" className="h-12 w-12 sm:h-14 sm:w-14" glow />
             </div>
 
             <p
@@ -112,7 +112,7 @@ export default function HomePage() {
         <div className="relative mx-auto max-w-lg animate-fade-up">
           <div className="mb-8 text-center">
             <div className="mb-3 flex justify-center">
-              <SpiderMark className="h-10 w-10 animate-pulse-glow" />
+              <SpiderMark className="h-10 w-10" glow />
             </div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#e11d2e]">Próximo passo</p>
             <h2 className="mt-2 font-display text-3xl tracking-wide text-[var(--color-ink)] dark:text-white">Inscrição</h2>
