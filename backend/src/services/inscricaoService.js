@@ -457,6 +457,65 @@ async function confirmarPagamento(id, adminId, ip) {
   });
   return { ...result, whatsappLink, emailResult, ingresso };
 }
+
+async function liberarIngressosFaltantes(id, adminId, ip) {
+  const inscricao = await prisma.inscricao.findUnique({
+    where: { id },
+    include: {
+      pessoas: { include: { ingresso: true } },
+      ingressos: true,
+      participante: true,
+      evento: true
+    }
+  });
+  if (!inscricao) {
+    const err = new Error("Inscrição não encontrada");
+    err.status = 404;
+    throw err;
+  }
+  if (["CANCELADA", "PAGAMENTO_RECUSADO"].includes(inscricao.status)) {
+    const err = new Error("Não é possível liberar ingressos nesta inscrição");
+    err.status = 400;
+    throw err;
+  }
+
+  let ingressos;
+  try {
+    ingressos = await criarIngressos(id);
+  } catch (err) {
+    console.error("[liberarIngressosFaltantes]", err);
+    const wrapped = new Error(err.message || "Falha ao gerar ingressos faltantes");
+    wrapped.status = 500;
+    wrapped.expose = true;
+    throw wrapped;
+  }
+
+  if (!ingressos?.length) {
+    const err = new Error("Nenhum ingresso foi gerado");
+    err.status = 500;
+    err.expose = true;
+    throw err;
+  }
+
+  await prisma.inscricao.update({
+    where: { id },
+    data: { status: "INGRESSO_LIBERADO" }
+  });
+
+  await registrarLog({
+    adminId,
+    acao: "INGRESSOS_LIBERADOS",
+    entidade: "Inscricao",
+    entidadeId: id,
+    detalhes: {
+      quantidade: ingressos.length,
+      codigos: ingressos.map((ig) => ig.codigo)
+    },
+    ip
+  });
+
+  return buscarAdmin(id);
+}
 async function recusarPagamento(id, observacao, adminId, ip) {
   await prisma.$transaction([
     prisma.pagamento.update({
@@ -714,6 +773,7 @@ module.exports = {
   listarPorEvento,
   buscarAdmin,
   confirmarPagamento,
+  liberarIngressosFaltantes,
   recusarPagamento,
   cancelar,
   excluir,

@@ -10,6 +10,7 @@ export default function ComprovantePage() {
   const [obs, setObs] = useState("");
   const [loading, setLoading] = useState(true);
   const [confirmando, setConfirmando] = useState(false);
+  const [liberando, setLiberando] = useState(false);
   const [showConfirmAnim, setShowConfirmAnim] = useState(false);
   const [msg, setMsg] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -98,6 +99,22 @@ export default function ComprovantePage() {
     }
   }
 
+  async function liberarFaltantes() {
+    setLiberando(true);
+    try {
+      const { data } = await api.post(`/inscricoes/${id}/liberar-ingressos`);
+      setItem(data.data);
+      const qtd = data.data.quantidade || data.data.ingressos?.length || 0;
+      setMsg(`${qtd} ingresso(s) liberado(s) com sucesso.`);
+      setShowConfirmAnim(true);
+      window.setTimeout(() => setShowConfirmAnim(false), 2800);
+    } catch (err) {
+      setMsg(err.response?.data?.message || "Falha ao liberar ingressos faltantes.");
+    } finally {
+      setLiberando(false);
+    }
+  }
+
   async function recusar() {
     const { data } = await api.post(`/inscricoes/${id}/recusar`, { observacao: obs });
     setItem(data.data);
@@ -140,6 +157,12 @@ export default function ComprovantePage() {
       ? [item.ingresso]
       : [];
   const pessoas = item.pessoas || [];
+  const pendentes = pessoas.filter((pessoa) => {
+    const ingresso =
+      pessoa.ingresso ||
+      ingressos.find((ig) => ig.pessoaId === pessoa.id || ig.nome === pessoa.nome);
+    return !ingresso?.codigo;
+  });
 
   return (
     <div className="space-y-6">
@@ -251,7 +274,21 @@ export default function ComprovantePage() {
 
           {pessoas.length > 0 && (
             <div className="space-y-3">
-              <h2 className="font-display text-xl">Ingressos / nomes</h2>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="font-display text-xl">Ingressos / nomes</h2>
+                {pendentes.length > 0 && (
+                  <Button onClick={liberarFaltantes} disabled={liberando}>
+                    {liberando
+                      ? "Liberando…"
+                      : `Liberar ${pendentes.length} ingresso${pendentes.length > 1 ? "s" : ""} faltante${pendentes.length > 1 ? "s" : ""}`}
+                  </Button>
+                )}
+              </div>
+              {pendentes.length > 0 && (
+                <p className="text-sm text-amber-700 dark:text-amber-300">
+                  {pendentes.map((p) => p.nome).join(", ")} ainda sem QR. Clique em liberar após o deploy.
+                </p>
+              )}
               <div className="grid gap-3">
                 {pessoas.map((pessoa, idx) => {
                   const ingresso =

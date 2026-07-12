@@ -55,6 +55,15 @@ async function confirmar(req, res, next) {
     return next(err);
   }
 }
+async function liberarIngressos(req, res, next) {
+  try {
+    const data = await inscricaoService.liberarIngressosFaltantes(req.params.id, req.admin.id, req.ip);
+    return success(res, data, "Ingressos liberados");
+  } catch (err) {
+    err.expose = true;
+    return next(err);
+  }
+}
 async function reprocessarOcr(req, res, next) {
   try {
     const data = await inscricaoService.reprocessarOcr(req.params.id);
@@ -170,6 +179,7 @@ module.exports = {
   listar,
   obterAdmin,
   confirmar,
+  liberarIngressos,
   reprocessarOcr,
   recusar,
   cancelar,
