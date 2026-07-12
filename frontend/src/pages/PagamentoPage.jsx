@@ -212,7 +212,9 @@ export default function PagamentoPage() {
               <span className="ml-2 text-[var(--color-ink-soft)]">{STATUS_LABELS[inscricao.status]}</span>
             </p>
             {["INGRESSO_LIBERADO", "PAGAMENTO_CONFIRMADO"].includes(inscricao.status) ? <Link to={`/ingresso/${inscricao.codigo}`}>
-                <Button className="w-full">Ver meu ingresso</Button>
+                <Button className="w-full">
+                  {inscricao.quantidade > 1 ? `Ver meus ${inscricao.quantidade} ingressos` : "Ver meu ingresso"}
+                </Button>
               </Link> : <p className="text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
                 {isDinheiro ? "Pagamento em dinheiro registrado. Assim que Eduardo ou Lavínia confirmar, o ingresso é liberado." : "Comprovante recebido. Assim que o organizador confirmar, você recebe o ingresso por e-mail."}
               </p>}

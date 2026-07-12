@@ -80,7 +80,10 @@ async function buscarPorCodigoInscricao(codigoInscricao) {
     include: {
       participante: true,
       evento: true,
-      pessoas: { orderBy: { ordem: "asc" } },
+      pessoas: {
+        orderBy: { ordem: "asc" },
+        include: { ingresso: true }
+      },
       ingressos: {
         include: { pessoa: true },
         orderBy: { criadoEm: "asc" }
@@ -94,13 +97,28 @@ async function buscarPorCodigoInscricao(codigoInscricao) {
   }
 
   const tickets = [];
-  for (const ingresso of inscricao.ingressos) {
-    tickets.push({
-      nome: ingresso.pessoa?.nome || inscricao.participante.nome,
-      codigo: ingresso.codigo,
-      status: ingresso.status,
-      qrDataUrl: await gerarQrDataUrl(ingresso)
-    });
+  const pessoas = inscricao.pessoas || [];
+  if (pessoas.length > 0) {
+    for (const pessoa of pessoas) {
+      const ingresso = pessoa.ingresso || inscricao.ingressos.find((ig) => ig.pessoaId === pessoa.id);
+      if (!ingresso) continue;
+      tickets.push({
+        nome: pessoa.nome,
+        codigo: ingresso.codigo,
+        status: ingresso.status,
+        qrDataUrl: await gerarQrDataUrl(ingresso)
+      });
+    }
+  }
+  if (tickets.length === 0) {
+    for (const ingresso of inscricao.ingressos) {
+      tickets.push({
+        nome: ingresso.pessoa?.nome || inscricao.participante.nome,
+        codigo: ingresso.codigo,
+        status: ingresso.status,
+        qrDataUrl: await gerarQrDataUrl(ingresso)
+      });
+    }
   }
 
   return {
