@@ -215,7 +215,7 @@ export default function PagamentoPage() {
                 <p className="flex items-start gap-2 rounded-2xl bg-[#f5c542]/15 px-3 py-2.5 text-xs leading-relaxed text-[#7a4b00] dark:text-[#f5c542]">
                   <AlertTriangle size={14} className="mt-0.5 shrink-0" />
                   <span>
-                    O ingresso digital <strong>não vale na entrada</strong>. No cinema, válidos apenas os ingressos do dia com Lavínia e Eduardo.
+                    Este comprovante digital <strong>não substitui o ingresso físico</strong> e não autoriza o acesso à sala. A entrada será permitida somente com o ingresso do cinema, no dia do evento, na presença dos organizadores Lavínia e Eduardo.
                   </span>
                 </p>
                 <Link to={`/ingresso/${inscricao.codigo}`}>

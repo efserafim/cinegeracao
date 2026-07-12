@@ -33,7 +33,7 @@ function TicketCard({ ticket, evento, data, horario, local, cidade, index, total
         <p className="flex items-start gap-2 text-[11px] leading-relaxed text-[#7a4b00] dark:text-[#f5c542]">
           <AlertTriangle size={14} className="mt-0.5 shrink-0" />
           <span>
-            Este ingresso digital <strong>não é válido na entrada</strong>. Válidos apenas os ingressos do cinema no dia do evento, com a presença de <strong>Lavínia</strong> e <strong>Eduardo</strong>.
+            Este comprovante digital <strong>não substitui o ingresso físico</strong> e <strong>não é válido para acesso à sala</strong>. A entrada será autorizada somente mediante o ingresso do cinema, no dia do evento, na presença dos organizadores Lavínia e Eduardo.
           </span>
         </p>
       </div>
@@ -105,9 +105,9 @@ export default function IngressoPage() {
         <p className="flex items-start gap-2">
           <AlertTriangle size={16} className="mt-0.5 shrink-0" />
           <span>
-            Estes ingressos digitais <strong>não são válidos na entrada</strong>.
-            Válidos apenas os ingressos do cinema no dia do evento, com a presença de{" "}
-            <strong>Lavínia</strong> e <strong>Eduardo</strong>.
+            Estes comprovantes digitais <strong>não substituem o ingresso físico</strong> e <strong>não são válidos para acesso à sala</strong>.
+            A entrada será autorizada somente mediante o ingresso do cinema, no dia do evento, na presença dos organizadores{" "}
+            Lavínia e Eduardo.
           </span>
         </p>
       </div>
