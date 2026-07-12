@@ -8,6 +8,11 @@ const config = require('../config');
 const { verificarTokenSupabase, supabaseAuthConfigurado } = require('../config/supabase');
 const { registrarLog } = require('./logService');
 
+/** Nomes de exibição fixos para admins (quando o cadastro veio só do e-mail). */
+const ADMIN_DISPLAY_NAMES = {
+  'laviniadossantos22@gmail.com': 'Lavínia Bernardino',
+};
+
 function emitirAccess(admin) {
   return jwt.sign(
     { email: admin.email, nome: admin.nome, purpose: 'access', provider: 'local' },
@@ -56,21 +61,35 @@ async function garantirAdminDoSupabase(user) {
   }
 
   let adminUser = await prisma.admin.findUnique({ where: { email } });
+  const nomePreferido =
+    ADMIN_DISPLAY_NAMES[email]
+    || user.user_metadata?.nome
+    || user.user_metadata?.full_name
+    || user.user_metadata?.name
+    || email.split('@')[0];
 
   if (!adminUser) {
-    const nome =
-      user.user_metadata?.nome ||
-      user.user_metadata?.full_name ||
-      email.split('@')[0];
     const senhaHash = await bcrypt.hash(`supabase_${user.id}_${Date.now()}`, 12);
     adminUser = await prisma.admin.create({
       data: {
         email,
-        nome: String(nome).slice(0, 120),
+        nome: String(nomePreferido).slice(0, 120),
         senhaHash,
         ativo: true,
       },
     });
+  } else {
+    const precisaAtualizarNome =
+      ADMIN_DISPLAY_NAMES[email]
+      || adminUser.nome === email.split('@')[0]
+      || adminUser.nome === email;
+
+    if (precisaAtualizarNome && adminUser.nome !== String(nomePreferido).slice(0, 120)) {
+      adminUser = await prisma.admin.update({
+        where: { id: adminUser.id },
+        data: { nome: String(nomePreferido).slice(0, 120) },
+      });
+    }
   }
 
   if (!adminUser.ativo) {
