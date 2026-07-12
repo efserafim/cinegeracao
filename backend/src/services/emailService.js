@@ -17,10 +17,24 @@ function getTransporter() {
       auth: {
         user: config.smtp.user,
         pass: config.smtp.pass
-      }
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+      tls: { minVersion: "TLSv1.2" }
     });
   }
   return transporter;
+}
+
+function withTimeout(promise, ms, message) {
+  let timer;
+  return Promise.race([
+    promise.finally(() => clearTimeout(timer)),
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(message)), ms);
+    })
+  ]);
 }
 
 function escapeHtml(value) {
@@ -239,13 +253,17 @@ async function enviarConfirmacaoInscricao({
     return { sent: false, reason: "SMTP não configurado no servidor" };
   }
   try {
-    await tx.sendMail({
-      from: config.smtp.from || "CineGeração <noreply@cinegeracao.local>",
-      to: para,
-      subject,
-      html,
-      text
-    });
+    await withTimeout(
+      tx.sendMail({
+        from: config.smtp.from || "CineGeração <noreply@cinegeracao.local>",
+        to: para,
+        subject,
+        html,
+        text
+      }),
+      12000,
+      "Tempo esgotado ao conectar no SMTP. Verifique host/porta/senha de app no Render."
+    );
     console.log(`[EMAIL] Confirmação enviada para ${para}`);
     return { sent: true, to: para };
   } catch (err) {

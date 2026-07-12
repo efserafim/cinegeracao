@@ -79,7 +79,7 @@ export default function ComprovantePage() {
   async function confirmar() {
     setConfirmando(true);
     try {
-      const { data } = await api.post(`/inscricoes/${id}/confirmar`);
+      const { data } = await api.post(`/inscricoes/${id}/confirmar`, null, { timeout: 25000 });
       setItem(data.data);
       setWhatsapp(data.data.whatsappLink || "");
       setEmailInfo(data.data.emailResult || null);
@@ -93,7 +93,11 @@ export default function ComprovantePage() {
       setShowConfirmAnim(true);
       window.setTimeout(() => setShowConfirmAnim(false), 2800);
     } catch (err) {
-      setMsg(err.response?.data?.message || "Falha ao confirmar pagamento.");
+      if (err.code === "ECONNABORTED") {
+        setMsg("A confirmação demorou demais. Atualize a página e verifique se o ingresso já foi liberado.");
+      } else {
+        setMsg(err.response?.data?.message || "Falha ao confirmar pagamento.");
+      }
     } finally {
       setConfirmando(false);
     }
