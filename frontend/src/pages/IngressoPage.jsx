@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import api, { formatDate } from "../services/api";
 import { Loading } from "../components/ui";
 import { logoImg, posterImg } from "../assets/brand";
@@ -28,6 +28,14 @@ function TicketCard({ ticket, evento, data, horario, local, cidade, index, total
         <p><span className="text-[var(--color-ink-soft)]">Local:</span> {local}{cidade ? ` · ${cidade}` : ""}</p>
         <p><span className="text-[var(--color-ink-soft)]">Código:</span> <strong className="tracking-wider">{ticket.codigo}</strong></p>
         <p><span className="text-[var(--color-ink-soft)]">Status:</span> {ticket.status}</p>
+      </div>
+      <div className="border-t border-[#f5c542]/30 bg-[#f5c542]/10 px-5 py-3 dark:bg-[#f5c542]/15">
+        <p className="flex items-start gap-2 text-[11px] leading-relaxed text-[#7a4b00] dark:text-[#f5c542]">
+          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+          <span>
+            Este ingresso digital <strong>não é válido na entrada</strong>. Válidos apenas os ingressos do cinema no dia do evento, com a presença de <strong>Lavínia</strong> e <strong>Eduardo</strong>.
+          </span>
+        </p>
       </div>
       <div className="flex justify-center bg-[#0b1020] px-6 py-6">
         <img src={ticket.qrDataUrl} alt={`QR Code de ${ticket.nome}`} className="h-52 w-52 rounded-xl bg-white p-2" />
@@ -93,6 +101,17 @@ export default function IngressoPage() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-10 animate-fade-up">
+      <div className="mb-5 rounded-2xl border border-[#f5c542]/40 bg-[#f5c542]/12 px-4 py-3 text-sm leading-relaxed text-[#7a4b00] dark:text-[#f5c542]">
+        <p className="flex items-start gap-2">
+          <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+          <span>
+            Estes ingressos digitais <strong>não são válidos na entrada</strong>.
+            Válidos apenas os ingressos do cinema no dia do evento, com a presença de{" "}
+            <strong>Lavínia</strong> e <strong>Eduardo</strong>.
+          </span>
+        </p>
+      </div>
+
       {multi && (
         <div className="mb-5 text-center">
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#e11d2e]">

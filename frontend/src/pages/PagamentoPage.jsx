@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Copy, Check, Upload, Banknote, User, KeyRound, HandCoins } from "lucide-react";
+import { Copy, Check, Upload, Banknote, User, KeyRound, HandCoins, AlertTriangle } from "lucide-react";
 import api, { formatMoney, STATUS_LABELS } from "../services/api";
 import { Button, Loading, StatusBadge } from "../components/ui";
 import ContatosDuvidas from "../components/ContatosDuvidas";
@@ -211,11 +211,19 @@ export default function PagamentoPage() {
               <StatusBadge status={inscricao.status} />
               <span className="ml-2 text-[var(--color-ink-soft)]">{STATUS_LABELS[inscricao.status]}</span>
             </p>
-            {["INGRESSO_LIBERADO", "PAGAMENTO_CONFIRMADO"].includes(inscricao.status) ? <Link to={`/ingresso/${inscricao.codigo}`}>
-                <Button className="w-full">
-                  {inscricao.quantidade > 1 ? `Ver meus ${inscricao.quantidade} ingressos` : "Ver meu ingresso"}
-                </Button>
-              </Link> : <p className="text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
+            {["INGRESSO_LIBERADO", "PAGAMENTO_CONFIRMADO"].includes(inscricao.status) ? <>
+                <p className="flex items-start gap-2 rounded-2xl bg-[#f5c542]/15 px-3 py-2.5 text-xs leading-relaxed text-[#7a4b00] dark:text-[#f5c542]">
+                  <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                  <span>
+                    O ingresso digital <strong>não vale na entrada</strong>. No cinema, válidos apenas os ingressos do dia com Lavínia e Eduardo.
+                  </span>
+                </p>
+                <Link to={`/ingresso/${inscricao.codigo}`}>
+                  <Button className="w-full">
+                    {inscricao.quantidade > 1 ? `Ver meus ${inscricao.quantidade} ingressos` : "Ver meu ingresso"}
+                  </Button>
+                </Link>
+              </> : <p className="text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
                 {isDinheiro ? "Pagamento em dinheiro registrado. Assim que Eduardo ou Lavínia confirmar, o ingresso é liberado." : "Comprovante recebido. Assim que o organizador confirmar, você recebe o ingresso por e-mail."}
               </p>}
           </div>

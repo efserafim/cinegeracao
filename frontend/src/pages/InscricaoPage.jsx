@@ -103,7 +103,7 @@ export default function InscricaoPage() {
       <SpiderMark className="pointer-events-none absolute -right-12 top-32 h-48 w-48 rotate-6 opacity-[0.06]" />
       <SpiderMark className="pointer-events-none absolute -left-10 bottom-40 h-40 w-40 -rotate-12 opacity-[0.05]" />
 
-      <section className="relative overflow-hidden bg-[#070a12] pt-20">
+      <section className="relative overflow-hidden bg-[#070a12] pt-8">
         <div className="pointer-events-none absolute inset-0 web-mask opacity-30" />
         <div className="pointer-events-none absolute -left-16 top-10 h-56 w-56 rounded-full bg-[#e11d2e]/25 blur-3xl" />
         <div className="pointer-events-none absolute right-0 top-20 h-48 w-48 rounded-full bg-[#1a6cff]/20 blur-3xl" />

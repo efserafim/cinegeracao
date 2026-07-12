@@ -6,14 +6,14 @@ import SpiderMark from "../components/SpiderMark";
 export default function PublicLayout() {
   const { theme, toggle } = useTheme();
   return <div className="bg-page min-h-screen">
-      <header className="fixed inset-x-0 top-0 z-20 bg-gradient-to-b from-[#070a12]/95 via-[#070a12]/70 to-transparent">
+      <header className="sticky top-0 z-20 border-b border-white/10 bg-[#070a12]/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 lg:px-6">
           <Link to="/" className="flex items-center gap-2.5">
             <img
-    src={logoImg}
-    alt="CineGeração"
-    className="h-10 w-10 rounded-full object-cover ring-2 ring-[#e11d2e]/80"
-  />
+              src={logoImg}
+              alt="CineGeração"
+              className="h-10 w-10 rounded-full object-cover ring-2 ring-[#e11d2e]/80"
+            />
             <span className="leading-tight">
               <span className="block font-display text-base tracking-wide text-white">CINEGERAÇÃO</span>
               <span className="block text-[10px] uppercase tracking-[0.18em] text-[#f5c542]">
@@ -22,11 +22,11 @@ export default function PublicLayout() {
             </span>
           </Link>
           <button
-    type="button"
-    onClick={toggle}
-    className="rounded-full p-2 text-white/80 hover:bg-white/10"
-    aria-label="Alternar tema"
-  >
+            type="button"
+            onClick={toggle}
+            className="rounded-full p-2 text-white/80 hover:bg-white/10"
+            aria-label="Alternar tema"
+          >
             {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
           </button>
         </div>
