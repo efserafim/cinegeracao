@@ -140,11 +140,20 @@ enum AlertaPagamento {
 }
 
 // -----------------------------------------------------------------------------
+// Forma de pagamento
+// -----------------------------------------------------------------------------
+enum MetodoPagamento {
+  PIX
+  DINHEIRO
+}
+
+// -----------------------------------------------------------------------------
 // Pagamentos (1:1 com inscrição)
 // -----------------------------------------------------------------------------
 model Pagamento {
   id                String          @id @default(uuid())
   inscricaoId       String          @unique @map("inscricao_id")
+  metodo            MetodoPagamento @default(PIX)
   valorEsperado     Decimal         @map("valor_esperado") @db.Decimal(10, 2)
   valorDetectado    Decimal?        @map("valor_detectado") @db.Decimal(10, 2)
   dataDetectada     DateTime?       @map("data_detectada")

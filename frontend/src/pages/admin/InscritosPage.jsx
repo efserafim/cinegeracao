@@ -119,6 +119,7 @@ export default function InscritosPage() {
                 <th className="px-4 py-3">Cidade</th>
                 <th className="px-4 py-3">Data</th>
                 <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Pagamento</th>
                 <th className="px-4 py-3">Valor</th>
                 <th className="px-4 py-3" />
               </tr>
@@ -132,11 +133,12 @@ export default function InscritosPage() {
                   <td className="px-4 py-3">{i.participante?.cidade}</td>
                   <td className="px-4 py-3">{formatDate(i.criadoEm)}</td>
                   <td className="px-4 py-3"><StatusBadge status={i.status} /></td>
+                  <td className="px-4 py-3">{i.pagamento?.metodo === 'DINHEIRO' ? 'Dinheiro' : 'PIX'}</td>
                   <td className="px-4 py-3">{formatMoney(i.valor)}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-3">
                       <Link to={`/admin/inscricoes/${i.id}`} className="text-[var(--color-forest)] hover:underline">
-                        Ver comprovante
+                        {i.pagamento?.metodo === 'DINHEIRO' ? 'Conferir' : 'Ver comprovante'}
                       </Link>
                       <button
                         type="button"

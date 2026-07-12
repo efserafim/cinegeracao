@@ -190,7 +190,11 @@ export default function ComprovantePage() {
               />
             )
           ) : (
-            <p className="mt-4 text-sm text-[var(--color-ink-soft)]">Nenhum comprovante enviado.</p>
+            <p className="mt-4 text-sm text-[var(--color-ink-soft)]">
+              {p?.metodo === 'DINHEIRO'
+                ? 'Pagamento em dinheiro — confirme quando receber o valor.'
+                : 'Nenhum comprovante enviado.'}
+            </p>
           )}
         </div>
 
@@ -203,6 +207,7 @@ export default function ComprovantePage() {
               <p>Paróquia: {item.participante?.paroquia || '—'}</p>
               <p>Cidade: {item.participante?.cidade}</p>
               <p>Valor: {formatMoney(item.valor)}</p>
+              <p>Pagamento: {p?.metodo === 'DINHEIRO' ? 'Dinheiro' : 'PIX'}</p>
               <p>Evento: {item.evento?.nome}</p>
             </dl>
           </div>

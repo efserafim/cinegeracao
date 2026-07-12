@@ -85,16 +85,25 @@ async function criarInscricao(eventoId, dados) {
     },
   });
 
+  const metodo = String(dados.metodoPagamento || dados.metodo || 'PIX').toUpperCase() === 'DINHEIRO'
+    ? 'DINHEIRO'
+    : 'PIX';
+
+  const statusInicial = metodo === 'DINHEIRO' ? 'AGUARDANDO_CONFIRMACAO' : 'AGUARDANDO_PAGAMENTO';
+
   const inscricao = await prisma.inscricao.create({
     data: {
       codigo: gerarCodigoInscricao(),
       eventoId,
       participanteId: participante.id,
-      status: 'AGUARDANDO_PAGAMENTO',
+      status: statusInicial,
       valor: evento.valor,
+      observacao: metodo === 'DINHEIRO' ? 'Pagamento em dinheiro — aguardando confirmação do organizador.' : null,
       pagamento: {
         create: {
           valorEsperado: evento.valor,
+          metodo,
+          alerta: metodo === 'DINHEIRO' ? 'NECESSITA_CONFERENCIA' : 'NENHUM',
         },
       },
     },
@@ -122,6 +131,7 @@ async function criarInscricao(eventoId, dados) {
   return {
     inscricao: formatInscricao(inscricao),
     pagamento: {
+      metodo,
       chavePix: evento.chavePix,
       nomeFavorecido: evento.nomeFavorecido,
       valor: Number(evento.valor),
@@ -172,6 +182,12 @@ async function enviarComprovante(codigo, file) {
 
   if (!inscricao.pagamento) {
     const err = new Error('Pagamento não encontrado');
+    err.status = 400;
+    throw err;
+  }
+
+  if (inscricao.pagamento.metodo === 'DINHEIRO') {
+    const err = new Error('Esta inscrição é pagamento em dinheiro — não precisa de comprovante PIX');
     err.status = 400;
     throw err;
   }
@@ -667,6 +683,7 @@ function formatInscricao(i) {
     pagamento: i.pagamento
       ? {
           id: i.pagamento.id,
+          metodo: i.pagamento.metodo || 'PIX',
           valorEsperado: Number(i.pagamento.valorEsperado),
           valorDetectado: i.pagamento.valorDetectado != null
             ? Number(i.pagamento.valorDetectado)

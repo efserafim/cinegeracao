@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Copy, Check, Upload, Banknote, User, KeyRound } from 'lucide-react';
+import { Copy, Check, Upload, Banknote, User, KeyRound, HandCoins } from 'lucide-react';
 import api, { formatMoney, STATUS_LABELS } from '../services/api';
 import { Button, Loading, StatusBadge } from '../components/ui';
 import ContatosDuvidas from '../components/ContatosDuvidas';
@@ -23,8 +23,13 @@ export default function PagamentoPage() {
       .then((res) => {
         const data = res.data.data;
         setInscricao(data);
+        const metodo = data.pagamento?.metodo || 'PIX';
         if (['AGUARDANDO_CONFIRMACAO', 'COMPROVANTE_ENVIADO', 'OCR_PROCESSADO', 'PAGAMENTO_CONFIRMADO', 'INGRESSO_LIBERADO'].includes(data.status)) {
-          setStep('done');
+          setStep(metodo === 'DINHEIRO' && data.status === 'AGUARDANDO_CONFIRMACAO' ? 'dinheiro' : 'done');
+        } else if (metodo === 'DINHEIRO') {
+          setStep('dinheiro');
+        } else {
+          setStep('pix');
         }
       })
       .catch((err) => setError(err.response?.data?.message || 'Inscrição não encontrada'))
@@ -34,6 +39,7 @@ export default function PagamentoPage() {
   const chavePix = inscricao?.evento?.chavePix || '';
   const favorecido = inscricao?.evento?.nomeFavorecido || '';
   const valor = inscricao?.valor;
+  const isDinheiro = inscricao?.pagamento?.metodo === 'DINHEIRO';
 
   async function copyPix() {
     if (!chavePix) return;
@@ -77,7 +83,9 @@ export default function PagamentoPage() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#f5c542]">CineGeração</p>
-          <h1 className="font-display text-3xl leading-none text-[var(--color-ink)] dark:text-white">Pagamento PIX</h1>
+          <h1 className="font-display text-3xl leading-none text-[var(--color-ink)] dark:text-white">
+            {isDinheiro ? 'Pagamento em dinheiro' : 'Pagamento PIX'}
+          </h1>
           <p className="mt-2 text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
             {inscricao.participante?.nome}
             <span className="mx-1.5 opacity-40">·</span>
@@ -86,6 +94,37 @@ export default function PagamentoPage() {
         </div>
         <StatusBadge status={inscricao.status} />
       </div>
+
+      {step === 'dinheiro' && (
+        <div className="mt-6 space-y-4">
+          <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#0b1020] text-white shadow-xl">
+            <div className="border-b border-white/10 bg-gradient-to-r from-[#e11d2e]/90 to-[#f5c542]/50 px-5 py-4 text-center">
+              <p className="text-xs uppercase tracking-widest text-white/80">Valor a pagar</p>
+              <p className="mt-1 font-display text-4xl">{formatMoney(valor)}</p>
+            </div>
+            <div className="space-y-4 p-5">
+              <div className="flex justify-center">
+                <span className="rounded-full bg-[#f5c542]/20 p-4 text-[#f5c542]">
+                  <HandCoins size={28} />
+                </span>
+              </div>
+              <p className="text-center text-sm leading-relaxed text-white/85">
+                Você escolheu pagar <strong>em dinheiro</strong>. Entregue o valor para{' '}
+                <strong>Eduardo</strong> ou <strong>Lavínia</strong> e aguarde a confirmação no sistema.
+              </p>
+              <ul className="space-y-2 rounded-2xl bg-white/5 p-4 text-sm text-white/80">
+                <li>· Guarde seu código: <span className="font-mono text-[#f5c542]">{inscricao.codigo}</span></li>
+                <li>· Após a confirmação, o ingresso é liberado</li>
+                <li>· Em dúvida, fale no WhatsApp com a organização</li>
+              </ul>
+              <p className="text-center text-xs text-white/55">
+                Status: {STATUS_LABELS[inscricao.status] || inscricao.status}
+              </p>
+            </div>
+          </div>
+          <ContatosDuvidas />
+        </div>
+      )}
 
       {step === 'pix' && (
         <div className="mt-6 space-y-4">
@@ -194,7 +233,9 @@ export default function PagamentoPage() {
               </Link>
             ) : (
               <p className="text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
-                Comprovante recebido. Assim que o organizador confirmar, você recebe o ingresso por e-mail.
+                {isDinheiro
+                  ? 'Pagamento em dinheiro registrado. Assim que Eduardo ou Lavínia confirmar, o ingresso é liberado.'
+                  : 'Comprovante recebido. Assim que o organizador confirmar, você recebe o ingresso por e-mail.'}
               </p>
             )}
           </div>

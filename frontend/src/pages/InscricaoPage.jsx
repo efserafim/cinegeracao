@@ -15,7 +15,10 @@ import SpiderMark from '../components/SpiderMark';
 export default function InscricaoPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+    defaultValues: { metodoPagamento: 'PIX' },
+  });
+  const metodoPagamento = watch('metodoPagamento');
   const [evento, setEvento] = useState(null);
   const [loadingEvento, setLoadingEvento] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -211,11 +214,52 @@ export default function InscricaoPage() {
               />
             </div>
 
+            <div className="space-y-2 pt-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)] dark:text-slate-400">
+                Forma de pagamento
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setValue('metodoPagamento', 'PIX')}
+                  className={`rounded-[1.25rem] px-4 py-3 text-left text-sm transition ring-1 ${
+                    metodoPagamento === 'PIX'
+                      ? 'bg-[#e11d2e]/10 ring-[#e11d2e] font-semibold text-[var(--color-ink)] dark:text-white'
+                      : 'bg-white/70 ring-black/5 dark:bg-white/5 dark:ring-white/10'
+                  }`}
+                >
+                  <span className="block font-semibold">PIX</span>
+                  <span className="mt-0.5 block text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
+                    Pague agora e envie o comprovante
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setValue('metodoPagamento', 'DINHEIRO')}
+                  className={`rounded-[1.25rem] px-4 py-3 text-left text-sm transition ring-1 ${
+                    metodoPagamento === 'DINHEIRO'
+                      ? 'bg-[#e11d2e]/10 ring-[#e11d2e] font-semibold text-[var(--color-ink)] dark:text-white'
+                      : 'bg-white/70 ring-black/5 dark:bg-white/5 dark:ring-white/10'
+                  }`}
+                >
+                  <span className="block font-semibold">Dinheiro</span>
+                  <span className="mt-0.5 block text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
+                    Entregue a Eduardo ou Lavínia
+                  </span>
+                </button>
+              </div>
+              <input type="hidden" {...register('metodoPagamento')} />
+            </div>
+
             {error && <p className="text-center text-sm text-red-600">{error}</p>}
 
             <Button type="submit" disabled={loading} className="mt-2 w-full !rounded-full py-3.5 shadow-md shadow-red-900/15">
               <SpiderMark tone="light" className="h-4 w-4" />
-              {loading ? 'Gerando...' : 'Continuar para o PIX'}
+              {loading
+                ? 'Gerando...'
+                : metodoPagamento === 'DINHEIRO'
+                  ? 'Confirmar inscrição em dinheiro'
+                  : 'Continuar para o PIX'}
             </Button>
             <p className="text-center text-[11px] leading-relaxed text-[var(--color-ink-soft)] dark:text-slate-400">
               Já se inscreveu? Use o mesmo WhatsApp para recuperar seu código, ou fale com Eduardo/Lavínia.
