@@ -7,6 +7,71 @@ function smtpConfigurado() {
   return Boolean(config.smtp.host && config.smtp.user && config.smtp.pass);
 }
 
+function emailConfigurado() {
+  return Boolean(config.brevoApiKey || config.resendApiKey || smtpConfigurado());
+}
+
+function parseFrom(fromRaw) {
+  const raw = String(fromRaw || "CineGeração <onboarding@resend.dev>").trim();
+  const m = raw.match(/^(.*)<([^>]+)>$/);
+  if (m) {
+    return { name: m[1].trim().replace(/^"|"$/g, "") || "CineGeração", email: m[2].trim() };
+  }
+  if (raw.includes("@")) return { name: "CineGeração", email: raw };
+  return { name: "CineGeração", email: raw };
+}
+
+async function enviarViaBrevo({ para, subject, html, text }) {
+  const sender = parseFrom(config.smtp.from || config.smtp.user);
+  if (!sender.email.includes("@")) {
+    throw new Error("SMTP_FROM inválido para Brevo. Use: CineGeração <seu@email.com>");
+  }
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      "content-type": "application/json",
+      "api-key": config.brevoApiKey
+    },
+    body: JSON.stringify({
+      sender,
+      to: [{ email: para }],
+      subject,
+      htmlContent: html,
+      textContent: text
+    })
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(body.message || body.error?.message || `Brevo HTTP ${res.status}`);
+  }
+  return { sent: true, to: para, id: body.messageId, provider: "brevo" };
+}
+
+async function enviarViaResend({ para, subject, html, text }) {
+  const from = config.smtp.from || "CineGeração <onboarding@resend.dev>";
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.resendApiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      from,
+      to: [para],
+      subject,
+      html,
+      text
+    })
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = body.message || body.error || `Resend HTTP ${res.status}`;
+    throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+  }
+  return { sent: true, to: para, id: body.id, provider: "resend" };
+}
+
 function getTransporter() {
   if (!smtpConfigurado()) return null;
   if (!transporter) {
@@ -249,12 +314,35 @@ async function enviarConfirmacaoInscricao({
     "Que Deus abençoe este encontro. Equipe CineGeração."
   ].join("\n");
 
-  const tx = getTransporter();
-  if (!tx) {
-    console.warn(`[EMAIL] SMTP não configurado – não enviado para ${para}`);
-    return { sent: false, reason: "SMTP não configurado no servidor" };
+  if (!emailConfigurado()) {
+    console.warn(`[EMAIL] Nenhum provedor configurado – não enviado para ${para}`);
+    return {
+      sent: false,
+      reason: "E-mail não configurado. No Render, use BREVO_API_KEY (recomendado) ou RESEND_API_KEY — o SMTP do Gmail costuma dar timeout."
+    };
   }
+
   try {
+    if (config.brevoApiKey) {
+      const result = await withTimeout(
+        enviarViaBrevo({ para, subject, html, text }),
+        15000,
+        "Tempo esgotado na API Brevo"
+      );
+      console.log(`[EMAIL] Brevo OK → ${para}`);
+      return result;
+    }
+    if (config.resendApiKey) {
+      const result = await withTimeout(
+        enviarViaResend({ para, subject, html, text }),
+        15000,
+        "Tempo esgotado na API Resend"
+      );
+      console.log(`[EMAIL] Resend OK → ${para}`);
+      return result;
+    }
+
+    const tx = getTransporter();
     await withTimeout(
       tx.sendMail({
         from: config.smtp.from || "CineGeração <noreply@cinegeracao.local>",
@@ -264,14 +352,17 @@ async function enviarConfirmacaoInscricao({
         text
       }),
       12000,
-      "Tempo esgotado ao conectar no SMTP. Verifique host/porta/senha de app no Render."
+      "Connection timeout no SMTP. No Render o Gmail costuma falhar — configure BREVO_API_KEY (gratuito) no Environment."
     );
-    console.log(`[EMAIL] Confirmação enviada para ${para}`);
-    return { sent: true, to: para };
+    console.log(`[EMAIL] SMTP OK → ${para}`);
+    return { sent: true, to: para, provider: "smtp" };
   } catch (err) {
     console.error("[EMAIL] Falha ao enviar:", err.message);
-    return { sent: false, reason: err.message };
+    const reason = /timeout|ETIMEDOUT|ECONNREFUSED/i.test(err.message)
+      ? `${err.message} — use BREVO_API_KEY no Render (SMTP do Gmail é bloqueado com frequência).`
+      : err.message;
+    return { sent: false, reason };
   }
 }
 
-module.exports = { enviarConfirmacaoInscricao, smtpConfigurado };
+module.exports = { enviarConfirmacaoInscricao, smtpConfigurado, emailConfigurado };

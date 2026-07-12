@@ -24,6 +24,9 @@ const config = {
     // Gmail app passwords are often copied with spaces
     pass: String(process.env.SMTP_PASS || "").replace(/\s+/g, ""),
     from: process.env.SMTP_FROM || "CineGeração <noreply@cinegeracao.local>"
-  }
+  },
+  // HTTPS — recomendado no Render (SMTP Gmail costuma dar Connection timeout)
+  brevoApiKey: (process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY || "").trim(),
+  resendApiKey: (process.env.RESEND_API_KEY || "").trim()
 };
 module.exports = config;

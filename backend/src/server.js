@@ -25,11 +25,16 @@ async function start() {
     app.listen(config.port, () => {
       console.log(`API rodando em http://localhost:${config.port}`);
       console.log(`Swagger: http://localhost:${config.port}/api/docs`);
-      const { smtpConfigurado } = require("./services/emailService");
-      if (smtpConfigurado()) {
-        console.log(`[boot] SMTP OK → ${config.smtp.host}:${config.smtp.port} como ${config.smtp.user}`);
-      } else {
-        console.warn("[boot] SMTP NÃO configurado (faltam SMTP_HOST/USER/PASS)");
+      const { emailConfigurado, smtpConfigurado } = require("./services/emailService");
+      if (config.brevoApiKey) {
+        console.log("[boot] E-mail: Brevo API configurada");
+      } else if (config.resendApiKey) {
+        console.log("[boot] E-mail: Resend API configurada");
+      } else if (smtpConfigurado()) {
+        console.log(`[boot] E-mail: SMTP → ${config.smtp.host}:${config.smtp.port} (${config.smtp.user})`);
+        console.warn("[boot] No Render, SMTP Gmail costuma dar timeout. Prefira BREVO_API_KEY.");
+      } else if (!emailConfigurado()) {
+        console.warn("[boot] E-mail NÃO configurado (BREVO_API_KEY / RESEND_API_KEY / SMTP_*)");
       }
     });
   } catch (err) {
