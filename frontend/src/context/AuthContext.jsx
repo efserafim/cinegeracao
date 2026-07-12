@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import api from '../services/api';
 import { supabase, supabaseConfigured } from '../lib/supabase';
 
@@ -20,6 +20,27 @@ export function AuthProvider({ children }) {
     setToken(data.token);
     setAdmin(data.admin);
   }
+
+  // Atualiza nome/e-mail do admin a partir da API (ex.: Lavínia Bernardino)
+  useEffect(() => {
+    if (!token) return undefined;
+    let cancelled = false;
+    api.get('/auth/me')
+      .then(({ data }) => {
+        if (cancelled || !data?.data) return;
+        const next = {
+          id: data.data.id,
+          nome: data.data.nome,
+          email: data.data.email,
+        };
+        localStorage.setItem('cg_admin', JSON.stringify(next));
+        setAdmin(next);
+      })
+      .catch(() => {
+        /* token inválido: interceptor trata 401 */
+      });
+    return () => { cancelled = true; };
+  }, [token]);
 
   /**
    * Preferência: Supabase Auth. Fallback: senha local na API.
