@@ -13,6 +13,8 @@ const eventoRoutes = require("./routes/eventoRoutes");
 const inscricaoRoutes = require("./routes/inscricaoRoutes");
 const ingressoRoutes = require("./routes/ingressoRoutes");
 const app = express();
+// Render (e outros proxies) enviam X-Forwarded-For; necessário para o rate-limit
+app.set("trust proxy", 1);
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 const allowedOrigins = new Set(
   config.frontendOrigins.map((o) => o.replace(/\/$/, "")).concat(["https://cinegeracao.netlify.app", "http://localhost:5173"])
