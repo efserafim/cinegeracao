@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { Minus, Plus, Ticket } from "lucide-react";
+import { Armchair, Minus, Plus, Ticket } from "lucide-react";
 import api, { formatDate, formatMoney, mediaUrl, STATUS_LABELS } from "../services/api";
 import { Button, Input, Loading, StatusBadge } from "../components/ui";
 import { logoImg, posterImg } from "../assets/brand";
 import ContatosDuvidas from "../components/ContatosDuvidas";
 import CinemaMapa from "../components/CinemaMapa";
 import SpiderMark from "../components/SpiderMark";
+import SeatMapModal from "../components/SeatMapModal";
 
 const MAX_INGRESSOS = 10;
 
@@ -28,6 +29,8 @@ export default function InscricaoPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [duplicata, setDuplicata] = useState(null);
+  const [seatMapOpen, setSeatMapOpen] = useState(false);
+  const [assentosBrincadeira, setAssentosBrincadeira] = useState([]);
 
   useEffect(() => {
     api.get(`/eventos/publicos/${id}`).then((res) => setEvento(res.data.data)).catch((err) => setError(err.response?.data?.message || "Evento não encontrado")).finally(() => setLoadingEvento(false));
@@ -40,6 +43,10 @@ export default function InscricaoPage() {
     while (atual.length > extras) atual.pop();
     setValue("pessoas", atual);
   }, [quantidade, getValues, setValue]);
+
+  useEffect(() => {
+    setAssentosBrincadeira((prev) => prev.slice(0, quantidade));
+  }, [quantidade]);
 
   function alterarQuantidade(delta) {
     if (!evento) return;
@@ -267,6 +274,28 @@ export default function InscricaoPage() {
               <input type="hidden" {...register("quantidade", { valueAsNumber: true })} />
             </div>
 
+            <div className="rounded-[1.25rem] bg-white/80 p-4 shadow-sm ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)] dark:text-slate-400">
+                    Assentos (brincadeira)
+                  </p>
+                  <p className="mt-1 text-sm text-[var(--color-ink)] dark:text-white">
+                    {assentosBrincadeira.length
+                      ? <>Escolhidos: <strong className="text-[#e11d2e]">{assentosBrincadeira.join(", ")}</strong></>
+                      : "Abra o mapa e escolha só por diversão"}
+                  </p>
+                </div>
+                <Button type="button" variant="secondary" className="!rounded-full" onClick={() => setSeatMapOpen(true)}>
+                  <Armchair size={16} />
+                  {assentosBrincadeira.length ? "Trocar assentos" : "Ver mapa"}
+                </Button>
+              </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-[var(--color-ink-soft)] dark:text-slate-400">
+                Mapa fictício — não é o do cinema e não reserva lugar de verdade.
+              </p>
+            </div>
+
             {quantidade > 1 && <div className="space-y-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)] dark:text-slate-400">
                   Nome das outras pessoas
@@ -340,5 +369,13 @@ export default function InscricaoPage() {
           </Link>
         </p>
       </section>
+
+      <SeatMapModal
+        open={seatMapOpen}
+        onClose={() => setSeatMapOpen(false)}
+        quantidade={quantidade}
+        selected={assentosBrincadeira}
+        onConfirm={setAssentosBrincadeira}
+      />
     </div>;
 }
