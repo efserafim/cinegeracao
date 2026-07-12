@@ -6,9 +6,9 @@ import { logoImg } from '../assets/brand';
 import SpiderMark from '../components/SpiderMark';
 
 const links = [
-  { to: '/admin', end: true, label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/admin/eventos', label: 'Eventos', icon: Calendar },
-  { to: '/admin/validar', label: 'Validar entrada', icon: QrCode },
+  { to: '/admin', end: true, label: 'Dashboard', short: 'Início', icon: LayoutDashboard },
+  { to: '/admin/eventos', label: 'Eventos', short: 'Eventos', icon: Calendar },
+  { to: '/admin/validar', label: 'Validar entrada', short: 'Validar', icon: QrCode },
 ];
 
 export default function AdminLayout() {
@@ -60,15 +60,15 @@ export default function AdminLayout() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-black/5 bg-white/50 px-4 py-3 backdrop-blur dark:border-white/10 dark:bg-slate-950/40">
-          <div className="flex gap-1 overflow-x-auto md:hidden">
-            {links.map(({ to, end, label, icon: Icon }) => (
+        <header className="flex items-center gap-2 border-b border-black/5 bg-white/50 px-3 py-2.5 backdrop-blur dark:border-white/10 dark:bg-slate-950/40 sm:px-4">
+          <nav className="flex min-w-0 flex-1 flex-wrap items-center gap-1 md:hidden">
+            {links.map(({ to, end, short, icon: Icon }) => (
               <NavLink
                 key={to}
                 to={to}
                 end={end}
                 className={({ isActive }) =>
-                  `inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                  `inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-semibold ${
                     isActive
                       ? 'bg-[#e11d2e] text-white'
                       : 'bg-black/5 text-[var(--color-ink-soft)] dark:bg-white/10 dark:text-slate-300'
@@ -76,11 +76,11 @@ export default function AdminLayout() {
                 }
               >
                 <Icon size={12} />
-                {label}
+                {short}
               </NavLink>
             ))}
-          </div>
-          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+          </nav>
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-3">
             <span className="hidden text-sm text-[var(--color-ink-soft)] sm:inline dark:text-slate-300">
               {admin?.nome}
             </span>
@@ -95,9 +95,10 @@ export default function AdminLayout() {
             <button
               type="button"
               onClick={handleLogout}
-              className="flex items-center gap-1 rounded-full px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+              className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
             >
-              <LogOut size={14} /> Sair
+              <LogOut size={14} />
+              <span className="hidden sm:inline">Sair</span>
             </button>
           </div>
         </header>
