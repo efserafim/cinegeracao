@@ -8,7 +8,9 @@ function smtpConfigurado() {
 }
 
 function emailConfigurado() {
-  return Boolean(config.brevoApiKey || config.resendApiKey || smtpConfigurado());
+  return Boolean(
+    config.sendgridApiKey || config.brevoApiKey || config.resendApiKey || smtpConfigurado()
+  );
 }
 
 function parseFrom(fromRaw) {
@@ -19,6 +21,38 @@ function parseFrom(fromRaw) {
   }
   if (raw.includes("@")) return { name: "CineGeração", email: raw };
   return { name: "CineGeração", email: raw };
+}
+
+async function enviarViaSendGrid({ para, subject, html, text }) {
+  const from = parseFrom(config.smtp.from || config.smtp.user);
+  if (!from.email.includes("@")) {
+    throw new Error("SMTP_FROM inválido para SendGrid. Use: CineGeração <seu@email.com>");
+  }
+  const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.sendgridApiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      personalizations: [{ to: [{ email: para }] }],
+      from,
+      subject,
+      content: [
+        { type: "text/plain", value: text || " " },
+        { type: "text/html", value: html || "<p></p>" }
+      ]
+    })
+  });
+  if (res.status === 202 || res.ok) {
+    return { sent: true, to: para, provider: "sendgrid" };
+  }
+  const body = await res.json().catch(() => ({}));
+  const errMsg =
+    body.errors?.map((e) => e.message).filter(Boolean).join("; ") ||
+    body.message ||
+    `SendGrid HTTP ${res.status}`;
+  throw new Error(errMsg);
 }
 
 async function enviarViaBrevo({ para, subject, html, text }) {
@@ -318,11 +352,21 @@ async function enviarConfirmacaoInscricao({
     console.warn(`[EMAIL] Nenhum provedor configurado – não enviado para ${para}`);
     return {
       sent: false,
-      reason: "E-mail não configurado. No Render, use BREVO_API_KEY (recomendado) ou RESEND_API_KEY — o SMTP do Gmail costuma dar timeout."
+      reason:
+        "E-mail não configurado. No Render, use SENDGRID_API_KEY (recomendado) — o SMTP do Gmail costuma dar timeout."
     };
   }
 
   try {
+    if (config.sendgridApiKey) {
+      const result = await withTimeout(
+        enviarViaSendGrid({ para, subject, html, text }),
+        15000,
+        "Tempo esgotado na API SendGrid"
+      );
+      console.log(`[EMAIL] SendGrid OK → ${para}`);
+      return result;
+    }
     if (config.brevoApiKey) {
       const result = await withTimeout(
         enviarViaBrevo({ para, subject, html, text }),
@@ -352,14 +396,14 @@ async function enviarConfirmacaoInscricao({
         text
       }),
       12000,
-      "Connection timeout no SMTP. No Render o Gmail costuma falhar — configure BREVO_API_KEY (gratuito) no Environment."
+      "Connection timeout no SMTP. Configure SENDGRID_API_KEY no Render."
     );
     console.log(`[EMAIL] SMTP OK → ${para}`);
     return { sent: true, to: para, provider: "smtp" };
   } catch (err) {
     console.error("[EMAIL] Falha ao enviar:", err.message);
     const reason = /timeout|ETIMEDOUT|ECONNREFUSED/i.test(err.message)
-      ? `${err.message} — use BREVO_API_KEY no Render (SMTP do Gmail é bloqueado com frequência).`
+      ? `${err.message} — use SENDGRID_API_KEY no Render.`
       : err.message;
     return { sent: false, reason };
   }

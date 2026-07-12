@@ -26,15 +26,17 @@ async function start() {
       console.log(`API rodando em http://localhost:${config.port}`);
       console.log(`Swagger: http://localhost:${config.port}/api/docs`);
       const { emailConfigurado, smtpConfigurado } = require("./services/emailService");
-      if (config.brevoApiKey) {
+      if (config.sendgridApiKey) {
+        console.log("[boot] E-mail: SendGrid API configurada");
+      } else if (config.brevoApiKey) {
         console.log("[boot] E-mail: Brevo API configurada");
       } else if (config.resendApiKey) {
         console.log("[boot] E-mail: Resend API configurada");
       } else if (smtpConfigurado()) {
         console.log(`[boot] E-mail: SMTP → ${config.smtp.host}:${config.smtp.port} (${config.smtp.user})`);
-        console.warn("[boot] No Render, SMTP Gmail costuma dar timeout. Prefira BREVO_API_KEY.");
+        console.warn("[boot] No Render, SMTP Gmail costuma dar timeout. Prefira SENDGRID_API_KEY.");
       } else if (!emailConfigurado()) {
-        console.warn("[boot] E-mail NÃO configurado (BREVO_API_KEY / RESEND_API_KEY / SMTP_*)");
+        console.warn("[boot] E-mail NÃO configurado (SENDGRID_API_KEY / BREVO_API_KEY / RESEND_API_KEY / SMTP_*)");
       }
     });
   } catch (err) {
