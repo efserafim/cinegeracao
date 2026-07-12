@@ -59,9 +59,13 @@ export function Button({ children, variant = 'primary', className = '', ...props
 export function Input({ label, error, className = '', ...props }) {
   return (
     <label className="block space-y-1.5">
-      {label && <span className="text-sm font-medium text-[var(--color-ink-soft)] dark:text-slate-300">{label}</span>}
+      {label && (
+        <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)] dark:text-slate-400">
+          {label}
+        </span>
+      )}
       <input
-        className={`w-full rounded-xl border border-black/10 bg-white px-3 py-2.5 text-sm outline-none ring-[var(--color-forest)] focus:ring-2 dark:border-white/15 dark:bg-slate-900 ${className}`}
+        className={`w-full rounded-[1.25rem] border border-black/10 bg-white px-4 py-3 text-sm outline-none ring-[var(--color-forest)] transition focus:ring-2 dark:border-white/15 dark:bg-slate-900 ${className}`}
         {...props}
       />
       {error && <span className="text-xs text-red-600">{error}</span>}
