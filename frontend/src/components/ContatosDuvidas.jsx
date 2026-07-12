@@ -28,7 +28,7 @@ export default function ContatosDuvidas({ variant = 'light' }) {
             key={c.telefone}
             className={`flex items-center justify-between gap-3 rounded-[1.25rem] px-4 py-3 text-sm ${
               dark
-                ? 'bg-white/8'
+                ? 'bg-white/10'
                 : 'bg-white/65 ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10'
             }`}
           >
