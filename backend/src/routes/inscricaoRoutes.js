@@ -19,6 +19,7 @@ router.post(
   inscricaoController.criar
 );
 router.get("/codigo/:codigo", inscricaoController.obterPorCodigo);
+router.get("/por-whatsapp/:telefone", inscricaoController.obterPorWhatsApp);
 router.post(
   "/codigo/:codigo/comprovante",
   uploadComprovante.single("comprovante"),

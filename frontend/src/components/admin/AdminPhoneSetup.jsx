@@ -71,17 +71,18 @@ export default function AdminPhoneSetup() {
       return;
     }
 
-    if (!swReady) {
-      const reg = await enableAdminPwa();
-      setSwReady(Boolean(reg));
-      if (!reg) {
-        setMessage("Não foi possível preparar o app. Abra /admin/login no Chrome Android e tente de novo.");
-        return;
-      }
+    const reg = (await enableAdminPwa()) || (await getAdminServiceWorkerRegistration());
+    setSwReady(Boolean(reg));
+
+    if (reg) {
+      setMessage(
+        "App preparado. No Chrome Android: menu ⋮ → “Instalar app” ou “Adicionar à tela inicial”."
+      );
+      return;
     }
 
     setMessage(
-      "No Chrome Android: menu ⋮ → “Instalar app” ou “Adicionar à tela inicial”. Se não aparecer, recarregue esta página uma vez e tente outra vez."
+      "Se o botão de instalar não aparecer: abra este painel no Chrome Android (HTTPS), recarregue e use menu ⋮ → “Adicionar à tela inicial”."
     );
   }
 

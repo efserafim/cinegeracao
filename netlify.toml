@@ -15,6 +15,18 @@
     Cache-Control = "no-cache"
 
 [[redirects]]
+  from = "/admin/sw.js"
+  to = "/admin/sw.js"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin/manifest.webmanifest"
+  to = "/admin/manifest.webmanifest"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

@@ -20,10 +20,53 @@ import AdminPhoneSetup from "../../components/admin/AdminPhoneSetup";
 import { useAuth } from "../../context/AuthContext";
 
 const STATUS_EVENTO = {
-  ABERTO: { label: "Online", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200" },
-  ENCERRADO: { label: "Encerrado", className: "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200" },
-  RASCUNHO: { label: "Rascunho", className: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200" }
+  ABERTO: {
+    label: "Online",
+    dot: "bg-emerald-500",
+    ping: true,
+    className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200",
+  },
+  ENCERRADO: {
+    label: "Encerrado",
+    dot: "bg-slate-400",
+    ping: false,
+    className: "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200",
+  },
+  RASCUNHO: {
+    label: "Rascunho",
+    dot: "bg-amber-400",
+    ping: false,
+    className: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
+  },
+  CANCELADO: {
+    label: "Cancelado",
+    dot: "bg-red-500",
+    ping: false,
+    className: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200",
+  },
 };
+
+function StatusDot({ status }) {
+  const st = STATUS_EVENTO[status] || STATUS_EVENTO.RASCUNHO;
+  return (
+    <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
+      {st.ping && (
+        <span className={`absolute inline-flex h-full w-full animate-ping rounded-full ${st.dot} opacity-60`} />
+      )}
+      <span className={`relative inline-flex h-2 w-2 rounded-full ${st.dot}`} />
+    </span>
+  );
+}
+
+function StatusBadge({ status }) {
+  const st = STATUS_EVENTO[status] || STATUS_EVENTO.RASCUNHO;
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${st.className}`}>
+      <StatusDot status={status} />
+      {st.label}
+    </span>
+  );
+}
 
 function StatTile({ label, value, hint, icon: Icon, accent = "red", to }) {
   const accents = {
@@ -91,22 +134,13 @@ function QuickLink({ to, icon: Icon, title, hint, tone }) {
 function EventoCard({ ev }) {
   const ocupadas = Math.max(0, (ev.vagasMaximas || 0) - (ev.vagasRestantes || 0));
   const pct = ev.vagasMaximas ? Math.min(100, Math.round((ocupadas / ev.vagasMaximas) * 100)) : 0;
-  const st = STATUS_EVENTO[ev.status] || STATUS_EVENTO.RASCUNHO;
   return (
     <div className="rounded-[1.5rem] bg-white/80 p-4 ring-1 ring-black/5 dark:bg-slate-900/70 dark:ring-white/10">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-display text-xl text-[var(--color-ink)] dark:text-white">{ev.nome}</h2>
-            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${st.className}`}>
-              {ev.status === "ABERTO" && (
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                </span>
-              )}
-              {st.label}
-            </span>
+            <StatusBadge status={ev.status} />
           </div>
           <p className="mt-1 text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
             {formatDate(ev.data)} · {ev.horario}
@@ -171,7 +205,9 @@ export default function DashboardPage() {
   if (loading) return <Loading />;
 
   const abertos = eventos.filter((e) => e.status === "ABERTO");
-  const eventoPrincipal = abertos[0] || eventos[0];
+  const eventoAberto = abertos[0] || null;
+  const eventoPrincipal = eventoAberto || eventos[0] || null;
+  const eventoAbertoOuNenhum = Boolean(eventoAberto);
   const pendentes = stats?.pendentes ?? 0;
   const presentes = stats?.presentes ?? 0;
   const pendentesRecentes = stats?.pendentesRecentes || [];
@@ -193,13 +229,28 @@ export default function DashboardPage() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#f5c542]">Painel CineGeração</p>
             <h1 className="mt-2 font-display text-3xl tracking-wide sm:text-4xl">Olá, {primeiroNome}</h1>
             {eventoPrincipal ? (
-              <p className="mt-2 max-w-lg text-sm text-white/70">
-                Evento ativo: <strong className="text-white">{eventoPrincipal.nome}</strong>
-                {" · "}
-                {formatDate(eventoPrincipal.data)} · {eventoPrincipal.horario}
-                {" · "}
-                {ocupadasPrincipal}/{eventoPrincipal.vagasMaximas} vagas
-              </p>
+              <div className="mt-2 max-w-lg space-y-1.5">
+                <p className="inline-flex flex-wrap items-center gap-2 text-sm text-white/70">
+                  <StatusBadge status={eventoPrincipal.status} />
+                  <span>
+                    {eventoAbertoOuNenhum ? (
+                      <>
+                        Evento ativo: <strong className="text-white">{eventoPrincipal.nome}</strong>
+                      </>
+                    ) : (
+                      <>
+                        Sem evento aberto · último:{" "}
+                        <strong className="text-white">{eventoPrincipal.nome}</strong>
+                      </>
+                    )}
+                  </span>
+                </p>
+                <p className="text-sm text-white/55">
+                  {formatDate(eventoPrincipal.data)} · {eventoPrincipal.horario}
+                  {" · "}
+                  {ocupadasPrincipal}/{eventoPrincipal.vagasMaximas} vagas
+                </p>
+              </div>
             ) : (
               <p className="mt-2 max-w-md text-sm text-white/70">
                 Acompanhe vagas, confirmações e o que precisa da sua atenção agora.
@@ -367,7 +418,7 @@ export default function DashboardPage() {
           <QuickLink
             to={eventoPrincipal ? `/admin/eventos/${eventoPrincipal.id}/editar` : "/admin/eventos"}
             icon={Pencil}
-            title="Editar evento ativo"
+            title={eventoAbertoOuNenhum ? "Editar evento ativo" : "Editar evento"}
             hint={eventoPrincipal?.nome || "Nenhum evento"}
             tone="slate"
           />

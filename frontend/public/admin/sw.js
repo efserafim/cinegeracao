@@ -1,18 +1,15 @@
-/* Service worker — PWA admin (/admin/*) */
+/* Service worker — PWA admin (/admin/*) + push
+ * Install leve: não usa cache.addAll (falha no Netlify derruba o SW e quebra instalar/notificar).
+ */
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-  event.waitUntil(
-    caches.open("cg-admin-v3").then((cache) =>
-      cache.addAll(["/admin", "/admin/login", "/admin/manifest.webmanifest"])
-    )
-  );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== "cg-admin-v3").map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -21,22 +18,7 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
   if (request.url.includes("/api/")) return;
-  const url = new URL(request.url);
-  if (!url.pathname.startsWith("/admin")) return;
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      const network = fetch(request)
-        .then((res) => {
-          if (res && res.ok && request.url.startsWith(self.location.origin)) {
-            const copy = res.clone();
-            caches.open("cg-admin-v3").then((cache) => cache.put(request, copy));
-          }
-          return res;
-        })
-        .catch(() => cached);
-      return cached || network;
-    })
-  );
+  // Deixa o browser cuidar; SW só existe para installability + push
 });
 
 self.addEventListener("push", (event) => {

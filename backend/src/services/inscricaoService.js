@@ -199,6 +199,32 @@ async function buscarPorCodigo(codigo) {
   }
   return formatInscricao(inscricao);
 }
+
+async function buscarPorWhatsApp(telefoneRaw) {
+  const telefone = normalizarWhatsApp(telefoneRaw);
+  if (!telefone || telefone.length < 10) {
+    const err = new Error("Informe o WhatsApp com DDD (10 ou 11 dígitos)");
+    err.status = 400;
+    throw err;
+  }
+  const sufixo11 = telefone.slice(-11);
+  const sufixo10 = telefone.slice(-10);
+  const list = await prisma.inscricao.findMany({
+    where: {
+      participante: {
+        OR: [
+          { telefone },
+          { telefone: { endsWith: sufixo11 } },
+          { telefone: { endsWith: sufixo10 } }
+        ]
+      }
+    },
+    include: includeInscricao,
+    orderBy: { criadoEm: "desc" },
+    take: 20
+  });
+  return list.map(formatInscricao);
+}
 async function enviarComprovante(codigo, file) {
   const inscricao = await prisma.inscricao.findUnique({
     where: { codigo },
@@ -930,6 +956,7 @@ async function reenviarEmailConfirmacao(id, adminId, ip) {
 module.exports = {
   criarInscricao,
   buscarPorCodigo,
+  buscarPorWhatsApp,
   enviarComprovante,
   reprocessarOcr,
   listarPorEvento,

@@ -17,6 +17,14 @@ async function obterPorCodigo(req, res, next) {
     return next(err);
   }
 }
+async function obterPorWhatsApp(req, res, next) {
+  try {
+    const data = await inscricaoService.buscarPorWhatsApp(req.params.telefone);
+    return success(res, data);
+  } catch (err) {
+    return next(err);
+  }
+}
 async function enviarComprovante(req, res, next) {
   try {
     if (!req.file) {
@@ -188,6 +196,7 @@ async function relatorioFinanceiro(req, res, next) {
 module.exports = {
   criar,
   obterPorCodigo,
+  obterPorWhatsApp,
   enviarComprovante,
   listar,
   obterAdmin,

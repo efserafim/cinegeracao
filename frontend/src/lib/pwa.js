@@ -30,10 +30,17 @@ export function removeAdminManifest() {
   document.querySelectorAll(`link[${MANIFEST_ATTR}], link[rel="manifest"]`).forEach((el) => el.remove());
 }
 
+function scriptUrl(reg) {
+  return reg.active?.scriptURL || reg.installing?.scriptURL || reg.waiting?.scriptURL || "";
+}
+
 function isLegacyServiceWorker(reg) {
-  const script = reg.active?.scriptURL || reg.installing?.scriptURL || reg.waiting?.scriptURL || "";
-  // Antigo SW na raiz: /sw.js — NÃO remover /admin/sw.js
+  const script = scriptUrl(reg);
   return /\/sw\.js$/.test(script) && !script.includes("/admin/sw.js");
+}
+
+function isAdminServiceWorker(reg) {
+  return scriptUrl(reg).includes("/admin/sw.js");
 }
 
 async function unregisterLegacyServiceWorkers() {
@@ -41,6 +48,7 @@ async function unregisterLegacyServiceWorkers() {
   const regs = await navigator.serviceWorker.getRegistrations();
   await Promise.all(
     regs.map((reg) => {
+      if (isAdminServiceWorker(reg)) return null;
       const path = new URL(reg.scope).pathname;
       if (path === "/" || path === "" || isLegacyServiceWorker(reg)) {
         return reg.unregister();
@@ -50,13 +58,40 @@ async function unregisterLegacyServiceWorkers() {
   );
 }
 
+function waitForActive(reg, timeoutMs = 8000) {
+  if (reg.active) return Promise.resolve(reg);
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("Timeout waiting for service worker")), timeoutMs);
+    const worker = reg.installing || reg.waiting;
+    if (!worker) {
+      clearTimeout(timer);
+      resolve(reg);
+      return;
+    }
+    worker.addEventListener("statechange", () => {
+      if (worker.state === "activated" || reg.active) {
+        clearTimeout(timer);
+        resolve(reg);
+      }
+    });
+  });
+}
+
 export async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return null;
   if (!isAdminPath()) return null;
+  if (!window.isSecureContext) return null;
   try {
     await unregisterLegacyServiceWorkers();
-    const reg = await navigator.serviceWorker.register(SW_PATH, { scope: "/admin" });
-    await navigator.serviceWorker.ready;
+    // Escopo padrão de /admin/sw.js = /admin/ (não precisa de Service-Worker-Allowed)
+    const existing = await navigator.serviceWorker.getRegistration("/admin/");
+    if (existing && isAdminServiceWorker(existing)) {
+      await waitForActive(existing).catch(() => {});
+      return existing;
+    }
+    const reg = await navigator.serviceWorker.register(SW_PATH);
+    await waitForActive(reg).catch(() => {});
+    await navigator.serviceWorker.ready.catch(() => {});
     return reg;
   } catch (err) {
     console.warn("[PWA] SW register failed", err);
@@ -79,6 +114,7 @@ export async function disablePublicPwaInstall() {
     const regs = await navigator.serviceWorker.getRegistrations();
     await Promise.all(
       regs.map((reg) => {
+        if (isAdminServiceWorker(reg)) return null;
         const path = new URL(reg.scope).pathname;
         if (path === "/" || path === "" || isLegacyServiceWorker(reg)) {
           return reg.unregister();
@@ -102,12 +138,17 @@ export function urlBase64ToUint8Array(base64String) {
 
 export async function getAdminServiceWorkerRegistration() {
   if (!("serviceWorker" in navigator)) return null;
-  const byScope = await navigator.serviceWorker.getRegistration("/admin");
-  if (byScope) {
-    await navigator.serviceWorker.ready;
-    return byScope;
+  let reg = await navigator.serviceWorker.getRegistration("/admin/");
+  if (!reg || !isAdminServiceWorker(reg)) {
+    reg = await enableAdminPwa();
   }
-  return enableAdminPwa();
+  if (!reg) return null;
+  try {
+    await waitForActive(reg);
+  } catch {
+    /* ainda assim tenta usar pushManager */
+  }
+  return reg;
 }
 
 export async function getExistingPushSubscription() {

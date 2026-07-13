@@ -227,9 +227,9 @@ export default function HomePage() {
           )}
 
           <p className="mt-6 text-center text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
-            Já tem código?{" "}
+            Já se inscreveu?{" "}
             <Link to="/consultar" className="font-semibold text-[#e11d2e] underline">
-              Consultar inscrição
+              Consultar pelo WhatsApp
             </Link>
           </p>
 
