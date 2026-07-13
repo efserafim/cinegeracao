@@ -54,8 +54,8 @@ export default function PublicLayout() {
             <SpiderMark className="h-7 w-7" glow />
           </div>
           <p className="font-display text-xl tracking-wide text-white">CINEGERAÇÃO</p>
-          <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-[#f5c542]">
-            Homem-Aranha: Um novo dia
+          <p className="spidey-title mt-1.5 font-display text-sm tracking-[0.06em] text-[#e11d2e] sm:text-base">
+            HOMEM-ARANHA: UM NOVO DIA
           </p>
 
           <p className="mt-6 text-sm font-medium tracking-wide text-white/80">
