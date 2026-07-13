@@ -1,8 +1,9 @@
 {
+  "id": "/admin/",
   "name": "CineGeração Admin",
   "short_name": "CineGeração",
   "description": "Painel do CineGeração — inscrição, chamada e confirmação de pagamentos",
-  "start_url": "/admin/login",
+  "start_url": "/admin",
   "scope": "/admin",
   "display": "standalone",
   "orientation": "portrait-primary",

@@ -1,14 +1,19 @@
-/* Service worker — PWA + push (admin) */
+/* Service worker — PWA admin (/admin/*) */
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-  event.waitUntil(caches.open("cg-admin-v2").then((cache) => cache.addAll(["/admin", "/admin/login", "/manifest.webmanifest"])));
+  event.waitUntil(
+    caches.open("cg-admin-v3").then((cache) =>
+      cache.addAll(["/admin", "/admin/login", "/admin/manifest.webmanifest"])
+    )
+  );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== "cg-admin-v2").map((k) => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== "cg-admin-v3").map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
@@ -24,7 +29,7 @@ self.addEventListener("fetch", (event) => {
         .then((res) => {
           if (res && res.ok && request.url.startsWith(self.location.origin)) {
             const copy = res.clone();
-            caches.open("cg-admin-v2").then((cache) => cache.put(request, copy));
+            caches.open("cg-admin-v3").then((cache) => cache.put(request, copy));
           }
           return res;
         })

@@ -1,6 +1,10 @@
-const SW_PATH = "/sw.js";
-const MANIFEST_HREF = "/manifest.webmanifest";
+const SW_PATH = "/admin/sw.js";
+const MANIFEST_HREF = "/admin/manifest.webmanifest";
 const MANIFEST_ATTR = "data-cg-admin-manifest";
+
+export function isAdminPath(pathname = window.location.pathname) {
+  return /^\/admin(\/|$)/.test(pathname);
+}
 
 export function isStandaloneDisplay() {
   return (
@@ -26,10 +30,26 @@ export function removeAdminManifest() {
   document.querySelectorAll(`link[${MANIFEST_ATTR}], link[rel="manifest"]`).forEach((el) => el.remove());
 }
 
+async function unregisterLegacyServiceWorkers() {
+  if (!("serviceWorker" in navigator)) return;
+  const regs = await navigator.serviceWorker.getRegistrations();
+  await Promise.all(
+    regs.map((reg) => {
+      const path = new URL(reg.scope).pathname;
+      if (path === "/" || path === "" || reg.active?.scriptURL?.endsWith("/sw.js")) {
+        return reg.unregister();
+      }
+      return null;
+    })
+  );
+}
+
 export async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return null;
+  if (!isAdminPath()) return null;
   try {
-    return await navigator.serviceWorker.register(SW_PATH, { scope: "/admin" });
+    await unregisterLegacyServiceWorkers();
+    return await navigator.serviceWorker.register(SW_PATH);
   } catch (err) {
     console.warn("[PWA] SW register failed", err);
     return null;
@@ -38,6 +58,7 @@ export async function registerServiceWorker() {
 
 /** Ativa PWA só no painel admin (login + dashboard). */
 export async function enableAdminPwa() {
+  if (!isAdminPath()) return null;
   ensureAdminManifest();
   return registerServiceWorker();
 }
@@ -51,8 +72,9 @@ export async function disablePublicPwaInstall() {
     await Promise.all(
       regs.map((reg) => {
         const path = new URL(reg.scope).pathname;
-        // Remove SW antigo com escopo do site inteiro (era o que disparava o banner na home)
-        if (path === "/" || path === "") return reg.unregister();
+        if (path === "/" || path === "" || reg.active?.scriptURL?.endsWith("/sw.js")) {
+          return reg.unregister();
+        }
         return null;
       })
     );

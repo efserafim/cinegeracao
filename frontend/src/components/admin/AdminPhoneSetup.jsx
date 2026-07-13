@@ -12,12 +12,13 @@ import {
 export default function AdminPhoneSetup() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [installed, setInstalled] = useState(isStandaloneDisplay());
+  const [swReady, setSwReady] = useState(false);
   const [notifStatus, setNotifStatus] = useState("idle"); // idle | on | denied | unsupported | loading | error
   const [message, setMessage] = useState("");
   const [vapidOk, setVapidOk] = useState(false);
 
   useEffect(() => {
-    enableAdminPwa();
+    let cancelled = false;
 
     const onBip = (e) => {
       e.preventDefault();
@@ -30,26 +31,32 @@ export default function AdminPhoneSetup() {
     });
 
     (async () => {
+      const reg = await enableAdminPwa();
+      if (!cancelled) setSwReady(Boolean(reg));
+
       try {
         const { data } = await api.get("/admin/push/vapid-public-key");
-        setVapidOk(Boolean(data?.data?.publicKey));
+        if (!cancelled) setVapidOk(Boolean(data?.data?.publicKey));
       } catch {
-        setVapidOk(false);
+        if (!cancelled) setVapidOk(false);
       }
 
       if (!("Notification" in window) || !("PushManager" in window)) {
-        setNotifStatus("unsupported");
+        if (!cancelled) setNotifStatus("unsupported");
         return;
       }
       if (Notification.permission === "denied") {
-        setNotifStatus("denied");
+        if (!cancelled) setNotifStatus("denied");
         return;
       }
       const sub = await getExistingPushSubscription();
-      setNotifStatus(sub ? "on" : "idle");
+      if (!cancelled) setNotifStatus(sub ? "on" : "idle");
     })();
 
-    return () => window.removeEventListener("beforeinstallprompt", onBip);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("beforeinstallprompt", onBip);
+    };
   }, []);
 
   async function handleInstall() {
@@ -61,9 +68,23 @@ export default function AdminPhoneSetup() {
       setDeferredPrompt(null);
       return;
     }
+
+    if (!swReady) {
+      const reg = await enableAdminPwa();
+      setSwReady(Boolean(reg));
+      if (!reg) {
+        setMessage("Não foi possível preparar o app. Abra /admin/login no Chrome Android e tente de novo.");
+        return;
+      }
+    }
+
     setMessage(
-      "No Chrome Android: menu ⋮ → “Instalar app” ou “Adicionar à tela inicial”. Abra pelo ícone depois."
+      "No Chrome Android: menu ⋮ → “Instalar app” ou “Adicionar à tela inicial”. Se não aparecer, recarregue esta página uma vez e tente outra vez."
     );
+  }
+
+  function handleReloadForInstall() {
+    window.location.reload();
   }
 
   async function handleEnableNotifications() {
@@ -156,6 +177,11 @@ export default function AdminPhoneSetup() {
                 <Download size={16} />
                 {deferredPrompt ? "Instalar no celular" : "Como instalar"}
               </Button>
+              {!deferredPrompt && swReady && (
+                <Button variant="secondary" className="mt-2 w-full !rounded-full" onClick={handleReloadForInstall}>
+                  Recarregar para ativar instalação
+                </Button>
+              )}
             </>
           )}
         </div>

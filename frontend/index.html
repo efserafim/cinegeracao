@@ -13,6 +13,14 @@
           if (t === 'dark') document.documentElement.classList.add('dark');
           document.documentElement.style.colorScheme = t === 'dark' ? 'dark' : 'light';
         } catch (e) {}
+        if (/^\/admin(\/|$)/.test(location.pathname)) {
+          var m = document.createElement('link');
+          m.rel = 'manifest';
+          m.href = '/admin/manifest.webmanifest';
+          document.head.appendChild(m);
+          var theme = document.querySelector('meta[name="theme-color"]');
+          if (theme) theme.setAttribute('content', '#e11d2e');
+        }
       })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
