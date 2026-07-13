@@ -3,6 +3,12 @@
   command = "npm run build"
   publish = "dist"
 
+# VITE_API_URL é URL pública do front (não segredo). Sem omit, o Secrets Scanner
+# falha o build porque Vite embute a variável no bundle do browser.
+[build.environment]
+  VITE_API_URL = "/api"
+  SECRETS_SCAN_OMIT_KEYS = "VITE_API_URL"
+
 [[headers]]
   for = "/admin/sw.js"
   [headers.values]
