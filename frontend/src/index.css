@@ -81,6 +81,12 @@
     letter-spacing: 0.04em;
   }
 
+  .spidey-title {
+    text-shadow:
+      0 0 12px rgba(225, 29, 46, 0.45),
+      1px 1px 0 rgba(26, 108, 255, 0.35);
+  }
+
   .font-sans {
     font-family: var(--font-sans);
   }

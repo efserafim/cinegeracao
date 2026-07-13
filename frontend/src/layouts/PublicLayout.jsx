@@ -16,8 +16,8 @@ export default function PublicLayout() {
             />
             <span className="leading-tight">
               <span className="block font-display text-base tracking-wide text-white">CINEGERAÇÃO</span>
-              <span className="block text-[10px] uppercase tracking-[0.18em] text-[#f5c542]">
-                1º de agosto · Homem-Aranha
+              <span className="spidey-title mt-0.5 block font-display text-[11px] leading-none tracking-[0.06em] text-[#e11d2e] sm:text-xs">
+                HOMEM-ARANHA: UM NOVO DIA
               </span>
             </span>
           </Link>
@@ -44,7 +44,9 @@ export default function PublicLayout() {
             <SpiderMark className="h-6 w-6" glow />
           </div>
           <p className="font-display text-lg tracking-wide text-[var(--color-ink)] dark:text-white">CINEGERAÇÃO</p>
-          <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[#e11d2e]">1º de agosto · Homem-Aranha: Um novo dia</p>
+          <p className="spidey-title mt-1 font-display text-sm tracking-[0.06em] text-[#e11d2e]">
+            HOMEM-ARANHA: UM NOVO DIA
+          </p>
           <p className="mt-3 leading-relaxed">
             Paróquia Santo Antônio · Bacaxá · Saquarema/RJ
             <br />
