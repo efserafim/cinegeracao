@@ -215,18 +215,22 @@ export default function InscricaoForm({ evento }) {
       </div>
 
       {quantidade > 1 && (
-        <div className="space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)] dark:text-slate-400">
-            Nome das outras pessoas
-          </p>
-          <p className="text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
-            O ingresso 1 usa o nome do responsável. Informe quem mais vai:
-          </p>
-          {Array.from({ length: quantidade - 1 }).map((_, idx) => (
-            <Field key={idx} label={`Ingresso ${idx + 2}`} error={errors.pessoas?.[idx]?.message}>
-              <input className={fieldClass} {...register(`pessoas.${idx}`, { required: "Obrigatório" })} />
-            </Field>
-          ))}
+        <div className="overflow-hidden rounded-[1.35rem] ring-2 ring-[#e11d2e]/45 dark:ring-[#e11d2e]/50">
+          <div className="bg-gradient-to-r from-[#e11d2e] to-[#b01422] px-4 py-2.5">
+            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white">
+              Nome das outras pessoas
+            </p>
+          </div>
+          <div className="space-y-3 bg-[#e11d2e]/[0.06] p-4 dark:bg-[#e11d2e]/15">
+            <p className="rounded-xl bg-[#f5c542]/20 px-3 py-2 text-sm font-semibold leading-snug text-[#7a4b00] dark:bg-[#f5c542]/15 dark:text-[#f5c542]">
+              O ingresso 1 usa o nome do responsável. Informe quem mais vai:
+            </p>
+            {Array.from({ length: quantidade - 1 }).map((_, idx) => (
+              <Field key={idx} label={`Ingresso ${idx + 2}`} error={errors.pessoas?.[idx]?.message}>
+                <input className={fieldClass} {...register(`pessoas.${idx}`, { required: "Obrigatório" })} />
+              </Field>
+            ))}
+          </div>
         </div>
       )}
 
