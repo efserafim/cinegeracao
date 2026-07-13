@@ -353,11 +353,20 @@ async function enviarConfirmacaoInscricao({
     return {
       sent: false,
       reason:
-        "E-mail não configurado. No Render, use RESEND_API_KEY + SMTP_FROM com domínio verificado."
+        "E-mail não configurado. No Render, use BREVO_API_KEY + SMTP_FROM com domínio autenticado."
     };
   }
 
   try {
+    if (config.brevoApiKey) {
+      const result = await withTimeout(
+        enviarViaBrevo({ para, subject, html, text }),
+        15000,
+        "Tempo esgotado na API Brevo"
+      );
+      console.log(`[EMAIL] Brevo OK → ${para}`);
+      return result;
+    }
     if (config.resendApiKey) {
       const result = await withTimeout(
         enviarViaResend({ para, subject, html, text }),
@@ -376,15 +385,6 @@ async function enviarConfirmacaoInscricao({
       console.log(`[EMAIL] SendGrid OK → ${para}`);
       return result;
     }
-    if (config.brevoApiKey) {
-      const result = await withTimeout(
-        enviarViaBrevo({ para, subject, html, text }),
-        15000,
-        "Tempo esgotado na API Brevo"
-      );
-      console.log(`[EMAIL] Brevo OK → ${para}`);
-      return result;
-    }
 
     const tx = getTransporter();
     await withTimeout(
@@ -396,14 +396,14 @@ async function enviarConfirmacaoInscricao({
         text
       }),
       12000,
-      "Connection timeout no SMTP. Configure RESEND_API_KEY no Render."
+      "Connection timeout no SMTP. Configure BREVO_API_KEY no Render."
     );
     console.log(`[EMAIL] SMTP OK → ${para}`);
     return { sent: true, to: para, provider: "smtp" };
   } catch (err) {
     console.error("[EMAIL] Falha ao enviar:", err.message);
     const reason = /timeout|ETIMEDOUT|ECONNREFUSED/i.test(err.message)
-      ? `${err.message} — use RESEND_API_KEY no Render.`
+      ? `${err.message} — use BREVO_API_KEY no Render.`
       : err.message;
     return { sent: false, reason };
   }

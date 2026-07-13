@@ -26,7 +26,7 @@ const config = {
     from: process.env.SMTP_FROM || "CineGeração <noreply@geucaristica.com.br>"
   },
   // HTTPS — recomendado no Render (SMTP Gmail costuma dar Connection timeout)
-  // Prioridade no envio: Resend → SendGrid → Brevo → SMTP
+  // Prioridade no envio: Brevo → Resend → SendGrid → SMTP
   sendgridApiKey: (process.env.SENDGRID_API_KEY || "").trim(),
   brevoApiKey: (process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY || "").trim(),
   resendApiKey: (process.env.RESEND_API_KEY || "").trim(),
