@@ -18,8 +18,8 @@ export default function PublicLayout() {
             />
             <span className="leading-tight">
               <span className="block font-display text-base tracking-wide text-white">CINEGERAÇÃO</span>
-              <span className="mt-0.5 block text-[10px] uppercase tracking-[0.18em] text-[#f5c542] sm:text-[11px]">
-                Homem-Aranha: Um novo dia
+              <span className="spidey-title mt-0.5 block font-display text-[11px] leading-none tracking-[0.06em] text-[#e11d2e] sm:text-xs">
+                HOMEM-ARANHA: UM NOVO DIA
               </span>
             </span>
           </Link>
