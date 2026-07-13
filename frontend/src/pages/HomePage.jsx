@@ -4,7 +4,6 @@ import api, { formatDate, formatMoney, mediaUrl } from "../services/api";
 import { Loading } from "../components/ui";
 import { logoImg, posterImg } from "../assets/brand";
 import ContatosDuvidas from "../components/ContatosDuvidas";
-import CinemaMapa from "../components/CinemaMapa";
 import SpiderMark from "../components/SpiderMark";
 import InscricaoForm from "../components/InscricaoForm";
 
@@ -234,7 +233,6 @@ export default function HomePage() {
           </p>
 
           <div className="mt-10 space-y-8">
-            <CinemaMapa />
             <ContatosDuvidas />
           </div>
         </div>

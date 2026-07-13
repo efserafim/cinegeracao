@@ -7,7 +7,7 @@ const { processarComprovante } = require("./ocrService");
 const { criarIngressos } = require("./ingressoService");
 const { enviarConfirmacaoInscricao } = require("./emailService");
 const { registrarLog } = require("./logService");
-const { contarOcupadas, listarAssentosSimulados, STATUS_OCUPAM_VAGA } = require("./eventoService");
+const { contarOcupadas, STATUS_OCUPAM_VAGA } = require("./eventoService");
 const { salvarComprovante } = require("./storageService");
 const { notifyAdmins } = require("./pushService");
 
@@ -93,35 +93,6 @@ async function criarInscricao(eventoId, dados) {
   }
   const nomeResponsavel = String(dados.nome || pessoas[0]).trim();
   const valorTotal = Number(evento.valor) * quantidade;
-  const assentosPedidos = (() => {
-    const raw = dados.assentosSimulados ?? dados.assentosBrincadeira ?? dados.assentos;
-    if (Array.isArray(raw)) return raw.map((s) => String(s || "").trim().toUpperCase()).filter(Boolean);
-    if (typeof raw === "string") {
-      return raw.split(/[,;\s]+/).map((s) => s.trim().toUpperCase()).filter(Boolean);
-    }
-    return [];
-  })();
-  const assentosUnicos = [...new Set(assentosPedidos)];
-  if (assentosUnicos.length > 0 && assentosUnicos.length !== quantidade) {
-    const err = new Error(`Selecione exatamente ${quantidade} assento(s) no mapa`);
-    err.status = 400;
-    throw err;
-  }
-  let assentosSimulados = null;
-  if (assentosUnicos.length > 0) {
-    const { ocupados } = await listarAssentosSimulados(eventoId);
-    const ocupadosSet = new Set(ocupados);
-    const conflito = assentosUnicos.filter((s) => ocupadosSet.has(s));
-    if (conflito.length) {
-      const err = new Error(
-        `Assento(s) já escolhido(s) por outra pessoa: ${conflito.join(", ")}. Abra o mapa de novo e escolha outros.`
-      );
-      err.status = 409;
-      err.data = { assentosOcupados: ocupados };
-      throw err;
-    }
-    assentosSimulados = assentosUnicos.join(",");
-  }
   const participante = await prisma.participante.create({
     data: {
       nome: nomeResponsavel,
@@ -141,7 +112,6 @@ async function criarInscricao(eventoId, dados) {
       status: statusInicial,
       valor: valorTotal,
       quantidade,
-      assentosSimulados,
       observacao: metodo === "DINHEIRO" ? "Pagamento em dinheiro — aguardando confirmação do organizador." : null,
       pagamento: {
         create: {
