@@ -6,5 +6,10 @@
 /admin/sw.js  /admin/sw.js  200!
 /admin/manifest.webmanifest  /admin/manifest.webmanifest  200!
 
-# SPA
+# Admin: HTML próprio (OG WhatsApp diferente do site público)
+/admin  /admin.html  200!
+/admin/  /admin.html  200!
+/admin/*  /admin.html  200!
+
+# SPA público
 /*    /index.html   200

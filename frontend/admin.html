@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/image/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#e11d2e" />
+    <title>CineGeração Admin · Painel da equipe</title>
+    <meta
+      name="description"
+      content="Painel admin do CineGeração — login, chamada, comprovantes e PIX. Acesso da equipe Geração Eucarística."
+    />
+    <!-- Preview WhatsApp específico do /admin (diferente do site público) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CineGeração Admin" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:url" content="https://geucaristica.com.br/admin" />
+    <meta property="og:title" content="🔐 CineGeração Admin · Painel da equipe" />
+    <meta
+      property="og:description"
+      content="Acesso da equipe: login, chamada, comprovantes e PIX · Geração Eucarística"
+    />
+    <meta property="og:image" content="https://geucaristica.com.br/image/og-admin.jpg?v=1" />
+    <meta property="og:image:secure_url" content="https://geucaristica.com.br/image/og-admin.jpg?v=1" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="CineGeração Admin" />
+    <link rel="image_src" href="https://geucaristica.com.br/image/og-admin.jpg?v=1" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="🔐 CineGeração Admin · Painel da equipe" />
+    <meta
+      name="twitter:description"
+      content="Acesso da equipe: login, chamada, comprovantes e PIX · Geração Eucarística"
+    />
+    <meta name="twitter:image" content="https://geucaristica.com.br/image/og-admin.jpg?v=1" />
+    <link rel="manifest" href="/admin/manifest.webmanifest" />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('cg_theme') || 'light';
+          if (t === 'dark') document.documentElement.classList.add('dark');
+          document.documentElement.style.colorScheme = t === 'dark' ? 'dark' : 'light';
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Bangers&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
