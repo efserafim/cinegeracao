@@ -19,6 +19,7 @@ export default function ComprovantePage() {
   const [pdfUrl, setPdfUrl] = useState(null);
   const [ocrBusy, setOcrBusy] = useState(false);
   const [ocrTried, setOcrTried] = useState(false);
+  const [conferindoExtrato, setConferindoExtrato] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -70,7 +71,11 @@ export default function ComprovantePage() {
     setOcrBusy(true);
     api.post(`/inscricoes/${id}/reprocessar-ocr`).then(({ data }) => {
       setItem(data.data);
-      if (data.data?.pagamento?.alerta !== "OCR_FALHOU") {
+      if (data.data?.autoConfirmado) {
+        setMsg("Valor do PIX confere — ingresso e e-mail liberados automaticamente.");
+        setShowConfirmAnim(true);
+        window.setTimeout(() => setShowConfirmAnim(false), 2800);
+      } else if (data.data?.pagamento?.alerta !== "OCR_FALHOU") {
         setMsg("OCR reprocessado com sucesso.");
       }
     }).catch(() => {
@@ -171,11 +176,30 @@ export default function ComprovantePage() {
     try {
       const { data } = await api.post(`/inscricoes/${id}/reprocessar-ocr`);
       setItem(data.data);
-      setMsg("OCR reprocessado.");
+      if (data.data?.autoConfirmado) {
+        setMsg("Valor do PIX confere — ingresso e e-mail liberados automaticamente.");
+        setShowConfirmAnim(true);
+        window.setTimeout(() => setShowConfirmAnim(false), 2800);
+      } else {
+        setMsg(data.message || "OCR reprocessado.");
+      }
     } catch (err) {
       setMsg(err.response?.data?.message || "Falha ao reprocessar OCR.");
     } finally {
       setOcrBusy(false);
+    }
+  }
+
+  async function conferirExtrato() {
+    setConferindoExtrato(true);
+    try {
+      const { data } = await api.post(`/inscricoes/${id}/conferir-extrato`);
+      setItem(data.data);
+      setMsg("Conferência no extrato do banco registrada.");
+    } catch (err) {
+      setMsg(err.response?.data?.message || "Falha ao marcar conferência no extrato.");
+    } finally {
+      setConferindoExtrato(false);
     }
   }
 
@@ -195,6 +219,15 @@ export default function ComprovantePage() {
       ingressos.find((ig) => ig.pessoaId === pessoa.id || ig.nome === pessoa.nome);
     return !ingresso?.codigo;
   });
+  const podeConfirmar = [
+    "AGUARDANDO_CONFIRMACAO",
+    "COMPROVANTE_ENVIADO",
+    "OCR_PROCESSADO",
+    "AGUARDANDO_PAGAMENTO",
+    "PAGAMENTO_RECUSADO",
+  ].includes(item.status);
+  const jaLiberado = ["INGRESSO_LIBERADO", "PAGAMENTO_CONFIRMADO"].includes(item.status);
+  const precisaConferirExtrato = jaLiberado && p?.metodo !== "DINHEIRO" && !p?.conferidoExtratoEm;
 
   return (
     <div className="space-y-6">
@@ -229,9 +262,19 @@ export default function ComprovantePage() {
             ← Voltar
           </Link>
           <h1 className="font-display text-3xl">{item.participante?.nome}</h1>
-          <div className="mt-1 flex items-center gap-2">
+          <div className="mt-1 flex flex-wrap items-center gap-2">
             <StatusBadge status={item.status} />
             <span className="text-sm text-[var(--color-ink-soft)]">{item.codigo}</span>
+            {p?.liberacaoAutomatica && (
+              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
+                Liberado pelo OCR
+              </span>
+            )}
+            {p?.conferidoExtratoEm && (
+              <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-semibold text-sky-800 dark:bg-sky-900/40 dark:text-sky-200">
+                Extrato conferido
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -392,12 +435,21 @@ export default function ComprovantePage() {
           <TextArea label="Observação" rows={3} value={obs} onChange={(e) => setObs(e.target.value)} />
 
           <div className="flex flex-wrap gap-2">
-            <Button onClick={confirmar} disabled={confirmando}>
-              {confirmando ? "Confirmando…" : "Confirmar pagamento"}
-            </Button>
-            <Button variant="danger" onClick={recusar}>
-              Recusar
-            </Button>
+            {podeConfirmar && (
+              <>
+                <Button onClick={confirmar} disabled={confirmando}>
+                  {confirmando ? "Confirmando…" : "Confirmar pagamento"}
+                </Button>
+                <Button variant="danger" onClick={recusar}>
+                  Recusar
+                </Button>
+              </>
+            )}
+            {precisaConferirExtrato && (
+              <Button onClick={conferirExtrato} disabled={conferindoExtrato}>
+                {conferindoExtrato ? "Salvando…" : "Conferir no extrato do banco"}
+              </Button>
+            )}
             <Button variant="secondary" onClick={salvarObs}>
               Editar observação
             </Button>
@@ -405,6 +457,12 @@ export default function ComprovantePage() {
               Cancelar inscrição
             </Button>
           </div>
+          {precisaConferirExtrato && (
+            <p className="text-xs text-[var(--color-ink-soft)]">
+              Ingresso já liberado{p?.liberacaoAutomatica ? " automaticamente pelo valor do PIX" : ""}.
+              Use o botão acima só para registrar que você bateu a inscrição com o extrato da conta.
+            </p>
+          )}
 
           {whatsapp && (
             <a

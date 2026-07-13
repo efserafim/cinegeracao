@@ -33,7 +33,13 @@ async function enviarComprovante(req, res, next) {
       throw err;
     }
     const data = await inscricaoService.enviarComprovante(req.params.codigo, req.file);
-    return success(res, data, "Comprovante enviado e OCR processado");
+    return success(
+      res,
+      data,
+      data.autoConfirmado
+        ? "Valor do PIX confere — ingresso e e-mail liberados automaticamente"
+        : "Comprovante enviado e OCR processado"
+    );
   } catch (err) {
     return next(err);
   }
@@ -88,8 +94,23 @@ async function liberarIngressos(req, res, next) {
 async function reprocessarOcr(req, res, next) {
   try {
     const data = await inscricaoService.reprocessarOcr(req.params.id);
-    return success(res, data, "OCR reprocessado");
+    return success(
+      res,
+      data,
+      data.autoConfirmado
+        ? "OCR ok — ingresso e e-mail liberados automaticamente"
+        : "OCR reprocessado"
+    );
   } catch (err) {
+    return next(err);
+  }
+}
+async function conferirExtrato(req, res, next) {
+  try {
+    const data = await inscricaoService.marcarConferidoExtrato(req.params.id, req.admin.id, req.ip);
+    return success(res, data, "Conferência no extrato registrada");
+  } catch (err) {
+    err.expose = true;
     return next(err);
   }
 }
@@ -204,6 +225,7 @@ module.exports = {
   liberarIngressos,
   reenviarEmail,
   reprocessarOcr,
+  conferirExtrato,
   recusar,
   cancelar,
   excluir,

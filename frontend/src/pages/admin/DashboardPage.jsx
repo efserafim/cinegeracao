@@ -192,6 +192,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState(null);
   const [eventos, setEventos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [marcandoExtrato, setMarcandoExtrato] = useState({});
 
   useEffect(() => {
     Promise.all([api.get("/inscricoes/dashboard/global"), api.get("/eventos")])
@@ -202,6 +203,25 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  async function marcarExtrato(id) {
+    setMarcandoExtrato((prev) => ({ ...prev, [id]: true }));
+    try {
+      await api.post(`/inscricoes/${id}/conferir-extrato`);
+      setStats((prev) =>
+        prev
+          ? {
+              ...prev,
+              conferirExtrato: (prev.conferirExtrato || []).filter((x) => x.id !== id),
+            }
+          : prev
+      );
+    } catch {
+      /* silent — admin can open detail */
+    } finally {
+      setMarcandoExtrato((prev) => ({ ...prev, [id]: false }));
+    }
+  }
+
   if (loading) return <Loading />;
 
   const abertos = eventos.filter((e) => e.status === "ABERTO");
@@ -211,6 +231,7 @@ export default function DashboardPage() {
   const pendentes = stats?.pendentes ?? 0;
   const presentes = stats?.presentes ?? 0;
   const pendentesRecentes = stats?.pendentesRecentes || [];
+  const conferirExtrato = stats?.conferirExtrato || [];
   const taxaConfirmacao = stats?.inscritos
     ? Math.round(((stats?.confirmadas || 0) / stats.inscritos) * 100)
     : 0;
@@ -300,7 +321,7 @@ export default function DashboardPage() {
                   {pendentes} comprovante{pendentes === 1 ? "" : "s"} aguardando conferência
                 </p>
                 <p className="text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
-                  Confirme ou recuse o pagamento para liberar o ingresso.
+                  Só quando o valor do PIX não bate ou o OCR falha. Se o valor confere, o ingresso já sai sozinho.
                 </p>
               </div>
             </div>
@@ -335,6 +356,47 @@ export default function DashboardPage() {
               ))}
             </ul>
           )}
+        </section>
+      )}
+
+      {conferirExtrato.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-display text-xl text-[var(--color-ink)] dark:text-white">
+            Conferir no extrato do banco
+          </h2>
+          <p className="text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
+            Ingressos já liberados (muitos pelo valor do PIX). Marque quando bater com o extrato da conta.
+          </p>
+          <ul className="divide-y divide-black/5 overflow-hidden rounded-[1.5rem] bg-white/80 ring-1 ring-black/5 dark:divide-white/10 dark:bg-slate-900/70 dark:ring-white/10">
+            {conferirExtrato.map((item) => (
+              <li
+                key={item.id}
+                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+              >
+                <Link to={`/admin/inscricoes/${item.id}`} className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-[var(--color-ink)] dark:text-white">
+                    {item.nome}
+                    {item.liberacaoAutomatica && (
+                      <span className="ml-2 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+                        auto
+                      </span>
+                    )}
+                  </p>
+                  <p className="truncate text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
+                    {item.codigo} · {formatMoney(item.valor)}
+                    {item.idTransacao ? ` · ID ${item.idTransacao}` : ""}
+                  </p>
+                </Link>
+                <Button
+                  className="!rounded-full"
+                  disabled={Boolean(marcandoExtrato[item.id])}
+                  onClick={() => marcarExtrato(item.id)}
+                >
+                  {marcandoExtrato[item.id] ? "…" : "Conferido"}
+                </Button>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 

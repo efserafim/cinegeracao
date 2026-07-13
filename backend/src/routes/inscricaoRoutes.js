@@ -35,6 +35,7 @@ router.post("/:id/confirmar", authAdmin, inscricaoController.confirmar);
 router.post("/:id/reenviar-email", authAdmin, inscricaoController.reenviarEmail);
 router.post("/:id/liberar-ingressos", authAdmin, inscricaoController.liberarIngressos);
 router.post("/:id/reprocessar-ocr", authAdmin, inscricaoController.reprocessarOcr);
+router.post("/:id/conferir-extrato", authAdmin, inscricaoController.conferirExtrato);
 router.post("/:id/recusar", authAdmin, inscricaoController.recusar);
 router.post("/:id/cancelar", authAdmin, inscricaoController.cancelar);
 router.delete("/:id", authAdmin, inscricaoController.excluir);

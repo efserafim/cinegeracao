@@ -225,6 +225,24 @@ async function buscarPorWhatsApp(telefoneRaw) {
   });
   return list.map(formatInscricao);
 }
+function valorOcrConfere(valorDetectado, valorEsperado) {
+  if (valorDetectado == null || valorEsperado == null) return false;
+  return Math.abs(Number(valorDetectado) - Number(valorEsperado)) <= 0.01;
+}
+
+async function tentarAutoConfirmacaoPorOcr(inscricaoId, ocr, valorEsperado) {
+  if (!valorOcrConfere(ocr?.valor, valorEsperado)) {
+    return { auto: false };
+  }
+  try {
+    const result = await confirmarPagamento(inscricaoId, null, null, { automatico: true });
+    return { auto: true, result };
+  } catch (err) {
+    console.error("[autoConfirmacao OCR]", err.message || err);
+    return { auto: false, error: err.message };
+  }
+}
+
 async function enviarComprovante(codigo, file) {
   const inscricao = await prisma.inscricao.findUnique({
     where: { codigo },
@@ -296,7 +314,24 @@ async function enviarComprovante(codigo, file) {
     where: { id: inscricao.id },
     data: { status: "AGUARDANDO_CONFIRMACAO" }
   });
+
   const nome = inscricao.participante?.nome || "Participante";
+  const auto = await tentarAutoConfirmacaoPorOcr(
+    inscricao.id,
+    ocr,
+    Number(inscricao.pagamento.valorEsperado)
+  );
+
+  if (auto.auto) {
+    notifyAdmins({
+      title: "PIX liberado automaticamente",
+      body: `${nome} — valor confere · ${inscricao.codigo}`,
+      url: `/admin/inscricoes/${inscricao.id}`,
+    }).catch(() => {});
+    const dados = await buscarPorCodigo(codigo);
+    return { ...dados, autoConfirmado: true, emailResult: auto.result?.emailResult };
+  }
+
   notifyAdmins({
     title: "Comprovante pendente",
     body: `${nome} enviou comprovante — ${inscricao.codigo}`,
@@ -356,6 +391,19 @@ async function reprocessarOcr(id) {
       data: { status: "AGUARDANDO_CONFIRMACAO" }
     });
   }
+
+  if (["AGUARDANDO_CONFIRMACAO", "COMPROVANTE_ENVIADO", "OCR_PROCESSADO"].includes(inscricao.status)) {
+    const auto = await tentarAutoConfirmacaoPorOcr(
+      inscricao.id,
+      ocr,
+      Number(inscricao.pagamento.valorEsperado)
+    );
+    if (auto.auto) {
+      const dados = await buscarAdmin(id);
+      return { ...dados, autoConfirmado: true, emailResult: auto.result?.emailResult };
+    }
+  }
+
   return buscarAdmin(id);
 }
 async function listarPorEvento(eventoId, filtros = {}) {
@@ -399,7 +447,8 @@ async function buscarAdmin(id) {
   }
   return formatInscricao(inscricao);
 }
-async function confirmarPagamento(id, adminId, ip) {
+async function confirmarPagamento(id, adminId, ip, opcoes = {}) {
+  const automatico = Boolean(opcoes.automatico);
   const inscricao = await prisma.inscricao.findUnique({
     where: { id },
     include: { participante: true, evento: true, pagamento: true, pessoas: true }
@@ -419,11 +468,19 @@ async function confirmarPagamento(id, adminId, ip) {
     err.status = 400;
     throw err;
   }
+  if (["INGRESSO_LIBERADO", "PAGAMENTO_CONFIRMADO"].includes(inscricao.status) && inscricao.pagamento.confirmadoEm) {
+    const atual = await buscarAdmin(id);
+    return { ...atual, emailResult: { sent: false, reason: "Já estava confirmado" }, jaConfirmado: true };
+  }
 
   await prisma.$transaction([
     prisma.pagamento.update({
       where: { inscricaoId: id },
-      data: { confirmadoEm: new Date(), recusadoEm: null }
+      data: {
+        confirmadoEm: new Date(),
+        recusadoEm: null,
+        liberacaoAutomatica: automatico
+      }
     }),
     prisma.inscricao.update({
       where: { id },
@@ -537,11 +594,14 @@ async function confirmarPagamento(id, adminId, ip) {
     codigoIngresso: codigosIngresso
   });
   await registrarLog({
-    adminId,
-    acao: "PAGAMENTO_CONFIRMADO",
+    adminId: adminId || null,
+    acao: automatico ? "PAGAMENTO_AUTO_CONFIRMADO_OCR" : "PAGAMENTO_CONFIRMADO",
     entidade: "Inscricao",
     entidadeId: id,
-    ip
+    detalhes: automatico
+      ? { origem: "ocr_valor", valorDetectado: inscricao.pagamento.valorDetectado }
+      : undefined,
+    ip: ip || null
   });
   const result = await buscarAdmin(id).catch((err) => {
     console.error("[confirmarPagamento] buscarAdmin:", err);
@@ -564,7 +624,7 @@ async function confirmarPagamento(id, adminId, ip) {
       }
     };
   });
-  return { ...result, whatsappLink, emailResult, ingresso };
+  return { ...result, whatsappLink, emailResult, ingresso, autoConfirmado: automatico };
 }
 
 async function liberarIngressosFaltantes(id, adminId, ip) {
@@ -768,7 +828,16 @@ async function dashboard(eventoId) {
 }
 async function dashboardGlobal() {
   const statusPendentes = ["AGUARDANDO_CONFIRMACAO", "COMPROVANTE_ENVIADO", "OCR_PROCESSADO"];
-  const [eventos, inscritos, confirmadas, pendentes, valor, presentes, pendentesRaw] = await Promise.all([
+  const [
+    eventos,
+    inscritos,
+    confirmadas,
+    pendentes,
+    valor,
+    presentes,
+    pendentesRaw,
+    conferirExtratoRaw
+  ] = await Promise.all([
     prisma.evento.count(),
     prisma.inscricao.count(),
     prisma.inscricao.count({
@@ -790,7 +859,31 @@ async function dashboardGlobal() {
       take: 5,
       include: {
         participante: { select: { nome: true } },
-        evento: { select: { nome: true } }
+        evento: { select: { nome: true } },
+        pagamento: { select: { alerta: true, valorDetectado: true, valorEsperado: true } }
+      }
+    }),
+    prisma.inscricao.findMany({
+      where: {
+        status: { in: ["INGRESSO_LIBERADO", "PAGAMENTO_CONFIRMADO"] },
+        pagamento: {
+          metodo: "PIX",
+          conferidoExtratoEm: null
+        }
+      },
+      orderBy: { atualizadoEm: "desc" },
+      take: 8,
+      include: {
+        participante: { select: { nome: true, telefone: true } },
+        evento: { select: { nome: true } },
+        pagamento: {
+          select: {
+            valorEsperado: true,
+            valorDetectado: true,
+            idTransacao: true,
+            liberacaoAutomatica: true
+          }
+        }
       }
     })
   ]);
@@ -800,7 +893,20 @@ async function dashboardGlobal() {
     nome: i.participante?.nome || "—",
     eventoNome: i.evento?.nome || "—",
     status: i.status,
+    alerta: i.pagamento?.alerta || null,
     criadoEm: i.criadoEm
+  }));
+  const conferirExtrato = conferirExtratoRaw.map((i) => ({
+    id: i.id,
+    codigo: i.codigo,
+    nome: i.participante?.nome || "—",
+    telefone: i.participante?.telefone || null,
+    eventoNome: i.evento?.nome || "—",
+    valor: Number(i.pagamento?.valorEsperado || i.valor || 0),
+    valorDetectado:
+      i.pagamento?.valorDetectado != null ? Number(i.pagamento.valorDetectado) : null,
+    idTransacao: i.pagamento?.idTransacao || null,
+    liberacaoAutomatica: Boolean(i.pagamento?.liberacaoAutomatica)
   }));
   return {
     eventos,
@@ -809,8 +915,43 @@ async function dashboardGlobal() {
     pendentes,
     presentes,
     valorArrecadado: Number(valor._sum.valor || 0),
-    pendentesRecentes
+    pendentesRecentes,
+    conferirExtrato
   };
+}
+
+async function marcarConferidoExtrato(id, adminId, ip) {
+  const inscricao = await prisma.inscricao.findUnique({
+    where: { id },
+    include: { pagamento: true }
+  });
+  if (!inscricao) {
+    const err = new Error("Inscrição não encontrada");
+    err.status = 404;
+    throw err;
+  }
+  if (!inscricao.pagamento) {
+    const err = new Error("Pagamento não encontrado");
+    err.status = 400;
+    throw err;
+  }
+  if (!["INGRESSO_LIBERADO", "PAGAMENTO_CONFIRMADO"].includes(inscricao.status)) {
+    const err = new Error("Só é possível conferir extrato após liberar o ingresso");
+    err.status = 400;
+    throw err;
+  }
+  await prisma.pagamento.update({
+    where: { id: inscricao.pagamento.id },
+    data: { conferidoExtratoEm: new Date() }
+  });
+  await registrarLog({
+    adminId,
+    acao: "CONFERIDO_EXTRATO_BANCO",
+    entidade: "Inscricao",
+    entidadeId: id,
+    ip
+  });
+  return buscarAdmin(id);
 }
 function formatInscricao(i) {
   const pessoas = (i.pessoas || []).map((p) => ({
@@ -890,6 +1031,8 @@ function formatInscricao(i) {
       alerta: i.pagamento.alerta,
       confirmadoEm: i.pagamento.confirmadoEm,
       recusadoEm: i.pagamento.recusadoEm,
+      liberacaoAutomatica: Boolean(i.pagamento.liberacaoAutomatica),
+      conferidoExtratoEm: i.pagamento.conferidoExtratoEm || null,
       comprovante: i.pagamento.comprovante || null
     } : null,
     ingresso,
@@ -974,6 +1117,7 @@ module.exports = {
   cancelar,
   excluir,
   atualizarObservacao,
+  marcarConferidoExtrato,
   dashboard,
   dashboardGlobal,
   STATUS_OCUPAM_VAGA

@@ -105,10 +105,11 @@ function avaliarAlerta(campos, valorEsperado) {
   if (!campos.valor && !campos.data && !campos.idTransacao) {
     return "OCR_FALHOU";
   }
-  if (campos.valor != null) {
-    const diff = Math.abs(Number(campos.valor) - Number(valorEsperado));
-    if (diff > 0.01) return "VALOR_INCORRETO";
+  if (campos.valor == null) {
+    return "NECESSITA_CONFERENCIA";
   }
+  const diff = Math.abs(Number(campos.valor) - Number(valorEsperado));
+  if (diff > 0.01) return "VALOR_INCORRETO";
   if (campos.data) {
     const agora = new Date();
     const diffMs = agora.getTime() - campos.data.getTime();
