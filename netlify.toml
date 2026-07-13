@@ -7,7 +7,7 @@
   for = "/sw.js"
   [headers.values]
     Cache-Control = "no-cache"
-    Service-Worker-Allowed = "/"
+    Service-Worker-Allowed = "/admin"
 
 [[headers]]
   for = "/manifest.webmanifest"

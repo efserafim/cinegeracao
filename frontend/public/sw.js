@@ -1,24 +1,30 @@
 /* Service worker — PWA + push (admin) */
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-  event.waitUntil(caches.open("cg-shell-v1").then((cache) => cache.addAll(["/", "/admin", "/manifest.webmanifest"])));
+  event.waitUntil(caches.open("cg-admin-v2").then((cache) => cache.addAll(["/admin", "/admin/login", "/manifest.webmanifest"])));
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== "cg-admin-v2").map((k) => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
   if (request.url.includes("/api/")) return;
+  const url = new URL(request.url);
+  if (!url.pathname.startsWith("/admin")) return;
   event.respondWith(
     caches.match(request).then((cached) => {
       const network = fetch(request)
         .then((res) => {
           if (res && res.ok && request.url.startsWith(self.location.origin)) {
             const copy = res.clone();
-            caches.open("cg-shell-v1").then((cache) => cache.put(request, copy));
+            caches.open("cg-admin-v2").then((cache) => cache.put(request, copy));
           }
           return res;
         })

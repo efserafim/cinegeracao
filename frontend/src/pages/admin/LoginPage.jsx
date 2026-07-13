@@ -4,6 +4,8 @@ import { useForm } from "react-hook-form";
 import { useAuth } from "../../context/AuthContext";
 import { Button, Input } from "../../components/ui";
 import { logoImg } from "../../assets/brand";
+import AdminPwaBootstrap from "../../components/admin/AdminPwaBootstrap";
+
 export default function LoginPage() {
   const { login, supabaseConfigured } = useAuth();
   const navigate = useNavigate();
@@ -24,7 +26,9 @@ export default function LoginPage() {
       setLoading(false);
     }
   }
-  return <div className="bg-page flex min-h-screen items-center justify-center px-4">
+  return (
+    <div className="bg-page flex min-h-screen items-center justify-center px-4">
+      <AdminPwaBootstrap />
       <form
     onSubmit={handleSubmit(onSubmit)}
     autoComplete="off"
@@ -62,5 +66,6 @@ export default function LoginPage() {
             Cadastre o usuário em Supabase → Authentication → Users (Auto Confirm).
           </p>}
       </form>
-    </div>;
+    </div>
+  );
 }

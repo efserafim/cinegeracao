@@ -1,11 +1,18 @@
 import { Link, Outlet } from "react-router-dom";
 import { Moon, Sun } from "lucide-react";
+import { useEffect } from "react";
 import { useTheme } from "../context/ThemeContext";
 import { logoImg } from "../assets/brand";
 import SpiderMark from "../components/SpiderMark";
+import { disablePublicPwaInstall } from "../lib/pwa";
 
 export default function PublicLayout() {
   const { theme, toggle } = useTheme();
+
+  useEffect(() => {
+    disablePublicPwaInstall();
+  }, []);
+
   return (
     <div className="bg-page min-h-screen">
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#070a12]/95 backdrop-blur-md">

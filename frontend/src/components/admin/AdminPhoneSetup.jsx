@@ -5,7 +5,7 @@ import api from "../../services/api";
 import {
   getExistingPushSubscription,
   isStandaloneDisplay,
-  registerServiceWorker,
+  enableAdminPwa,
   urlBase64ToUint8Array,
 } from "../../lib/pwa";
 
@@ -17,7 +17,7 @@ export default function AdminPhoneSetup() {
   const [vapidOk, setVapidOk] = useState(false);
 
   useEffect(() => {
-    registerServiceWorker();
+    enableAdminPwa();
 
     const onBip = (e) => {
       e.preventDefault();
@@ -89,7 +89,7 @@ export default function AdminPhoneSetup() {
         return;
       }
 
-      const reg = (await registerServiceWorker()) || (await navigator.serviceWorker.ready);
+      const reg = (await enableAdminPwa()) || (await navigator.serviceWorker.ready);
       let sub = await reg.pushManager.getSubscription();
       if (!sub) {
         sub = await reg.pushManager.subscribe({

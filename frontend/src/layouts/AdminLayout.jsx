@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { logoImg } from "../assets/brand";
 import SpiderMark from "../components/SpiderMark";
+import AdminPwaBootstrap from "../components/admin/AdminPwaBootstrap";
 
 const navGroups = [
   {
@@ -36,6 +37,7 @@ export default function AdminLayout() {
 
   return (
     <div className="bg-page flex min-h-screen">
+      <AdminPwaBootstrap />
       <aside className="relative hidden w-64 shrink-0 overflow-hidden border-r border-black/5 bg-white/70 p-5 backdrop-blur dark:border-white/10 dark:bg-slate-900/70 md:block">
         <SpiderMark className="pointer-events-none absolute -right-6 bottom-8 h-28 w-28 opacity-[0.06]" />
         <Link to="/admin" className="relative flex items-center gap-2.5">
