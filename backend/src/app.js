@@ -12,6 +12,7 @@ const authRoutes = require("./routes/authRoutes");
 const eventoRoutes = require("./routes/eventoRoutes");
 const inscricaoRoutes = require("./routes/inscricaoRoutes");
 const ingressoRoutes = require("./routes/ingressoRoutes");
+const pushRoutes = require("./routes/pushRoutes");
 const app = express();
 // Render (e outros proxies) enviam X-Forwarded-For; necessário para o rate-limit
 app.set("trust proxy", 1);
@@ -63,6 +64,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/eventos", eventoRoutes);
 app.use("/api/inscricoes", inscricaoRoutes);
 app.use("/api/ingressos", ingressoRoutes);
+app.use("/api/admin/push", pushRoutes);
 app.use(notFound);
 app.use(errorHandler);
 module.exports = app;

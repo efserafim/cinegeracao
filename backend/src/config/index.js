@@ -28,6 +28,11 @@ const config = {
   // HTTPS — recomendado no Render (SMTP Gmail costuma dar Connection timeout)
   sendgridApiKey: (process.env.SENDGRID_API_KEY || "").trim(),
   brevoApiKey: (process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY || "").trim(),
-  resendApiKey: (process.env.RESEND_API_KEY || "").trim()
+  resendApiKey: (process.env.RESEND_API_KEY || "").trim(),
+  vapid: {
+    publicKey: (process.env.VAPID_PUBLIC_KEY || "").trim(),
+    privateKey: (process.env.VAPID_PRIVATE_KEY || "").trim(),
+    subject: (process.env.VAPID_SUBJECT || "mailto:setorjuventude.bacaxa@gmail.com").trim()
+  }
 };
 module.exports = config;

@@ -16,6 +16,7 @@ import {
 import api, { formatDate, formatMoney, STATUS_LABELS } from "../../services/api";
 import { Loading, Button } from "../../components/ui";
 import SpiderMark from "../../components/SpiderMark";
+import AdminPhoneSetup from "../../components/admin/AdminPhoneSetup";
 import { useAuth } from "../../context/AuthContext";
 
 const STATUS_EVENTO = {
@@ -221,6 +222,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      <AdminPhoneSetup />
 
       {(pendentes > 0 || pendentesRecentes.length > 0) && (
         <section className="space-y-3">

@@ -9,6 +9,7 @@ const { enviarConfirmacaoInscricao } = require("./emailService");
 const { registrarLog } = require("./logService");
 const { contarOcupadas, listarAssentosSimulados, STATUS_OCUPAM_VAGA } = require("./eventoService");
 const { salvarComprovante } = require("./storageService");
+const { notifyAdmins } = require("./pushService");
 
 const MAX_INGRESSOS = 10;
 
@@ -167,6 +168,13 @@ async function criarInscricao(eventoId, dados) {
     margin: 2,
     width: 280
   });
+  if (metodo === "DINHEIRO") {
+    notifyAdmins({
+      title: "Pagamento em dinheiro",
+      body: `${participante.nome} se inscreveu — ${inscricao.codigo}`,
+      url: `/admin/inscricoes/${inscricao.id}`,
+    }).catch(() => {});
+  }
   return {
     inscricao: formatInscricao(inscricao),
     pagamento: {
@@ -194,7 +202,7 @@ async function buscarPorCodigo(codigo) {
 async function enviarComprovante(codigo, file) {
   const inscricao = await prisma.inscricao.findUnique({
     where: { codigo },
-    include: { pagamento: { include: { comprovante: true } }, evento: true }
+    include: { pagamento: { include: { comprovante: true } }, evento: true, participante: true }
   });
   if (!inscricao) {
     const err = new Error("Inscrição não encontrada");
@@ -262,6 +270,12 @@ async function enviarComprovante(codigo, file) {
     where: { id: inscricao.id },
     data: { status: "AGUARDANDO_CONFIRMACAO" }
   });
+  const nome = inscricao.participante?.nome || "Participante";
+  notifyAdmins({
+    title: "Comprovante pendente",
+    body: `${nome} enviou comprovante — ${inscricao.codigo}`,
+    url: `/admin/inscricoes/${inscricao.id}`,
+  }).catch(() => {});
   return buscarPorCodigo(codigo);
 }
 async function reprocessarOcr(id) {

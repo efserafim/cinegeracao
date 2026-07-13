@@ -278,7 +278,7 @@ function buildConfirmacaoHtml({
       <p style="margin:10px 0 0;font-size:13px;color:#f5c542;font-family:Arial,sans-serif">${VERSO_BIBLICO.referencia}</p>
       <p style="margin:16px 0 0;font-size:13px;color:rgba(255,255,255,.65);font-family:Arial,sans-serif;line-height:1.5">
         Que Deus abençoe este encontro e cada um de vocês.<br>
-        Com carinho, equipe <strong style="color:#fff">CineGeração</strong>.
+        Com carinho, coordenação <strong style="color:#fff">Grupo Jovem Geração Eucarística</strong>.
       </p>
     </div>
   </div>
@@ -345,7 +345,7 @@ async function enviarConfirmacaoInscricao({
     "",
     `"${VERSO_BIBLICO.texto}" (${VERSO_BIBLICO.referencia})`,
     "",
-    "Que Deus abençoe este encontro. Equipe CineGeração."
+    "Que Deus abençoe este encontro. Coordenação Grupo Jovem Geração Eucarística."
   ].join("\n");
 
   if (!emailConfigurado()) {

@@ -21,6 +21,7 @@ model Admin {
 
   logs             Log[]
   validacoesTicket ValidacaoTicket[]
+  pushSubs         AdminPushSubscription[]
 
   @@map("admins")
 }
@@ -255,4 +256,20 @@ model Configuracao {
   atualizadoEm DateTime @updatedAt @map("atualizado_em")
 
   @@map("configuracoes")
+}
+
+model AdminPushSubscription {
+  id        String   @id @default(uuid())
+  adminId   String   @map("admin_id")
+  endpoint  String   @unique @db.Text
+  p256dh    String   @db.Text
+  auth      String   @db.Text
+  userAgent String?  @map("user_agent") @db.Text
+  criadoEm  DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@map("admin_push_subscriptions")
 }
