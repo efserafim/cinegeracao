@@ -292,78 +292,63 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <section className="relative overflow-hidden rounded-[1.9rem] bg-[#070a12] text-white shadow-[0_24px_60px_-28px_rgba(225,29,46,0.55)] animate-swing">
-        <div className="pointer-events-none absolute inset-0 dash-sunburst" />
-        <div className="pointer-events-none absolute inset-0 web-mask opacity-35" />
-        <div className="pointer-events-none absolute -left-10 top-0 h-full w-16 bg-gradient-to-b from-[#e11d2e] via-[#f5c542] to-[#1a6cff] opacity-90" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#f5c542]/70 to-transparent" />
+      <section className="relative overflow-hidden rounded-[1.35rem] bg-[#070a12] text-white shadow-[0_16px_40px_-24px_rgba(225,29,46,0.5)] animate-swing">
+        <div className="pointer-events-none absolute inset-0 dash-sunburst opacity-70" />
+        <div className="pointer-events-none absolute inset-0 web-mask opacity-25" />
+        <div className="pointer-events-none absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-[#e11d2e] via-[#f5c542] to-[#1a6cff]" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#f5c542]/60 to-transparent" />
 
         <SpiderMark
           tone="light"
-          className="pointer-events-none absolute right-3 bottom-4 h-14 w-14 opacity-15 animate-spidey-float sm:right-8 sm:h-16 sm:w-16"
+          className="pointer-events-none absolute right-3 bottom-2 h-10 w-10 opacity-12 animate-spidey-float sm:right-5 sm:h-12 sm:w-12"
         />
 
-        <div className="relative flex flex-col gap-6 px-5 py-6 sm:px-8 sm:py-8 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 items-start gap-4 sm:gap-5">
-            <div className="relative shrink-0">
-              <span className="absolute -inset-2 rounded-full bg-[radial-gradient(circle,rgba(245,197,66,0.45),transparent_70%)]" />
-              <img
-                src={logoImg}
-                alt="Geração Eucarística"
-                className="relative h-16 w-16 rounded-full ring-2 ring-[#f5c542]/80 sm:h-20 sm:w-20"
-              />
-            </div>
+        <div className="relative flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:py-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <img
+              src={logoImg}
+              alt="Geração Eucarística"
+              className="h-11 w-11 shrink-0 rounded-full ring-2 ring-[#f5c542]/75 sm:h-12 sm:w-12"
+            />
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#f5c542]">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#f5c542]">
                 Geração Eucarística · CineGeração
               </p>
-              <h1 className="mt-1 font-display text-4xl tracking-wide sm:text-5xl">
+              <h1 className="font-display text-xl leading-none tracking-wide sm:text-2xl">
                 <span className="spidey-title text-[#e11d2e]">CineGeração</span>
+                <span className="ml-2 text-white/90">· Olá, {primeiroNome}</span>
               </h1>
-              <p className="mt-2 font-display text-2xl tracking-wide text-white/95 sm:text-3xl">
-                Olá, {primeiroNome}
-              </p>
               {eventoPrincipal ? (
-                <div className="mt-3 max-w-xl space-y-1.5">
-                  <p className="inline-flex flex-wrap items-center gap-2 text-sm text-white/75">
-                    <StatusBadge status={eventoPrincipal.status} />
-                    <span>
-                      {eventoAbertoOuNenhum ? (
-                        <>
-                          Missão ativa: <strong className="text-white">{eventoPrincipal.nome}</strong>
-                        </>
-                      ) : (
-                        <>
-                          Sem evento aberto · último:{" "}
-                          <strong className="text-white">{eventoPrincipal.nome}</strong>
-                        </>
-                      )}
-                    </span>
-                  </p>
-                  <p className="text-sm text-white/55">
+                <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/65">
+                  <StatusBadge status={eventoPrincipal.status} />
+                  <span className="truncate">
+                    {eventoAbertoOuNenhum ? "Missão ativa: " : "Último: "}
+                    <strong className="font-medium text-white/90">{eventoPrincipal.nome}</strong>
+                  </span>
+                  <span className="text-white/45">
                     {formatDate(eventoPrincipal.data)} · {eventoPrincipal.horario}
                     {" · "}
                     {ocupadasPrincipal}/{eventoPrincipal.vagasMaximas} vagas
-                  </p>
-                </div>
+                  </span>
+                </p>
               ) : (
-                <p className="mt-3 max-w-md text-sm text-white/70">
-                  Painel da operação: vagas, PIX, chamada e o que precisa da sua atenção.
+                <p className="mt-1 text-xs text-white/60">
+                  Vagas, PIX, chamada e o que precisa da sua atenção.
                 </p>
               )}
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 lg:justify-end">
+          <div className="flex flex-wrap gap-2 sm:shrink-0 sm:justify-end">
             <Link to="/admin/eventos/novo">
-              <Button className="!rounded-full !bg-[#e11d2e] !px-5 hover:!bg-[#c41626]">
-                <CalendarPlus size={16} /> Novo evento
+              <Button className="!rounded-full !bg-[#e11d2e] !px-3.5 !py-2 !text-xs hover:!bg-[#c41626]">
+                <CalendarPlus size={14} /> Novo evento
               </Button>
             </Link>
             {eventoPrincipal && (
               <Link to={`/admin/eventos/${eventoPrincipal.id}/inscritos`}>
-                <Button variant="secondary" className="!rounded-full !bg-white/10 !text-white hover:!bg-white/15">
-                  <Users size={16} /> Inscritos
+                <Button variant="secondary" className="!rounded-full !bg-white/10 !px-3.5 !py-2 !text-xs !text-white hover:!bg-white/15">
+                  <Users size={14} /> Inscritos
                 </Button>
               </Link>
             )}
