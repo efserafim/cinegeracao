@@ -1,6 +1,6 @@
 Add-Type -AssemblyName System.Drawing
 $ErrorActionPreference = "Stop"
-$root = Split-Path -Parent $MyInvocation.MyCommand.Path
+$root = Resolve-Path (Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) "..")
 Set-Location $root
 
 function New-Og([string]$outName, [scriptblock]$drawText) {
