@@ -39,16 +39,19 @@ export default function AdminLayout() {
     <div className="bg-page flex min-h-screen">
       <AdminPwaBootstrap />
       <aside className="relative hidden w-64 shrink-0 overflow-hidden border-r border-black/5 bg-white/70 p-5 backdrop-blur dark:border-white/10 dark:bg-slate-900/70 md:block">
+        <div className="pointer-events-none absolute inset-0 web-mask opacity-[0.07]" />
+        <div className="pointer-events-none absolute -left-1 top-0 h-28 w-1.5 bg-gradient-to-b from-[#e11d2e] via-[#f5c542] to-[#1a6cff]" />
         <SpiderMark className="pointer-events-none absolute -right-6 bottom-8 h-28 w-28 opacity-[0.06]" />
         <Link to="/admin" className="relative flex items-center gap-2.5">
           <span className="relative">
-            <img src={logoImg} alt="" className="h-10 w-10 rounded-full ring-2 ring-[#e11d2e]/50" />
+            <span className="absolute -inset-1 rounded-full bg-[radial-gradient(circle,rgba(245,197,66,0.35),transparent_70%)]" />
+            <img src={logoImg} alt="" className="relative h-11 w-11 rounded-full ring-2 ring-[#f5c542]/70" />
             <SpiderMark className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5" />
           </span>
           <span>
-            <span className="block font-display text-lg leading-none text-[#e11d2e]">CineGeração</span>
+            <span className="block font-display text-lg leading-none text-[#e11d2e] spidey-title">CineGeração</span>
             <span className="mt-1 block text-[10px] uppercase tracking-[0.16em] text-[var(--color-ink-soft)] dark:text-slate-400">
-              Admin
+              Geração Eucarística
             </span>
           </span>
         </Link>
