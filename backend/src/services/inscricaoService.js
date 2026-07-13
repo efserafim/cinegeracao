@@ -591,7 +591,12 @@ async function confirmarPagamento(id, adminId, ip, opcoes = {}) {
     data: dataFmt,
     horario: inscricao.evento.horario,
     local: inscricao.evento.local,
-    codigoIngresso: codigosIngresso
+    cidade: inscricao.evento.cidade,
+    codigoIngresso: codigosIngresso,
+    codigoInscricao: inscricao.codigo,
+    chegada: "17h10",
+    tickets: ticketsEmail,
+    quantidade: ticketsEmail.length || inscricao.quantidade || 1
   });
   await registrarLog({
     adminId: adminId || null,
