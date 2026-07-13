@@ -11,13 +11,15 @@ import {
   Pencil,
   Ticket,
   ClipboardList,
-  AlertCircle
+  AlertCircle,
+  Sparkles
 } from "lucide-react";
 import api, { formatDate, formatMoney, STATUS_LABELS } from "../../services/api";
 import { Loading, Button } from "../../components/ui";
 import SpiderMark from "../../components/SpiderMark";
 import AdminPhoneSetup from "../../components/admin/AdminPhoneSetup";
 import { useAuth } from "../../context/AuthContext";
+import { logoImg } from "../../assets/brand";
 
 const STATUS_EVENTO = {
   ABERTO: {
@@ -68,19 +70,59 @@ function StatusBadge({ status }) {
   );
 }
 
-function StatTile({ label, value, hint, icon: Icon, accent = "red", to }) {
+function SectionTitle({ kicker, title, action }) {
+  return (
+    <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        {kicker && <p className="dash-section-kicker">{kicker}</p>}
+        <h2 className="mt-1 font-display text-2xl tracking-wide text-[var(--color-ink)] dark:text-white">
+          {title}
+        </h2>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function StatTile({ label, value, hint, icon: Icon, accent = "red", to, delay = 0 }) {
   const accents = {
-    red: "from-[#e11d2e]/15 to-transparent text-[#e11d2e]",
-    gold: "from-[#f5c542]/20 to-transparent text-[#b45309] dark:text-[#f5c542]",
-    blue: "from-[#1a6cff]/15 to-transparent text-[#1a6cff]",
-    green: "from-emerald-500/15 to-transparent text-emerald-600 dark:text-emerald-400",
-    amber: "from-amber-500/15 to-transparent text-amber-700 dark:text-amber-300"
+    red: {
+      bar: "from-[#e11d2e] to-[#ff5a6a]",
+      icon: "bg-[#e11d2e]/12 text-[#e11d2e]",
+      wash: "from-[#e11d2e]/18 via-transparent to-transparent",
+    },
+    gold: {
+      bar: "from-[#f5c542] to-[#ffe08a]",
+      icon: "bg-[#f5c542]/25 text-[#b45309] dark:text-[#f5c542]",
+      wash: "from-[#f5c542]/25 via-transparent to-transparent",
+    },
+    blue: {
+      bar: "from-[#1a6cff] to-[#6aa0ff]",
+      icon: "bg-[#1a6cff]/12 text-[#1a6cff]",
+      wash: "from-[#1a6cff]/18 via-transparent to-transparent",
+    },
+    green: {
+      bar: "from-emerald-500 to-emerald-300",
+      icon: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+      wash: "from-emerald-500/18 via-transparent to-transparent",
+    },
+    amber: {
+      bar: "from-amber-500 to-amber-300",
+      icon: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+      wash: "from-amber-500/18 via-transparent to-transparent",
+    },
   };
+  const a = accents[accent] || accents.red;
   const inner = (
-    <div className={`relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br ${accents[accent]} p-4 ring-1 ring-black/5 dark:ring-white/10`}>
-      <div className="absolute -right-3 -top-3 opacity-10">
+    <div
+      className="dash-panel group relative p-4 transition duration-300 hover:-translate-y-1"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${a.wash}`} />
+      <div className="pointer-events-none absolute -right-2 -top-2 opacity-[0.08] transition group-hover:opacity-20">
         <SpiderMark className="h-16 w-16" />
       </div>
+      <div className={`absolute left-0 top-0 h-1 w-full bg-gradient-to-r ${a.bar}`} />
       <div className="relative flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-soft)] dark:text-slate-400">
@@ -91,7 +133,7 @@ function StatTile({ label, value, hint, icon: Icon, accent = "red", to }) {
           </p>
           {hint && <p className="mt-2 text-xs text-[var(--color-ink-soft)] dark:text-slate-400">{hint}</p>}
         </div>
-        <span className="rounded-2xl bg-white/70 p-2.5 dark:bg-white/10">
+        <span className={`rounded-2xl p-2.5 ${a.icon}`}>
           <Icon size={18} />
         </span>
       </div>
@@ -99,34 +141,38 @@ function StatTile({ label, value, hint, icon: Icon, accent = "red", to }) {
   );
   if (to) {
     return (
-      <Link to={to} className="block transition hover:-translate-y-0.5">
+      <Link to={to} className="block animate-fade-up">
         {inner}
       </Link>
     );
   }
-  return inner;
+  return <div className="animate-fade-up">{inner}</div>;
 }
 
 function QuickLink({ to, icon: Icon, title, hint, tone }) {
   const tones = {
-    red: "bg-[#e11d2e]/10 text-[#e11d2e]",
-    blue: "bg-[#1a6cff]/10 text-[#1a6cff]",
-    green: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-    gold: "bg-[#f5c542]/20 text-[#b45309] dark:text-[#f5c542]",
-    slate: "bg-black/5 text-[var(--color-ink-soft)] dark:bg-white/10 dark:text-slate-300"
+    red: "bg-[#e11d2e]/12 text-[#e11d2e] ring-[#e11d2e]/20",
+    blue: "bg-[#1a6cff]/12 text-[#1a6cff] ring-[#1a6cff]/20",
+    green: "bg-emerald-500/15 text-emerald-600 ring-emerald-500/20 dark:text-emerald-400",
+    gold: "bg-[#f5c542]/20 text-[#b45309] ring-[#f5c542]/35 dark:text-[#f5c542]",
+    slate: "bg-black/5 text-[var(--color-ink-soft)] ring-black/5 dark:bg-white/10 dark:text-slate-300 dark:ring-white/10",
   };
   return (
     <Link
       to={to}
-      className="flex items-center gap-3 rounded-[1.25rem] bg-white/80 px-4 py-3 ring-1 ring-black/5 transition hover:ring-[#e11d2e]/30 dark:bg-slate-900/70 dark:ring-white/10"
+      className="dash-panel group flex items-center gap-3 px-4 py-3.5 transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(225,29,46,0.25)]"
     >
-      <span className={`rounded-2xl p-2 ${tones[tone] || tones.slate}`}>
+      <span className={`rounded-2xl p-2.5 ring-1 ${tones[tone] || tones.slate}`}>
         <Icon size={18} />
       </span>
-      <span>
-        <span className="block text-sm font-semibold">{title}</span>
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold text-[var(--color-ink)] dark:text-white">{title}</span>
         <span className="text-xs text-[var(--color-ink-soft)] dark:text-slate-400">{hint}</span>
       </span>
+      <ArrowRight
+        size={14}
+        className="ml-auto shrink-0 text-[#e11d2e] opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100"
+      />
     </Link>
   );
 }
@@ -135,11 +181,14 @@ function EventoCard({ ev }) {
   const ocupadas = Math.max(0, (ev.vagasMaximas || 0) - (ev.vagasRestantes || 0));
   const pct = ev.vagasMaximas ? Math.min(100, Math.round((ocupadas / ev.vagasMaximas) * 100)) : 0;
   return (
-    <div className="rounded-[1.5rem] bg-white/80 p-4 ring-1 ring-black/5 dark:bg-slate-900/70 dark:ring-white/10">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="dash-panel relative p-4 sm:p-5">
+      <div className="pointer-events-none absolute inset-0 dash-comic-stripe opacity-40" />
+      <div className="relative flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-display text-xl text-[var(--color-ink)] dark:text-white">{ev.nome}</h2>
+            <h3 className="font-display text-xl tracking-wide text-[var(--color-ink)] dark:text-white">
+              {ev.nome}
+            </h3>
             <StatusBadge status={ev.status} />
           </div>
           <p className="mt-1 text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
@@ -149,9 +198,10 @@ function EventoCard({ ev }) {
             {formatMoney(ev.valor)}
           </p>
         </div>
+        <SpiderMark className="h-8 w-8 opacity-20" />
       </div>
 
-      <div className="mt-4">
+      <div className="relative mt-4">
         <div className="mb-1.5 flex items-center justify-between text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
           <span>Vagas preenchidas</span>
           <span className="font-semibold text-[var(--color-ink)] dark:text-white">
@@ -160,13 +210,13 @@ function EventoCard({ ev }) {
         </div>
         <div className="h-2.5 overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[#e11d2e] to-[#f5c542] transition-all"
+            className="h-full rounded-full bg-gradient-to-r from-[#e11d2e] via-[#f5c542] to-[#1a6cff] transition-all"
             style={{ width: `${pct}%` }}
           />
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="relative mt-4 flex flex-wrap gap-2">
         <Link to={`/admin/eventos/${ev.id}/inscritos`}>
           <Button variant="secondary" className="!rounded-full">
             <Users size={14} /> Inscritos
@@ -242,45 +292,71 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div className="relative overflow-hidden rounded-[1.75rem] bg-[#070a12] px-5 py-6 text-white sm:px-7">
-        <div className="pointer-events-none absolute inset-0 web-mask opacity-30" />
-        <SpiderMark tone="light" className="pointer-events-none absolute -right-4 -top-2 h-28 w-28 opacity-20 sm:right-6 sm:h-36 sm:w-36" />
-        <div className="relative flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#f5c542]">Painel CineGeração</p>
-            <h1 className="mt-2 font-display text-3xl tracking-wide sm:text-4xl">Olá, {primeiroNome}</h1>
-            {eventoPrincipal ? (
-              <div className="mt-2 max-w-lg space-y-1.5">
-                <p className="inline-flex flex-wrap items-center gap-2 text-sm text-white/70">
-                  <StatusBadge status={eventoPrincipal.status} />
-                  <span>
-                    {eventoAbertoOuNenhum ? (
-                      <>
-                        Evento ativo: <strong className="text-white">{eventoPrincipal.nome}</strong>
-                      </>
-                    ) : (
-                      <>
-                        Sem evento aberto · último:{" "}
-                        <strong className="text-white">{eventoPrincipal.nome}</strong>
-                      </>
-                    )}
-                  </span>
-                </p>
-                <p className="text-sm text-white/55">
-                  {formatDate(eventoPrincipal.data)} · {eventoPrincipal.horario}
-                  {" · "}
-                  {ocupadasPrincipal}/{eventoPrincipal.vagasMaximas} vagas
-                </p>
-              </div>
-            ) : (
-              <p className="mt-2 max-w-md text-sm text-white/70">
-                Acompanhe vagas, confirmações e o que precisa da sua atenção agora.
+      <section className="relative overflow-hidden rounded-[1.9rem] bg-[#070a12] text-white shadow-[0_24px_60px_-28px_rgba(225,29,46,0.55)] animate-swing">
+        <div className="pointer-events-none absolute inset-0 dash-sunburst" />
+        <div className="pointer-events-none absolute inset-0 web-mask opacity-35" />
+        <div className="pointer-events-none absolute -left-10 top-0 h-full w-16 bg-gradient-to-b from-[#e11d2e] via-[#f5c542] to-[#1a6cff] opacity-90" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#f5c542]/70 to-transparent" />
+
+        <SpiderMark
+          tone="light"
+          className="pointer-events-none absolute right-3 bottom-4 h-14 w-14 opacity-15 animate-spidey-float sm:right-8 sm:h-16 sm:w-16"
+        />
+
+        <div className="relative flex flex-col gap-6 px-5 py-6 sm:px-8 sm:py-8 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-start gap-4 sm:gap-5">
+            <div className="relative shrink-0">
+              <span className="absolute -inset-2 rounded-full bg-[radial-gradient(circle,rgba(245,197,66,0.45),transparent_70%)]" />
+              <img
+                src={logoImg}
+                alt="Geração Eucarística"
+                className="relative h-16 w-16 rounded-full ring-2 ring-[#f5c542]/80 sm:h-20 sm:w-20"
+              />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#f5c542]">
+                Geração Eucarística · CineGeração
               </p>
-            )}
+              <h1 className="mt-1 font-display text-4xl tracking-wide sm:text-5xl">
+                <span className="spidey-title text-[#e11d2e]">CineGeração</span>
+              </h1>
+              <p className="mt-2 font-display text-2xl tracking-wide text-white/95 sm:text-3xl">
+                Olá, {primeiroNome}
+              </p>
+              {eventoPrincipal ? (
+                <div className="mt-3 max-w-xl space-y-1.5">
+                  <p className="inline-flex flex-wrap items-center gap-2 text-sm text-white/75">
+                    <StatusBadge status={eventoPrincipal.status} />
+                    <span>
+                      {eventoAbertoOuNenhum ? (
+                        <>
+                          Missão ativa: <strong className="text-white">{eventoPrincipal.nome}</strong>
+                        </>
+                      ) : (
+                        <>
+                          Sem evento aberto · último:{" "}
+                          <strong className="text-white">{eventoPrincipal.nome}</strong>
+                        </>
+                      )}
+                    </span>
+                  </p>
+                  <p className="text-sm text-white/55">
+                    {formatDate(eventoPrincipal.data)} · {eventoPrincipal.horario}
+                    {" · "}
+                    {ocupadasPrincipal}/{eventoPrincipal.vagasMaximas} vagas
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-3 max-w-md text-sm text-white/70">
+                  Painel da operação: vagas, PIX, chamada e o que precisa da sua atenção.
+                </p>
+              )}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+
+          <div className="flex flex-wrap gap-2 lg:justify-end">
             <Link to="/admin/eventos/novo">
-              <Button className="!rounded-full">
+              <Button className="!rounded-full !bg-[#e11d2e] !px-5 hover:!bg-[#c41626]">
                 <CalendarPlus size={16} /> Novo evento
               </Button>
             </Link>
@@ -293,52 +369,58 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
-      </div>
+      </section>
 
       <AdminPhoneSetup />
 
       {(pendentes > 0 || pendentesRecentes.length > 0) && (
-        <section className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-display text-xl text-[var(--color-ink)] dark:text-white">Precisa de atenção</h2>
-            {eventoPrincipal && (
-              <Link
-                to={`/admin/eventos/${eventoPrincipal.id}/inscritos`}
-                className="text-xs font-semibold text-[#e11d2e] underline"
-              >
-                Ver todos os inscritos
-              </Link>
-            )}
-          </div>
+        <section className="animate-fade-up space-y-3">
+          <SectionTitle
+            kicker="Alerta Spidey"
+            title="Precisa de atenção"
+            action={
+              eventoPrincipal ? (
+                <Link
+                  to={`/admin/eventos/${eventoPrincipal.id}/inscritos`}
+                  className="text-xs font-semibold text-[#e11d2e] underline"
+                >
+                  Ver todos os inscritos
+                </Link>
+              ) : null
+            }
+          />
 
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] bg-[#f5c542]/15 px-4 py-3 ring-1 ring-[#f5c542]/40">
-            <div className="flex items-center gap-3">
-              <span className="rounded-2xl bg-[#f5c542]/30 p-2 text-[#b45309]">
-                <Clock3 size={18} />
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-[var(--color-ink)] dark:text-white">
-                  {pendentes} comprovante{pendentes === 1 ? "" : "s"} aguardando conferência
-                </p>
-                <p className="text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
-                  Só quando o valor do PIX não bate ou o OCR falha. Se o valor confere, o ingresso já sai sozinho.
-                </p>
+          <div className="relative overflow-hidden rounded-[1.5rem] bg-gradient-to-r from-[#f5c542]/25 via-[#f5c542]/10 to-transparent px-4 py-4 ring-1 ring-[#f5c542]/45">
+            <div className="pointer-events-none absolute inset-0 dash-comic-stripe opacity-50" />
+            <div className="relative flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="rounded-2xl bg-[#f5c542]/40 p-2.5 text-[#7a4b00]">
+                  <Clock3 size={18} />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-[var(--color-ink)] dark:text-white">
+                    {pendentes} comprovante{pendentes === 1 ? "" : "s"} aguardando conferência
+                  </p>
+                  <p className="text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
+                    Só quando o valor do PIX não bate ou o OCR falha. Se o valor confere, o ingresso já sai sozinho.
+                  </p>
+                </div>
               </div>
+              {eventoPrincipal && (
+                <Link to={`/admin/eventos/${eventoPrincipal.id}/inscritos`}>
+                  <Button className="!rounded-full">Ver agora</Button>
+                </Link>
+              )}
             </div>
-            {eventoPrincipal && (
-              <Link to={`/admin/eventos/${eventoPrincipal.id}/inscritos`}>
-                <Button className="!rounded-full">Ver agora</Button>
-              </Link>
-            )}
           </div>
 
           {pendentesRecentes.length > 0 && (
-            <ul className="divide-y divide-black/5 overflow-hidden rounded-[1.5rem] bg-white/80 ring-1 ring-black/5 dark:divide-white/10 dark:bg-slate-900/70 dark:ring-white/10">
+            <ul className="dash-panel divide-y divide-black/5 overflow-hidden dark:divide-white/10">
               {pendentesRecentes.map((item) => (
                 <li key={item.id}>
                   <Link
                     to={`/admin/inscricoes/${item.id}`}
-                    className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 transition hover:bg-black/[0.03] dark:hover:bg-white/5"
+                    className="flex flex-wrap items-center justify-between gap-2 px-4 py-3.5 transition hover:bg-[#e11d2e]/[0.04] dark:hover:bg-white/5"
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-[var(--color-ink)] dark:text-white">
@@ -360,25 +442,23 @@ export default function DashboardPage() {
       )}
 
       {conferirExtrato.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="font-display text-xl text-[var(--color-ink)] dark:text-white">
-            Conferir no extrato do banco
-          </h2>
-          <p className="text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
+        <section className="animate-fade-up space-y-3">
+          <SectionTitle kicker="Extrato" title="Conferir no extrato do banco" />
+          <p className="-mt-1 text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
             Ingressos já liberados (muitos pelo valor do PIX). Marque quando bater com o extrato da conta.
           </p>
-          <ul className="divide-y divide-black/5 overflow-hidden rounded-[1.5rem] bg-white/80 ring-1 ring-black/5 dark:divide-white/10 dark:bg-slate-900/70 dark:ring-white/10">
+          <ul className="dash-panel divide-y divide-black/5 dark:divide-white/10">
             {conferirExtrato.map((item) => (
               <li
                 key={item.id}
-                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5"
               >
                 <Link to={`/admin/inscricoes/${item.id}`} className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-[var(--color-ink)] dark:text-white">
                     {item.nome}
                     {item.liberacaoAutomatica && (
-                      <span className="ml-2 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
-                        auto
+                      <span className="ml-2 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+                        <Sparkles size={10} /> auto
                       </span>
                     )}
                   </p>
@@ -401,7 +481,7 @@ export default function DashboardPage() {
       )}
 
       <section>
-        <h2 className="mb-3 font-display text-xl text-[var(--color-ink)] dark:text-white">Números</h2>
+        <SectionTitle kicker="Radar" title="Números da missão" />
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <StatTile
             label="Eventos"
@@ -410,6 +490,7 @@ export default function DashboardPage() {
             icon={Ticket}
             accent="red"
             to="/admin/eventos"
+            delay={40}
           />
           <StatTile
             label="Inscritos"
@@ -418,6 +499,7 @@ export default function DashboardPage() {
             icon={Users}
             accent="blue"
             to={eventoPrincipal ? `/admin/eventos/${eventoPrincipal.id}/inscritos` : "/admin/eventos"}
+            delay={80}
           />
           <StatTile
             label="Confirmados"
@@ -426,6 +508,7 @@ export default function DashboardPage() {
             icon={CheckCircle2}
             accent="green"
             to={eventoPrincipal ? `/admin/eventos/${eventoPrincipal.id}/inscritos` : "/admin/eventos"}
+            delay={120}
           />
           <StatTile
             label="Pendentes"
@@ -434,6 +517,7 @@ export default function DashboardPage() {
             icon={AlertCircle}
             accent="amber"
             to={eventoPrincipal ? `/admin/eventos/${eventoPrincipal.id}/inscritos` : "/admin/eventos"}
+            delay={160}
           />
           <StatTile
             label="Arrecadado"
@@ -441,12 +525,13 @@ export default function DashboardPage() {
             hint={presentes > 0 ? `${presentes} presente${presentes === 1 ? "" : "s"} na chamada` : "Pagamentos confirmados"}
             icon={Wallet}
             accent="gold"
+            delay={200}
           />
         </div>
       </section>
 
       <section>
-        <h2 className="mb-3 font-display text-xl text-[var(--color-ink)] dark:text-white">No dia do cinema</h2>
+        <SectionTitle kicker="Dia D" title="No dia do cinema" />
         <div className="grid gap-3 sm:grid-cols-3">
           <QuickLink
             to={eventoPrincipal ? `/admin/chamada?evento=${eventoPrincipal.id}` : "/admin/chamada"}
@@ -473,7 +558,7 @@ export default function DashboardPage() {
       </section>
 
       <section>
-        <h2 className="mb-3 font-display text-xl text-[var(--color-ink)] dark:text-white">Gestão</h2>
+        <SectionTitle kicker="Q.G." title="Gestão" />
         <div className="grid gap-3 sm:grid-cols-3">
           <QuickLink to="/admin/eventos/novo" icon={CalendarPlus} title="Criar evento" hint="Novo CineGeração" tone="red" />
           <QuickLink to="/admin/eventos" icon={Ticket} title="Ver eventos" hint="Lista completa" tone="slate" />
@@ -488,18 +573,24 @@ export default function DashboardPage() {
       </section>
 
       <section>
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="font-display text-xl text-[var(--color-ink)] dark:text-white">Seus eventos</h2>
-          <Link to="/admin/eventos" className="text-xs font-semibold text-[#e11d2e] underline">
-            Ver todos
-          </Link>
-        </div>
+        <SectionTitle
+          kicker="Cartaz"
+          title="Seus eventos"
+          action={
+            <Link to="/admin/eventos" className="text-xs font-semibold text-[#e11d2e] underline">
+              Ver todos
+            </Link>
+          }
+        />
 
         {eventos.length === 0 ? (
-          <div className="rounded-[1.5rem] bg-white/80 px-5 py-10 text-center ring-1 ring-black/5 dark:bg-slate-900/70 dark:ring-white/10">
-            <SpiderMark className="mx-auto mb-3 h-12 w-12 opacity-50" />
-            <p className="text-sm text-[var(--color-ink-soft)] dark:text-slate-400">Nenhum evento ainda.</p>
-            <Link to="/admin/eventos/novo" className="mt-4 inline-block">
+          <div className="dash-panel px-5 py-12 text-center">
+            <SpiderMark className="mx-auto mb-3 h-14 w-14 opacity-40 animate-spidey-float" />
+            <p className="font-display text-xl text-[var(--color-ink)] dark:text-white">Nenhum evento ainda</p>
+            <p className="mt-1 text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
+              Crie o próximo CineGeração e a teia começa a girar.
+            </p>
+            <Link to="/admin/eventos/novo" className="mt-5 inline-block">
               <Button className="!rounded-full">Criar primeiro evento</Button>
             </Link>
           </div>
