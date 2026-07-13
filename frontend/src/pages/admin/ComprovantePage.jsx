@@ -80,7 +80,7 @@ export default function ComprovantePage() {
   async function confirmar() {
     setConfirmando(true);
     try {
-      const { data } = await api.post(`/inscricoes/${id}/confirmar`, null, { timeout: 25000 });
+      const { data } = await api.post(`/inscricoes/${id}/confirmar`, null, { timeout: 45000 });
       setItem(data.data);
       setWhatsapp(data.data.whatsappLink || "");
       setEmailInfo(data.data.emailResult || null);
@@ -91,7 +91,9 @@ export default function ComprovantePage() {
       } else if (er?.queued) {
         setMsg(`Pagamento confirmado. ${qtd} ingresso(s) liberado(s). E-mail a caminho de ${er.to || "o participante"}.`);
       } else {
-        setMsg(`Pagamento confirmado. ${qtd} ingresso(s) liberado(s). E-mail não enviado: ${er?.reason || "verifique o SMTP"}.`);
+        setMsg(
+          `Pagamento confirmado. ${qtd} ingresso(s) liberado(s). E-mail não enviado: ${er?.reason || "verifique BREVO_API_KEY no Render"}.`
+        );
       }
       setShowConfirmAnim(true);
       window.setTimeout(() => setShowConfirmAnim(false), 2800);
@@ -432,9 +434,9 @@ export default function ComprovantePage() {
               }`}
             >
               {emailInfo.sent
-                ? `E-mail enviado para ${emailInfo.to}`
+                ? `E-mail enviado automaticamente para ${emailInfo.to}`
                 : emailInfo.queued
-                  ? `E-mail enfileirado para ${emailInfo.to || "o participante"} (envio em segundo plano). Use “Reenviar e-mail” para testar de novo.`
+                  ? `E-mail a caminho de ${emailInfo.to || "o participante"}…`
                   : `E-mail não enviado: ${emailInfo.reason}`}
             </p>
           )}

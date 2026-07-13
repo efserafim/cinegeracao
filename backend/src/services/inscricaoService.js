@@ -483,33 +483,39 @@ async function confirmarPagamento(id, adminId, ip) {
       }
     : null;
 
-  // E-mail em segundo plano: não bloqueia a resposta (evita timeout/CORS no browser)
+  // Envia e-mail na confirmação (aguarda resultado para feedback correto no painel)
   let emailResult = emailPayload
-    ? { sent: false, queued: true, to: emailPayload.para, reason: "E-mail sendo enviado em segundo plano" }
+    ? null
     : { sent: false, reason: "Participante sem e-mail" };
 
   if (emailPayload) {
-    setImmediate(() => {
-      enviarConfirmacaoInscricao(emailPayload)
-        .then(async (result) => {
-          console.log("[confirmarPagamento] email async:", result);
-          try {
-            await registrarLog({
-              adminId,
-              acao: "EMAIL_CONFIRMACAO",
-              entidade: "Inscricao",
-              entidadeId: id,
-              detalhes: result,
-              ip
-            });
-          } catch (logErr) {
-            console.error("[confirmarPagamento] log email:", logErr.message);
-          }
-        })
-        .catch((emailErr) => {
-          console.error("[confirmarPagamento] email async:", emailErr.message || emailErr);
-        });
-    });
+    try {
+      emailResult = await enviarConfirmacaoInscricao(emailPayload);
+      console.log("[confirmarPagamento] email:", emailResult);
+      await registrarLog({
+        adminId,
+        acao: "EMAIL_CONFIRMACAO",
+        entidade: "Inscricao",
+        entidadeId: id,
+        detalhes: emailResult,
+        ip
+      }).catch((logErr) => console.error("[confirmarPagamento] log email:", logErr.message));
+    } catch (emailErr) {
+      console.error("[confirmarPagamento] email:", emailErr.message || emailErr);
+      emailResult = {
+        sent: false,
+        to: emailPayload.para,
+        reason: emailErr.message || "Falha ao enviar e-mail"
+      };
+      await registrarLog({
+        adminId,
+        acao: "EMAIL_CONFIRMACAO",
+        entidade: "Inscricao",
+        entidadeId: id,
+        detalhes: emailResult,
+        ip
+      }).catch(() => {});
+    }
   } else {
     await registrarLog({
       adminId,
