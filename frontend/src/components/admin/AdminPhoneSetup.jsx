@@ -4,9 +4,11 @@ import { Button } from "../ui";
 import api from "../../services/api";
 import {
   getExistingPushSubscription,
+  getAdminServiceWorkerRegistration,
   isStandaloneDisplay,
   enableAdminPwa,
   urlBase64ToUint8Array,
+  pushErrorMessage,
 } from "../../lib/pwa";
 
 export default function AdminPhoneSetup() {
@@ -95,6 +97,12 @@ export default function AdminPhoneSetup() {
         setNotifStatus("unsupported");
         return;
       }
+      if (!window.isSecureContext) {
+        setNotifStatus("error");
+        setMessage("Notificações só funcionam em HTTPS. Abra o site pelo domínio seguro.");
+        return;
+      }
+
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         setNotifStatus("denied");
@@ -106,18 +114,36 @@ export default function AdminPhoneSetup() {
       const publicKey = data?.data?.publicKey;
       if (!publicKey) {
         setNotifStatus("error");
-        setMessage("Servidor sem chave de notificação configurada.");
+        setMessage("Servidor sem chave de notificação configurada. Redeploy a API no Render.");
         return;
       }
 
-      const reg = (await enableAdminPwa()) || (await navigator.serviceWorker.ready);
-      let sub = await reg.pushManager.getSubscription();
-      if (!sub) {
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(publicKey),
-        });
+      const reg = await getAdminServiceWorkerRegistration();
+      if (!reg?.pushManager) {
+        setNotifStatus("error");
+        setMessage("Service worker do admin não ativo. Recarregue /admin e tente de novo.");
+        return;
       }
+
+      // Garante worker ativo (comum no app instalado / primeira abertura)
+      if (!reg.active) {
+        await navigator.serviceWorker.ready;
+      }
+
+      let sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        // Recria se a subscription antiga não bater com a chave atual
+        try {
+          await sub.unsubscribe();
+        } catch {
+          /* ignore */
+        }
+        sub = null;
+      }
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      });
 
       await api.post("/admin/push/subscribe", { subscription: sub.toJSON() });
       setNotifStatus("on");
@@ -126,7 +152,7 @@ export default function AdminPhoneSetup() {
     } catch (err) {
       console.error(err);
       setNotifStatus("error");
-      setMessage(err.response?.data?.message || "Não foi possível ativar as notificações.");
+      setMessage(pushErrorMessage(err));
     }
   }
 

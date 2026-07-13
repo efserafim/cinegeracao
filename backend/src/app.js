@@ -18,7 +18,14 @@ const app = express();
 app.set("trust proxy", 1);
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 const allowedOrigins = new Set(
-  config.frontendOrigins.map((o) => o.replace(/\/$/, "")).concat(["https://cinegeracao.netlify.app", "http://localhost:5173"])
+  config.frontendOrigins
+    .map((o) => o.replace(/\/$/, ""))
+    .concat([
+      "https://cinegeracao.netlify.app",
+      "https://geucaristica.com.br",
+      "https://www.geucaristica.com.br",
+      "http://localhost:5173",
+    ])
 );
 app.use(
   cors({

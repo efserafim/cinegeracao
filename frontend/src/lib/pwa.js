@@ -30,13 +30,19 @@ export function removeAdminManifest() {
   document.querySelectorAll(`link[${MANIFEST_ATTR}], link[rel="manifest"]`).forEach((el) => el.remove());
 }
 
+function isLegacyServiceWorker(reg) {
+  const script = reg.active?.scriptURL || reg.installing?.scriptURL || reg.waiting?.scriptURL || "";
+  // Antigo SW na raiz: /sw.js — NÃO remover /admin/sw.js
+  return /\/sw\.js$/.test(script) && !script.includes("/admin/sw.js");
+}
+
 async function unregisterLegacyServiceWorkers() {
   if (!("serviceWorker" in navigator)) return;
   const regs = await navigator.serviceWorker.getRegistrations();
   await Promise.all(
     regs.map((reg) => {
       const path = new URL(reg.scope).pathname;
-      if (path === "/" || path === "" || reg.active?.scriptURL?.endsWith("/sw.js")) {
+      if (path === "/" || path === "" || isLegacyServiceWorker(reg)) {
         return reg.unregister();
       }
       return null;
@@ -49,7 +55,9 @@ export async function registerServiceWorker() {
   if (!isAdminPath()) return null;
   try {
     await unregisterLegacyServiceWorkers();
-    return await navigator.serviceWorker.register(SW_PATH);
+    const reg = await navigator.serviceWorker.register(SW_PATH, { scope: "/admin" });
+    await navigator.serviceWorker.ready;
+    return reg;
   } catch (err) {
     console.warn("[PWA] SW register failed", err);
     return null;
@@ -72,7 +80,7 @@ export async function disablePublicPwaInstall() {
     await Promise.all(
       regs.map((reg) => {
         const path = new URL(reg.scope).pathname;
-        if (path === "/" || path === "" || reg.active?.scriptURL?.endsWith("/sw.js")) {
+        if (path === "/" || path === "" || isLegacyServiceWorker(reg)) {
           return reg.unregister();
         }
         return null;
@@ -92,8 +100,36 @@ export function urlBase64ToUint8Array(base64String) {
   return output;
 }
 
+export async function getAdminServiceWorkerRegistration() {
+  if (!("serviceWorker" in navigator)) return null;
+  const byScope = await navigator.serviceWorker.getRegistration("/admin");
+  if (byScope) {
+    await navigator.serviceWorker.ready;
+    return byScope;
+  }
+  return enableAdminPwa();
+}
+
 export async function getExistingPushSubscription() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return null;
-  const reg = await navigator.serviceWorker.ready;
+  const reg = await getAdminServiceWorkerRegistration();
+  if (!reg?.pushManager) return null;
   return reg.pushManager.getSubscription();
+}
+
+export function pushErrorMessage(err) {
+  if (err?.response?.data?.message) return err.response.data.message;
+  if (err?.name === "NotAllowedError") {
+    return "Permissão de notificação bloqueada. Ative nas configurações do Chrome.";
+  }
+  if (err?.name === "AbortError" || err?.name === "InvalidStateError") {
+    return "Service worker ainda não pronto. Feche o app, abra /admin de novo e tente outra vez.";
+  }
+  if (!err?.response && err?.message) {
+    if (/network|failed to fetch|cors/i.test(err.message) || err.code === "ERR_NETWORK") {
+      return "Falha de rede/CORS ao falar com a API. Confirme o domínio no Render (FRONTEND_URL) e tente de novo.";
+    }
+    return err.message;
+  }
+  return "Não foi possível ativar as notificações.";
 }
