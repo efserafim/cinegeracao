@@ -720,30 +720,49 @@ async function dashboard(eventoId) {
   };
 }
 async function dashboardGlobal() {
-  const [eventos, inscritos, confirmadas, pendentes, valor] = await Promise.all([
+  const statusPendentes = ["AGUARDANDO_CONFIRMACAO", "COMPROVANTE_ENVIADO", "OCR_PROCESSADO"];
+  const [eventos, inscritos, confirmadas, pendentes, valor, presentes, pendentesRaw] = await Promise.all([
     prisma.evento.count(),
     prisma.inscricao.count(),
     prisma.inscricao.count({
       where: { status: { in: ["PAGAMENTO_CONFIRMADO", "INGRESSO_LIBERADO"] } }
     }),
     prisma.inscricao.count({
-      where: {
-        status: {
-          in: ["AGUARDANDO_CONFIRMACAO", "COMPROVANTE_ENVIADO", "OCR_PROCESSADO"]
-        }
-      }
+      where: { status: { in: statusPendentes } }
     }),
     prisma.inscricao.aggregate({
       where: { status: { in: ["PAGAMENTO_CONFIRMADO", "INGRESSO_LIBERADO"] } },
       _sum: { valor: true }
+    }),
+    prisma.ingresso.count({
+      where: { presenteEm: { not: null } }
+    }),
+    prisma.inscricao.findMany({
+      where: { status: { in: statusPendentes } },
+      orderBy: { atualizadoEm: "desc" },
+      take: 5,
+      include: {
+        participante: { select: { nome: true } },
+        evento: { select: { nome: true } }
+      }
     })
   ]);
+  const pendentesRecentes = pendentesRaw.map((i) => ({
+    id: i.id,
+    codigo: i.codigo,
+    nome: i.participante?.nome || "—",
+    eventoNome: i.evento?.nome || "—",
+    status: i.status,
+    criadoEm: i.criadoEm
+  }));
   return {
     eventos,
     inscritos,
     confirmadas,
     pendentes,
-    valorArrecadado: Number(valor._sum.valor || 0)
+    presentes,
+    valorArrecadado: Number(valor._sum.valor || 0),
+    pendentesRecentes
   };
 }
 function formatInscricao(i) {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Check, ClipboardList, Search, UserRound } from "lucide-react";
 import api, { formatDate } from "../../services/api";
 import { Button, Input, Loading, StatCard } from "../../components/ui";
@@ -40,8 +41,10 @@ function flattenPessoas(inscricoes) {
 }
 
 export default function ChamadaPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const eventoFromUrl = searchParams.get("evento") || "";
   const [eventos, setEventos] = useState([]);
-  const [eventoId, setEventoId] = useState("");
+  const [eventoId, setEventoId] = useState(eventoFromUrl);
   const [pessoas, setPessoas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingLista, setLoadingLista] = useState(false);
@@ -57,12 +60,30 @@ export default function ChamadaPage() {
       .then((res) => {
         const list = res.data.data || [];
         setEventos(list);
-        const aberto = list.find((e) => e.status === "ABERTO") || list[0];
-        if (aberto) setEventoId(aberto.id);
+        setEventoId((atual) => {
+          if (atual && list.some((e) => e.id === atual)) return atual;
+          if (eventoFromUrl && list.some((e) => e.id === eventoFromUrl)) return eventoFromUrl;
+          const aberto = list.find((e) => e.status === "ABERTO") || list[0];
+          return aberto?.id || "";
+        });
       })
       .catch((err) => setError(err.response?.data?.message || "Falha ao carregar eventos"))
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- carrega eventos uma vez
   }, []);
+
+  useEffect(() => {
+    if (!eventoFromUrl || !eventos.length) return;
+    if (eventos.some((e) => e.id === eventoFromUrl) && eventoId !== eventoFromUrl) {
+      setEventoId(eventoFromUrl);
+    }
+  }, [eventoFromUrl, eventos, eventoId]);
+
+  function escolherEvento(id) {
+    setEventoId(id);
+    if (id) setSearchParams({ evento: id }, { replace: true });
+    else setSearchParams({}, { replace: true });
+  }
 
   async function loadLista(id = eventoId) {
     if (!id) return;
@@ -149,7 +170,7 @@ export default function ChamadaPage() {
           <select
             className="w-full rounded-xl border border-black/10 bg-white px-3 py-2.5 text-sm dark:border-white/15 dark:bg-slate-900"
             value={eventoId}
-            onChange={(e) => setEventoId(e.target.value)}
+            onChange={(e) => escolherEvento(e.target.value)}
           >
             {eventos.length === 0 && <option value="">Nenhum evento</option>}
             {eventos.map((e) => (
