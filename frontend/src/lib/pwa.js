@@ -83,13 +83,14 @@ export async function registerServiceWorker() {
   if (!window.isSecureContext) return null;
   try {
     await unregisterLegacyServiceWorkers();
-    // Escopo padrão de /admin/sw.js = /admin/ (não precisa de Service-Worker-Allowed)
     const existing = await navigator.serviceWorker.getRegistration("/admin/");
     if (existing && isAdminServiceWorker(existing)) {
+      // Força atualização do SW (manifest/ícones novos)
+      existing.update().catch(() => {});
       await waitForActive(existing).catch(() => {});
       return existing;
     }
-    const reg = await navigator.serviceWorker.register(SW_PATH);
+    const reg = await navigator.serviceWorker.register(SW_PATH, { scope: "/admin/" });
     await waitForActive(reg).catch(() => {});
     await navigator.serviceWorker.ready.catch(() => {});
     return reg;

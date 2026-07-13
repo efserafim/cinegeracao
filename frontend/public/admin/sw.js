@@ -1,5 +1,6 @@
 /* Service worker — PWA admin (/admin/*) + push
  * Install leve: não usa cache.addAll (falha no Netlify derruba o SW e quebra instalar/notificar).
+ * rev: 2026-07-13b — garante installability após proteção do _redirects
  */
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -22,7 +23,7 @@ self.addEventListener("fetch", (event) => {
 });
 
 self.addEventListener("push", (event) => {
-  let data = { title: "CineGeração", body: "Nova atualização no painel", url: "/admin" };
+  let data = { title: "CineGeração", body: "Nova atualização no painel", url: "/admin/" };
   try {
     if (event.data) data = { ...data, ...event.data.json() };
   } catch {
@@ -31,9 +32,9 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || "CineGeração", {
       body: data.body || "",
-      icon: "/image/logo.png",
-      badge: "/image/logo.png",
-      data: { url: data.url || "/admin" },
+      icon: "/image/pwa-192.png",
+      badge: "/image/pwa-192.png",
+      data: { url: data.url || "/admin/" },
       vibrate: [120, 60, 120],
     })
   );
@@ -41,7 +42,7 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = (event.notification.data && event.notification.data.url) || "/admin";
+  const url = (event.notification.data && event.notification.data.url) || "/admin/";
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
       for (const client of clients) {

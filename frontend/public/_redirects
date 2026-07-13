@@ -2,5 +2,9 @@
 /api/*  https://cinegeracao.onrender.com/api/:splat  200!
 /uploads/*  https://cinegeracao.onrender.com/uploads/:splat  200!
 
+# PWA: não deixar o SPA engolir SW e manifesto
+/admin/sw.js  /admin/sw.js  200!
+/admin/manifest.webmanifest  /admin/manifest.webmanifest  200!
+
 # SPA
 /*    /index.html   200

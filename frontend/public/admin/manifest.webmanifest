@@ -3,25 +3,37 @@
   "name": "CineGeração Admin",
   "short_name": "CineGeração",
   "description": "Painel do CineGeração — inscrição, chamada e confirmação de pagamentos",
-  "start_url": "/admin",
-  "scope": "/admin",
+  "start_url": "/admin/",
+  "scope": "/admin/",
   "display": "standalone",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "background_color": "#070a12",
   "theme_color": "#e11d2e",
   "lang": "pt-BR",
   "icons": [
     {
-      "src": "/image/logo.png",
+      "src": "/image/pwa-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/image/logo.png",
+      "src": "/image/pwa-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/image/pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/image/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
