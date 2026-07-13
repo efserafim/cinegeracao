@@ -83,7 +83,7 @@ async function enviarViaBrevo({ para, subject, html, text }) {
 }
 
 async function enviarViaResend({ para, subject, html, text }) {
-  const from = config.smtp.from || "CineGeração <onboarding@resend.dev>";
+  const from = config.smtp.from || "CineGeração <noreply@geucaristica.com.br>";
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -353,11 +353,20 @@ async function enviarConfirmacaoInscricao({
     return {
       sent: false,
       reason:
-        "E-mail não configurado. No Render, use SENDGRID_API_KEY (recomendado) — o SMTP do Gmail costuma dar timeout."
+        "E-mail não configurado. No Render, use RESEND_API_KEY + SMTP_FROM com domínio verificado."
     };
   }
 
   try {
+    if (config.resendApiKey) {
+      const result = await withTimeout(
+        enviarViaResend({ para, subject, html, text }),
+        15000,
+        "Tempo esgotado na API Resend"
+      );
+      console.log(`[EMAIL] Resend OK → ${para}`);
+      return result;
+    }
     if (config.sendgridApiKey) {
       const result = await withTimeout(
         enviarViaSendGrid({ para, subject, html, text }),
@@ -376,34 +385,25 @@ async function enviarConfirmacaoInscricao({
       console.log(`[EMAIL] Brevo OK → ${para}`);
       return result;
     }
-    if (config.resendApiKey) {
-      const result = await withTimeout(
-        enviarViaResend({ para, subject, html, text }),
-        15000,
-        "Tempo esgotado na API Resend"
-      );
-      console.log(`[EMAIL] Resend OK → ${para}`);
-      return result;
-    }
 
     const tx = getTransporter();
     await withTimeout(
       tx.sendMail({
-        from: config.smtp.from || "CineGeração <noreply@cinegeracao.local>",
+        from: config.smtp.from || "CineGeração <noreply@geucaristica.com.br>",
         to: para,
         subject,
         html,
         text
       }),
       12000,
-      "Connection timeout no SMTP. Configure SENDGRID_API_KEY no Render."
+      "Connection timeout no SMTP. Configure RESEND_API_KEY no Render."
     );
     console.log(`[EMAIL] SMTP OK → ${para}`);
     return { sent: true, to: para, provider: "smtp" };
   } catch (err) {
     console.error("[EMAIL] Falha ao enviar:", err.message);
     const reason = /timeout|ETIMEDOUT|ECONNREFUSED/i.test(err.message)
-      ? `${err.message} — use SENDGRID_API_KEY no Render.`
+      ? `${err.message} — use RESEND_API_KEY no Render.`
       : err.message;
     return { sent: false, reason };
   }
