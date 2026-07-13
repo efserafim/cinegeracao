@@ -3,7 +3,7 @@ const options = {
   definition: {
     openapi: "3.0.3",
     info: {
-      title: "Cine Geração – API de Inscrições",
+      title: "CineGeração – API de Inscrições",
       version: "1.0.0",
       description: "API para gerenciamento de inscrições de eventos com pagamento via PIX (chave + comprovante + OCR)."
     },

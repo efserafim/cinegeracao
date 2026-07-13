@@ -39,7 +39,12 @@ export function formatMoney(value) {
 }
 export function formatDate(value) {
   if (!value) return "—";
-  return new Date(value).toLocaleDateString("pt-BR");
+  const d = new Date(value);
+  // Evento.data é DATE no Postgres (meia-noite UTC). Usar UTC evita 01/08 virar 31/07 no Brasil.
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const year = d.getUTCFullYear();
+  return `${day}/${month}/${year}`;
 }
 export const STATUS_LABELS = {
   AGUARDANDO_PAGAMENTO: "Aguardando pagamento",

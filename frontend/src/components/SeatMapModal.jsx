@@ -51,10 +51,13 @@ export default function SeatMapModal({
       >
         <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-white/10 bg-[#0b1020]/95 px-5 py-4 backdrop-blur">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#f5c542]">CineGeração</p>
-            <h2 id="seat-map-title" className="mt-1 font-display text-2xl tracking-wide">
-              Escolha seus assentos
+            <p className="inline-flex rounded-md bg-[#f5c542] px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-[#3d2a00]">
+              Brincadeira
+            </p>
+            <h2 id="seat-map-title" className="mt-2 font-display text-2xl tracking-wide">
+              Mapa fictício
             </h2>
+            <p className="mt-1 text-xs text-white/55">Não reserva lugar no cinema de verdade</p>
           </div>
           <button
             type="button"
@@ -67,13 +70,14 @@ export default function SeatMapModal({
         </div>
 
         <div className="space-y-4 px-5 py-4">
-          <div className="rounded-2xl border border-[#f5c542]/35 bg-[#f5c542]/10 px-3 py-3 text-[11px] leading-relaxed text-[#f5c542]">
-            <p className="flex items-start gap-2">
-              <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+          <div className="rounded-2xl border-2 border-[#f5c542] bg-[#f5c542]/15 px-4 py-3.5 text-sm leading-relaxed text-[#f5c542]">
+            <p className="flex items-start gap-2.5">
+              <AlertTriangle size={18} className="mt-0.5 shrink-0" />
               <span>
-                Este mapa é apenas uma <strong>brincadeira de imersão</strong>.
-                Não corresponde ao mapa real do cinema e <strong>não reserva lugar de verdade</strong>.
-                Assentos cinza já foram escolhidos por outra pessoa nesta brincadeira.
+                <strong className="block text-base text-[#ffe08a]">Isto é só uma brincadeira!</strong>
+                O mapa <strong>não é o do cinema</strong> e <strong>não reserva assento real</strong>.
+                No dia do filme, o lugar vale pelo ingresso físico.
+                Assentos cinza já foram “pegos” por outra pessoa nesta brincadeira.
               </span>
             </p>
           </div>
@@ -153,7 +157,7 @@ export default function SeatMapModal({
               }}
             >
               <Armchair size={16} />
-              Confirmar brincadeira
+              Confirmar só na brincadeira
             </Button>
           </div>
         </div>

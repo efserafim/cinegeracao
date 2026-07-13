@@ -417,7 +417,8 @@ async function confirmarPagamento(id, adminId, ip) {
     where: { id },
     data: { status: "INGRESSO_LIBERADO" }
   });
-  const dataFmt = new Date(inscricao.evento.data).toLocaleDateString("pt-BR");
+  const dataEvt = new Date(inscricao.evento.data);
+  const dataFmt = `${String(dataEvt.getUTCDate()).padStart(2, "0")}/${String(dataEvt.getUTCMonth() + 1).padStart(2, "0")}/${dataEvt.getUTCFullYear()}`;
   const pessoasPorId = Object.fromEntries((inscricao.pessoas || []).map((p) => [p.id, p]));
   const ticketsEmail = ingressos.map((ig, idx) => ({
     codigo: ig.codigo,
@@ -885,7 +886,8 @@ async function reenviarEmailConfirmacao(id, adminId, ip) {
       inscricao.pessoas?.[idx]?.nome ||
       inscricao.participante.nome
   }));
-  const dataFmt = new Date(inscricao.evento.data).toLocaleDateString("pt-BR");
+  const dataEvt = new Date(inscricao.evento.data);
+  const dataFmt = `${String(dataEvt.getUTCDate()).padStart(2, "0")}/${String(dataEvt.getUTCMonth() + 1).padStart(2, "0")}/${dataEvt.getUTCFullYear()}`;
   const emailResult = await enviarConfirmacaoInscricao({
     para: inscricao.participante.email,
     nome: inscricao.participante.nome,

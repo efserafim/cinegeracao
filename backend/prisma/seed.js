@@ -29,10 +29,10 @@ async function main() {
           "Rua Beatriz Amaral Pereira, 106 - Bacaxá - Saquarema/RJ",
           "",
           "Sessão às 18h10 | Chegada às 17h10",
-          "Pipoca P + Guaravita inclusos"
+          "Pipoca cortesia + Guaravita inclusos"
         ].join("\n"),
         valor: 10,
-        data: new Date("2026-08-01T12:00:00"),
+        data: new Date("2026-08-01T12:00:00.000Z"),
         horario: "18:10",
         local: "Cinema MaxiMovie – Rua Beatriz Amaral Pereira, 106 - Bacaxá",
         cidade: "Saquarema",
