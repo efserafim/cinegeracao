@@ -1,1 +1,6 @@
+# Proxy da API (tem de vir ANTES do /* — o Netlify lê _redirects antes do netlify.toml)
+/api/*  https://cinegeracao.onrender.com/api/:splat  200!
+/uploads/*  https://cinegeracao.onrender.com/uploads/:splat  200!
+
+# SPA
 /*    /index.html   200
