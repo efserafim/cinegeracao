@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Pencil, Users, Ban, Trash2 } from "lucide-react";
 import api, { formatDate, formatMoney } from "../../services/api";
-import { Button, Loading } from "../../components/ui";
+import { Button, Loading, ConfirmModal } from "../../components/ui";
 
 const STATUS_EVENTO = {
   ABERTO: {
@@ -38,6 +38,8 @@ const STATUS_EVENTO = {
 export default function EventosAdminPage() {
   const [eventos, setEventos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [confirm, setConfirm] = useState(null); // { type, id }
+
   async function load() {
     setLoading(true);
     try {
@@ -50,18 +52,31 @@ export default function EventosAdminPage() {
   useEffect(() => {
     load();
   }, []);
-  async function encerrar(id) {
-    if (!confirm("Encerrar este evento?")) return;
-    await api.patch(`/eventos/${id}/encerrar`);
+
+  async function runConfirm() {
+    if (!confirm) return;
+    const { type, id } = confirm;
+    setConfirm(null);
+    if (type === "encerrar") await api.patch(`/eventos/${id}/encerrar`);
+    if (type === "excluir") await api.delete(`/eventos/${id}`);
     load();
   }
-  async function excluir(id) {
-    if (!confirm("Excluir permanentemente este evento e suas inscrições?")) return;
-    await api.delete(`/eventos/${id}`);
-    load();
-  }
+
   if (loading) return <Loading />;
   return <div className="space-y-6">
+      <ConfirmModal
+        open={Boolean(confirm)}
+        title={confirm?.type === "excluir" ? "Excluir evento?" : "Encerrar evento?"}
+        message={
+          confirm?.type === "excluir"
+            ? "Excluir permanentemente este evento e suas inscrições? Essa ação não pode ser desfeita."
+            : "Encerrar este evento? As inscrições públicas serão fechadas."
+        }
+        confirmLabel={confirm?.type === "excluir" ? "Excluir" : "Encerrar"}
+        danger={confirm?.type === "excluir"}
+        onCancel={() => setConfirm(null)}
+        onConfirm={runConfirm}
+      />
       <div className="flex items-center justify-between gap-3">
         <h1 className="font-display text-3xl">Eventos</h1>
         <Link to="/admin/eventos/novo"><Button>Novo evento</Button></Link>
@@ -103,8 +118,8 @@ export default function EventosAdminPage() {
               <Link to={`/admin/eventos/${ev.id}/editar`}>
                 <Button variant="ghost"><Pencil size={14} /></Button>
               </Link>
-              <Button variant="ghost" onClick={() => encerrar(ev.id)}><Ban size={14} /></Button>
-              <Button variant="ghost" onClick={() => excluir(ev.id)}><Trash2 size={14} className="text-red-600" /></Button>
+              <Button variant="ghost" onClick={() => setConfirm({ type: "encerrar", id: ev.id })}><Ban size={14} /></Button>
+              <Button variant="ghost" onClick={() => setConfirm({ type: "excluir", id: ev.id })}><Trash2 size={14} className="text-red-600" /></Button>
             </div>
           </div>
           );

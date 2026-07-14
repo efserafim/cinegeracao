@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Download, Search, Trash2 } from "lucide-react";
 import api, { formatDate, formatMoney } from "../../services/api";
-import { Button, Input, Loading, StatCard, StatusBadge } from "../../components/ui";
+import { Button, Input, Loading, StatCard, StatusBadge, ConfirmModal } from "../../components/ui";
 export default function InscritosPage() {
   const { id } = useParams();
   const [items, setItems] = useState([]);
   const [dash, setDash] = useState(null);
   const [loading, setLoading] = useState(true);
   const [excluindoId, setExcluindoId] = useState(null);
+  const [confirmExcluir, setConfirmExcluir] = useState(null);
   const [filters, setFilters] = useState({ q: "", status: "", cidade: "", telefone: "" });
   async function load() {
     setLoading(true);
@@ -39,11 +40,10 @@ export default function InscritosPage() {
     a.click();
     URL.revokeObjectURL(url);
   }
-  async function excluirInscricao(inscricao) {
-    const nome = inscricao.participante?.nome || "esta inscrição";
-    const ok = window.confirm(`Excluir a inscrição de ${nome}?
-Essa ação não pode ser desfeita.`);
-    if (!ok) return;
+  async function confirmarExclusao() {
+    if (!confirmExcluir) return;
+    const inscricao = confirmExcluir;
+    setConfirmExcluir(null);
     setExcluindoId(inscricao.id);
     try {
       await api.delete(`/inscricoes/${inscricao.id}`);
@@ -55,6 +55,16 @@ Essa ação não pode ser desfeita.`);
     }
   }
   return <div className="space-y-6">
+      <ConfirmModal
+        open={Boolean(confirmExcluir)}
+        title="Excluir inscrição?"
+        message={`Excluir a inscrição de ${confirmExcluir?.participante?.nome || "esta pessoa"}?\nEssa ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        danger
+        busy={Boolean(excluindoId)}
+        onCancel={() => setConfirmExcluir(null)}
+        onConfirm={confirmarExclusao}
+      />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-3xl">Inscritos</h1>
         <div className="flex flex-wrap gap-2">
@@ -140,7 +150,7 @@ Essa ação não pode ser desfeita.`);
                       </Link>
                       <button
     type="button"
-    onClick={() => excluirInscricao(i)}
+    onClick={() => setConfirmExcluir(i)}
     disabled={excluindoId === i.id}
     className="inline-flex items-center gap-1 text-red-600 hover:underline disabled:opacity-50"
     title="Excluir inscrição"

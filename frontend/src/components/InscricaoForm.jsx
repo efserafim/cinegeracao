@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { Minus, Plus, Ticket } from "lucide-react";
@@ -39,6 +39,7 @@ export default function InscricaoForm({ evento }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [duplicata, setDuplicata] = useState(null);
+  const guestsRef = useRef(null);
 
   const maxQtd = Math.min(MAX_INGRESSOS, Math.max(1, evento.vagasRestantes || 1));
   const total = Number(evento.valor) * quantidade;
@@ -51,6 +52,14 @@ export default function InscricaoForm({ evento }) {
     while (atual.length > extras) atual.pop();
     setValue("pessoas", atual);
   }, [quantidade, getValues, setValue]);
+
+  useEffect(() => {
+    if (quantidade <= 1 || !guestsRef.current) return;
+    const t = window.setTimeout(() => {
+      guestsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [quantidade]);
 
   function alterarQuantidade(delta) {
     const next = Math.min(maxQtd, Math.max(1, quantidade + delta));
@@ -177,6 +186,23 @@ export default function InscricaoForm({ evento }) {
         </Field>
       </div>
 
+      <Field
+        label="Chave PIX para devolução"
+        error={errors.chavePixDevolucao?.message}
+      >
+        <input
+          className={fieldClass}
+          placeholder="CPF, celular, e-mail ou chave aleatória"
+          {...register("chavePixDevolucao", {
+            required: "Obrigatório — usamos só se precisar devolver o valor",
+            validate: (v) => String(v || "").trim().length >= 5 || "Informe uma chave PIX válida",
+          })}
+        />
+        <p className="mt-1.5 text-xs leading-relaxed text-[var(--color-ink-soft)] dark:text-slate-400">
+          Em caso de problema (cancelamento, evento alterado etc.), devolvemos o pagamento nesta chave.
+        </p>
+      </Field>
+
       <div className={panelClass}>
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -215,7 +241,11 @@ export default function InscricaoForm({ evento }) {
       </div>
 
       {quantidade > 1 && (
-        <div className="overflow-hidden rounded-[1.35rem] ring-2 ring-[#e11d2e]/45 dark:ring-[#e11d2e]/50">
+        <div
+          ref={guestsRef}
+          data-scroll-anchor
+          className="overflow-hidden rounded-[1.35rem] ring-2 ring-[#e11d2e]/45 dark:ring-[#e11d2e]/50"
+        >
           <div className="bg-gradient-to-r from-[#e11d2e] to-[#b01422] px-4 py-2.5">
             <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white">
               Nome das outras pessoas

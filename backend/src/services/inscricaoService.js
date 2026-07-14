@@ -93,13 +93,20 @@ async function criarInscricao(eventoId, dados) {
   }
   const nomeResponsavel = String(dados.nome || pessoas[0]).trim();
   const valorTotal = Number(evento.valor) * quantidade;
+  const chavePixDevolucao = String(dados.chavePixDevolucao || "").trim();
+  if (!chavePixDevolucao) {
+    const err = new Error("Informe uma chave PIX para devolução, caso seja necessário");
+    err.status = 400;
+    throw err;
+  }
   const participante = await prisma.participante.create({
     data: {
       nome: nomeResponsavel,
       telefone,
       email: dados.email || null,
       paroquia: dados.paroquia,
-      cidade: dados.cidade
+      cidade: dados.cidade,
+      chavePixDevolucao
     }
   });
   const metodo = String(dados.metodoPagamento || dados.metodo || "PIX").toUpperCase() === "DINHEIRO" ? "DINHEIRO" : "PIX";
@@ -978,7 +985,8 @@ function formatInscricao(i) {
       telefone: i.participante.telefone,
       email: i.participante.email,
       paroquia: i.participante.paroquia,
-      cidade: i.participante.cidade
+      cidade: i.participante.cidade,
+      chavePixDevolucao: i.participante.chavePixDevolucao || null
     } : void 0,
     evento: i.evento ? {
       id: i.evento.id,

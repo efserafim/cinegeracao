@@ -135,7 +135,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="inscricao" className="relative scroll-mt-20 overflow-hidden px-5 py-10 sm:px-6 sm:py-12">
+      <section id="inscricao" className="relative scroll-mt-24 overflow-hidden px-5 py-10 sm:px-6 sm:py-12">
         <SpiderMark className="pointer-events-none absolute -right-10 top-8 h-44 w-44 rotate-6 opacity-[0.08]" />
         <SpiderMark className="pointer-events-none absolute -left-8 bottom-16 h-36 w-36 -rotate-12 opacity-[0.07]" />
 

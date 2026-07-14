@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Check } from "lucide-react";
 import api, { formatDate, formatMoney, mediaUrl, ALERTA_LABELS } from "../../services/api";
-import { Button, Loading, StatusBadge, TextArea } from "../../components/ui";
+import { Button, Loading, StatusBadge, TextArea, ConfirmModal, Modal } from "../../components/ui";
 
 export default function ComprovantePage() {
   const { id } = useParams();
@@ -20,6 +20,7 @@ export default function ComprovantePage() {
   const [ocrBusy, setOcrBusy] = useState(false);
   const [ocrTried, setOcrTried] = useState(false);
   const [conferindoExtrato, setConferindoExtrato] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -159,7 +160,11 @@ export default function ComprovantePage() {
   }
 
   async function cancelar() {
-    if (!confirm("Cancelar inscrição?")) return;
+    setConfirmCancel(true);
+  }
+
+  async function confirmarCancelamento() {
+    setConfirmCancel(false);
     const { data } = await api.post(`/inscricoes/${id}/cancelar`, { observacao: obs });
     setItem(data.data);
     setMsg("Inscrição cancelada.");
@@ -231,30 +236,37 @@ export default function ComprovantePage() {
 
   return (
     <div className="space-y-6">
-      {showConfirmAnim && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 animate-confirm-fade">
-          <div className="w-full max-w-sm rounded-[1.75rem] bg-[#070a12] px-6 py-8 text-center text-white shadow-2xl ring-1 ring-[#e11d2e]/40 animate-confirm-pop">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/20 ring-4 ring-emerald-400/40 animate-confirm-check">
-              <Check size={40} className="text-emerald-400" strokeWidth={3} />
-            </div>
-            <p className="mt-5 font-display text-3xl tracking-wide">Confirmado!</p>
-            <p className="mt-2 text-sm text-white/75">
-              {(item.quantidade || ingressos.length || 1) > 1
-                ? `${item.quantidade || ingressos.length} ingressos liberados`
-                : "Ingresso liberado"}
-            </p>
-            {pessoas.length > 0 && (
-              <ul className="mt-4 space-y-1 text-left text-sm text-white/85">
-                {pessoas.map((pessoa) => (
-                  <li key={pessoa.id || pessoa.nome} className="rounded-xl bg-white/5 px-3 py-2">
-                    · {pessoa.nome}
-                  </li>
-                ))}
-              </ul>
-            )}
+      <ConfirmModal
+        open={confirmCancel}
+        title="Cancelar inscrição?"
+        message="Essa ação marca a inscrição como cancelada."
+        confirmLabel="Sim, cancelar"
+        danger
+        onCancel={() => setConfirmCancel(false)}
+        onConfirm={confirmarCancelamento}
+      />
+      <Modal open={showConfirmAnim} className="!max-w-sm overflow-hidden bg-[#070a12] text-center text-white !border-[#e11d2e]/40">
+        <div className="px-6 py-8">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/20 ring-4 ring-emerald-400/40 animate-confirm-check">
+            <Check size={40} className="text-emerald-400" strokeWidth={3} />
           </div>
+          <p className="mt-5 font-display text-3xl tracking-wide">Confirmado!</p>
+          <p className="mt-2 text-sm text-white/75">
+            {(item.quantidade || ingressos.length || 1) > 1
+              ? `${item.quantidade || ingressos.length} ingressos liberados`
+              : "Ingresso liberado"}
+          </p>
+          {pessoas.length > 0 && (
+            <ul className="mt-4 space-y-1 text-left text-sm text-white/85">
+              {pessoas.map((pessoa) => (
+                <li key={pessoa.id || pessoa.nome} className="rounded-xl bg-white/5 px-3 py-2">
+                  · {pessoa.nome}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-      )}
+      </Modal>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -338,6 +350,12 @@ export default function ComprovantePage() {
               <p>E-mail: {item.participante?.email || "—"}</p>
               <p>Paróquia: {item.participante?.paroquia || "—"}</p>
               <p>Cidade: {item.participante?.cidade}</p>
+              <p>
+                PIX devolução:{" "}
+                <span className="font-medium break-all">
+                  {item.participante?.chavePixDevolucao || "—"}
+                </span>
+              </p>
               <p>
                 Valor: {formatMoney(item.valor)}
                 {item.quantidade > 1 ? ` (${item.quantidade} ingressos)` : ""}

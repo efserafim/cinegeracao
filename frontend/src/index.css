@@ -234,6 +234,53 @@
   html.dark .spider-mark-auto {
     filter: none;
   }
+
+  /* Janelas no viewport real (portal + 100dvh) — não “lá embaixo” */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    box-sizing: border-box;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    width: 100%;
+    min-height: 100%;
+    min-height: 100dvh;
+    padding:
+      max(12vh, env(safe-area-inset-top, 0px) + 1.25rem)
+      max(1rem, env(safe-area-inset-right, 0px))
+      max(1.5rem, env(safe-area-inset-bottom, 0px))
+      max(1rem, env(safe-area-inset-left, 0px));
+    background: rgba(0, 0, 0, 0.55);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    animation: fadeIn 0.2s ease-out both;
+  }
+
+  .modal-panel {
+    width: min(100%, 28rem);
+    max-height: min(78dvh, 36rem);
+    overflow-y: auto;
+    flex-shrink: 0;
+    border-radius: 1.5rem;
+    background: rgba(255, 255, 255, 0.97);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.55);
+    animation: confirmPop 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  html.dark .modal-panel {
+    background: rgba(15, 20, 36, 0.98);
+    box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.75);
+  }
+
+  #inscricao,
+  [data-scroll-anchor] {
+    scroll-margin-top: 5.5rem;
+  }
 }
 
 @keyframes fadeUp {
