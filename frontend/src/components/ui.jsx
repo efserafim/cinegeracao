@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 
 export function StatusBadge({ status }) {
   const map = {
-    PRE_INSCRITA: "bg-[#f5c542]/25 text-[#7a4b00] dark:bg-[#f5c542]/20 dark:text-[#f5c542]",
+    PRE_INSCRITA: "bg-[#f5c542] text-[#1a1200] ring-2 ring-[#f5c542]/60 shadow-sm shadow-[#f5c542]/30",
     AGUARDANDO_PAGAMENTO: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
     COMPROVANTE_ENVIADO: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200",
     OCR_PROCESSADO: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200",
@@ -14,7 +14,7 @@ export function StatusBadge({ status }) {
     CANCELADA: "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
   };
   const labels = {
-    PRE_INSCRITA: "Pré-inscrita",
+    PRE_INSCRITA: "Pré-inscrito(a)",
     AGUARDANDO_PAGAMENTO: "Aguardando pagamento",
     COMPROVANTE_ENVIADO: "Comprovante enviado",
     OCR_PROCESSADO: "OCR processado",
@@ -24,8 +24,13 @@ export function StatusBadge({ status }) {
     PAGAMENTO_RECUSADO: "Recusado",
     CANCELADA: "Cancelada"
   };
+  const emphasis = status === "PRE_INSCRITA";
   return (
-    <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${map[status] || map.CANCELADA}`}>
+    <span
+      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${map[status] || map.CANCELADA} ${
+        emphasis ? "!rounded-full !px-3.5 !py-1.5 !text-sm !font-black uppercase tracking-[0.08em]" : ""
+      }`}
+    >
       {labels[status] || status}
     </span>
   );

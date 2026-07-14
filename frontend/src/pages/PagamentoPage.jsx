@@ -133,9 +133,15 @@ export default function PagamentoPage() {
                 <li>· Quando liberarmos a cobrança, use o código + e-mail em Consultar</li>
                 <li>· Ou fale no WhatsApp com Eduardo ou Lavínia</li>
               </ul>
-              <p className="text-center text-xs text-white/55">
-                Status: {STATUS_LABELS[inscricao.status] || inscricao.status}
-              </p>
+
+              <div className="rounded-[1.35rem] bg-[#f5c542] px-4 py-4 text-center shadow-[0_0_28px_rgba(245,197,66,0.35)] ring-2 ring-white/30">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#1a1200]/70">
+                  Status da sua inscrição
+                </p>
+                <p className="mt-1 font-display text-3xl tracking-wide text-[#1a1200] sm:text-4xl">
+                  Pré-inscrito(a)
+                </p>
+              </div>
             </div>
           </div>
           <ContatosDuvidas />
