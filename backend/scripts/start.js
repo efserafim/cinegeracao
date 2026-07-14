@@ -1,6 +1,5 @@
 /**
  * Recover from failed Prisma migrations (P3009), then start the API.
- * Render keeps a failed row in `_prisma_migrations` until it is cleared.
  */
 const { execSync } = require("child_process");
 const fs = require("fs");
@@ -69,31 +68,18 @@ for (const name of FAILED) {
 let ok = sh("npx prisma migrate deploy", { allowFail: true });
 
 if (!ok) {
-  console.warn("[start] migrate deploy failed — ensuring enum values exist, then marking applied…");
+  console.warn(
+    "[start] migrate deploy failed — marking pre-inscricao migrations applied and forcing event status…"
+  );
 
-  dbExecute(`
-DO $$ BEGIN
-  ALTER TYPE "StatusEvento" ADD VALUE 'PRE_INSCRICAO';
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
-`);
-
-  dbExecute(`
-DO $$ BEGIN
-  ALTER TYPE "StatusInscricao" ADD VALUE 'PRE_INSCRITA';
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
-`);
+  // Enum may already exist from a previous partial attempt; don't re-run ADD VALUE.
+  for (const name of FAILED) {
+    sh(`npx prisma migrate resolve --applied "${name}"`, { allowFail: true });
+  }
 
   dbExecute(`
 UPDATE "eventos" SET status = 'PRE_INSCRICAO' WHERE status = 'ABERTO';
 `);
-
-  for (const name of FAILED) {
-    sh(`npx prisma migrate resolve --applied "${name}"`, { allowFail: true });
-  }
 
   ok = sh("npx prisma migrate deploy", { allowFail: true });
 }
