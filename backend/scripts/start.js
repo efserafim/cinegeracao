@@ -1,15 +1,16 @@
 /**
- * Recover from failed Prisma migrations (P3009), then start the API.
+ * Unblock Prisma P3009 and ensure pré-inscrição schema, then start the API.
  */
 const { execSync } = require("child_process");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const crypto = require("crypto");
 
 const root = path.join(__dirname, "..");
 const schema = path.join(root, "prisma", "schema.prisma");
 
-const FAILED = [
+const PRE_MIGRATIONS = [
   "20260714190000_pre_inscricao",
   "20260714190001_pre_inscricao_status",
   "20260714190100_ativar_pre_inscricao",
@@ -27,17 +28,17 @@ function sh(command, { allowFail = false } = {}) {
     return true;
   } catch (err) {
     if (allowFail) {
-      console.warn(`[start] command failed (continuing): ${command}`);
+      console.warn(`[start] continue after failure: ${command}`);
       return false;
     }
-    console.error(`[start] command failed: ${command}`);
+    console.error(`[start] fatal: ${command}`);
     process.exit(err.status || 1);
   }
 }
 
 function dbExecute(sql) {
-  const file = path.join(os.tmpdir(), `cinegeracao-migrate-fix-${Date.now()}.sql`);
-  fs.writeFileSync(file, sql, "utf8");
+  const file = path.join(os.tmpdir(), `cg-sql-${crypto.randomBytes(6).toString("hex")}.sql`);
+  fs.writeFileSync(file, `${sql.trim()}\n`, "utf8");
   try {
     return sh(
       `npx prisma db execute --file "${file}" --schema "${schema}"`,
@@ -52,40 +53,45 @@ function dbExecute(sql) {
   }
 }
 
-console.log("[start] clearing failed pre-inscricao migration rows (if any)…");
+function checksumOf(migrationName) {
+  const file = path.join(root, "prisma", "migrations", migrationName, "migration.sql");
+  if (!fs.existsSync(file)) return "";
+  return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+}
+
+console.log("[start] fixing pré-inscrição migrations if stuck…");
+
 dbExecute(`
 DELETE FROM "_prisma_migrations"
 WHERE migration_name IN (
-  '${FAILED.join("',\n  '")}'
-)
-AND finished_at IS NULL;
+  '${PRE_MIGRATIONS.join("',\n  '")}'
+);
 `);
 
-for (const name of FAILED) {
-  sh(`npx prisma migrate resolve --rolled-back "${name}"`, { allowFail: true });
-}
+dbExecute(`ALTER TYPE "StatusEvento" ADD VALUE IF NOT EXISTS 'PRE_INSCRICAO';`);
+dbExecute(`ALTER TYPE "StatusInscricao" ADD VALUE IF NOT EXISTS 'PRE_INSCRITA';`);
+dbExecute(`UPDATE "eventos" SET status = 'PRE_INSCRICAO' WHERE status = 'ABERTO';`);
 
-let ok = sh("npx prisma migrate deploy", { allowFail: true });
-
-if (!ok) {
-  console.warn(
-    "[start] migrate deploy failed — marking pre-inscricao migrations applied and forcing event status…"
-  );
-
-  // Enum may already exist from a previous partial attempt; don't re-run ADD VALUE.
-  for (const name of FAILED) {
-    sh(`npx prisma migrate resolve --applied "${name}"`, { allowFail: true });
-  }
-
+for (const name of PRE_MIGRATIONS) {
+  const checksum = checksumOf(name);
   dbExecute(`
-UPDATE "eventos" SET status = 'PRE_INSCRICAO' WHERE status = 'ABERTO';
+INSERT INTO "_prisma_migrations" (
+  id, checksum, finished_at, migration_name, logs, rolled_back_at, started_at, applied_steps_count
+) VALUES (
+  '${crypto.randomUUID()}',
+  '${checksum}',
+  NOW(),
+  '${name}',
+  NULL,
+  NULL,
+  NOW(),
+  1
+);
 `);
-
-  ok = sh("npx prisma migrate deploy", { allowFail: true });
 }
 
-if (!ok) {
-  console.error("[start] prisma migrate deploy still failing after recovery");
+if (!sh("npx prisma migrate deploy", { allowFail: true })) {
+  console.error("[start] prisma migrate deploy failed after recovery");
   process.exit(1);
 }
 
