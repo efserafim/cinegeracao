@@ -27,8 +27,10 @@ export function StatusBadge({ status }) {
   const emphasis = status === "PRE_INSCRITA";
   return (
     <span
-      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${map[status] || map.CANCELADA} ${
-        emphasis ? "!rounded-full !px-3.5 !py-1.5 !text-sm !font-black uppercase tracking-[0.08em]" : ""
+      className={`inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-medium ${map[status] || map.CANCELADA} ${
+        emphasis
+          ? "!rounded-full !px-3.5 !py-1.5 !text-[11px] !font-black !normal-case tracking-wide"
+          : ""
       }`}
     >
       {labels[status] || status}
