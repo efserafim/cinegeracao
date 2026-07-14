@@ -177,6 +177,27 @@ async function buscarPorCodigo(codigo) {
   return formatInscricao(inscricao);
 }
 
+async function buscarPorCodigoEEmail(codigoRaw, emailRaw) {
+  const codigo = String(codigoRaw || "").trim().toUpperCase();
+  const email = String(emailRaw || "").trim().toLowerCase();
+  if (!codigo || !email) {
+    const err = new Error("Informe o código e o e-mail da inscrição");
+    err.status = 400;
+    throw err;
+  }
+  const inscricao = await prisma.inscricao.findUnique({
+    where: { codigo },
+    include: includeInscricao
+  });
+  const emailCadastro = String(inscricao?.participante?.email || "").trim().toLowerCase();
+  if (!inscricao || !emailCadastro || emailCadastro !== email) {
+    const err = new Error("Código ou e-mail não conferem. Confira e tente de novo.");
+    err.status = 404;
+    throw err;
+  }
+  return formatInscricao(inscricao);
+}
+
 async function buscarPorWhatsApp(telefoneRaw) {
   const telefone = normalizarWhatsApp(telefoneRaw);
   if (!telefone || telefone.length < 10) {
@@ -1088,6 +1109,7 @@ async function reenviarEmailConfirmacao(id, adminId, ip) {
 module.exports = {
   criarInscricao,
   buscarPorCodigo,
+  buscarPorCodigoEEmail,
   buscarPorWhatsApp,
   enviarComprovante,
   reprocessarOcr,

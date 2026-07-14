@@ -303,8 +303,7 @@ export default function InscricaoForm({ evento }) {
             : `Continuar para o PIX · ${formatMoney(total)}`}
       </Button>
       <p className="text-center text-[11px] leading-relaxed text-[var(--color-ink-soft)] dark:text-slate-400">
-        Já se inscreveu? Use o mesmo WhatsApp para recuperar seu código.
-      </p>
+        Já se inscreveu? Consulte com o código e o e-mail da inscrição.      </p>
     </form>
   );
 }

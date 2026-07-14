@@ -17,6 +17,14 @@ async function obterPorCodigo(req, res, next) {
     return next(err);
   }
 }
+async function consultar(req, res, next) {
+  try {
+    const data = await inscricaoService.buscarPorCodigoEEmail(req.body.codigo, req.body.email);
+    return success(res, data);
+  } catch (err) {
+    return next(err);
+  }
+}
 async function obterPorWhatsApp(req, res, next) {
   try {
     const data = await inscricaoService.buscarPorWhatsApp(req.params.telefone);
@@ -217,6 +225,7 @@ async function relatorioFinanceiro(req, res, next) {
 module.exports = {
   criar,
   obterPorCodigo,
+  consultar,
   obterPorWhatsApp,
   enviarComprovante,
   listar,
