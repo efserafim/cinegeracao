@@ -109,13 +109,6 @@ export default function HomePage() {
               <br />
               Sessão 18h10 · Chegada 17h10
             </h1>
-            <p
-              className="animate-fade-up mt-4 max-w-md rounded-2xl bg-[#f5c542]/95 px-4 py-3 text-sm font-bold leading-snug text-[#1a1200] shadow-[0_12px_28px_rgba(245,197,66,0.35)] ring-2 ring-white/40"
-              style={{ animationDelay: "0.22s" }}
-            >
-              Promoção: ingresso a R$&nbsp;10 + pipoca cortesia + guaravita —{" "}
-              <span className="underline decoration-2 underline-offset-2">mínimo de 100 pessoas</span>.
-            </p>
             <button
               type="button"
               onClick={scrollToInscricao}
