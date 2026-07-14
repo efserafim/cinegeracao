@@ -288,8 +288,8 @@ export default function DashboardPage() {
   const presentes = stats?.presentes ?? 0;
   const pendentesRecentes = stats?.pendentesRecentes || [];
   const conferirExtrato = stats?.conferirExtrato || [];
-  const taxaConfirmacao = stats?.inscritos
-    ? Math.round(((stats?.confirmadas || 0) / stats.inscritos) * 100)
+  const taxaConfirmacao = (stats?.pessoas || stats?.inscritos)
+    ? Math.round(((stats?.confirmadasPessoas || stats?.confirmadas || 0) / (stats.pessoas || stats.inscritos)) * 100)
     : 0;
   const ocupadasPrincipal = eventoPrincipal
     ? Math.max(0, (eventoPrincipal.vagasMaximas || 0) - (eventoPrincipal.vagasRestantes || 0))
@@ -485,8 +485,8 @@ export default function DashboardPage() {
           />
           <StatTile
             label="Inscritos"
-            value={stats?.inscritos ?? 0}
-            hint="Total geral"
+            value={stats?.pessoas ?? stats?.inscritos ?? 0}
+            hint={`${stats?.inscritos ?? 0} cadastro(s) · soma das qtds`}
             icon={Users}
             accent="blue"
             to={eventoPrincipal ? `/admin/eventos/${eventoPrincipal.id}/inscritos` : "/admin/eventos"}
@@ -494,7 +494,7 @@ export default function DashboardPage() {
           />
           <StatTile
             label="Confirmados"
-            value={stats?.confirmadas ?? 0}
+            value={stats?.confirmadasPessoas ?? stats?.confirmadas ?? 0}
             hint={`${taxaConfirmacao}% de confirmação`}
             icon={CheckCircle2}
             accent="green"

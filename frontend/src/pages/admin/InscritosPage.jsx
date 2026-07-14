@@ -74,13 +74,35 @@ export default function InscritosPage() {
         </div>
       </div>
 
-      {dash && <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-          <StatCard label="Inscritos" value={dash.inscritos} />
-          <StatCard label="Confirmadas" value={dash.confirmadas} />
-          <StatCard label="Pendentes" value={dash.pendentes} />
+      {dash && <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
+          <StatCard
+            label="Pessoas / ingressos"
+            value={dash.pessoas ?? dash.vagasOcupadas ?? 0}
+            hint="Soma das quantidades"
+          />
+          <StatCard label="Cadastros" value={dash.inscritos} hint="Responsáveis" />
+          <StatCard
+            label="Pré-inscritos"
+            value={dash.preInscritosPessoas ?? 0}
+            hint={`${dash.preInscritos || 0} cadastro(s)`}
+          />
+          <StatCard
+            label="Confirmadas"
+            value={dash.confirmadasPessoas ?? dash.confirmadas}
+            hint={`${dash.confirmadas || 0} cadastro(s)`}
+          />
+          <StatCard
+            label="Pendentes"
+            value={dash.pendentesPessoas ?? dash.pendentes}
+            hint={`${dash.pendentes || 0} cadastro(s)`}
+          />
           <StatCard label="Cancelados" value={dash.canceladas} />
           <StatCard label="Arrecadado" value={formatMoney(dash.valorArrecadado)} />
-          <StatCard label="Vagas" value={dash.vagasRestantes} hint={`de ${dash.vagasMaximas}`} />
+          <StatCard
+            label="Vagas"
+            value={dash.vagasRestantes}
+            hint={`${dash.vagasOcupadas ?? 0} de ${dash.vagasMaximas} ocupadas`}
+          />
         </div>}
 
       <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-black/5 bg-white/80 p-4 dark:border-white/10 dark:bg-slate-900/70">
@@ -101,6 +123,7 @@ export default function InscritosPage() {
     onChange={(e) => setFilters({ ...filters, status: e.target.value })}
   >
             <option value="">Todos</option>
+            <option value="PRE_INSCRITA">Pré-inscrito(a)</option>
             <option value="AGUARDANDO_PAGAMENTO">Aguardando pagamento</option>
             <option value="AGUARDANDO_CONFIRMACAO">Aguardando confirmação</option>
             <option value="INGRESSO_LIBERADO">Ingresso liberado</option>

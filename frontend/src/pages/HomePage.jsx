@@ -201,7 +201,10 @@ export default function HomePage() {
                         {isPre ? "Interessados até agora" : "Progresso para o evento"}
                       </p>
                       <p className="mt-1 text-sm font-semibold text-[var(--color-ink)] dark:text-white">
-                        {inscritos} de {META_PROMOCAO} pessoas
+                        {inscritos} de {META_PROMOCAO} pessoa{inscritos === 1 ? "" : "s"}
+                      </p>
+                      <p className="text-[11px] text-[var(--color-ink-soft)] dark:text-slate-400">
+                        Contando cada ingresso da quantidade informada
                       </p>
                     </div>
                     <p className="font-display text-4xl leading-none tracking-wide text-[#e11d2e] dark:text-[#f5c542]">

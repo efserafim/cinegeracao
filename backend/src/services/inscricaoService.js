@@ -830,10 +830,30 @@ async function dashboard(eventoId) {
     err.status = 404;
     throw err;
   }
-  const [total, confirmadas, pendentes, canceladas, arrecadado] = await Promise.all([
+  const statusAtivos = { not: "CANCELADA" };
+  const [
+    totalInscricoes,
+    totalPessoas,
+    confirmadas,
+    confirmadasPessoas,
+    pendentes,
+    pendentesPessoas,
+    preInscritos,
+    preInscritosPessoas,
+    canceladas,
+    arrecadado
+  ] = await Promise.all([
     prisma.inscricao.count({ where: { eventoId } }),
+    prisma.inscricao.aggregate({
+      where: { eventoId, status: statusAtivos },
+      _sum: { quantidade: true }
+    }),
     prisma.inscricao.count({
       where: { eventoId, status: { in: ["PAGAMENTO_CONFIRMADO", "INGRESSO_LIBERADO"] } }
+    }),
+    prisma.inscricao.aggregate({
+      where: { eventoId, status: { in: ["PAGAMENTO_CONFIRMADO", "INGRESSO_LIBERADO"] } },
+      _sum: { quantidade: true }
     }),
     prisma.inscricao.count({
       where: {
@@ -849,6 +869,26 @@ async function dashboard(eventoId) {
         }
       }
     }),
+    prisma.inscricao.aggregate({
+      where: {
+        eventoId,
+        status: {
+          in: [
+            "AGUARDANDO_PAGAMENTO",
+            "COMPROVANTE_ENVIADO",
+            "OCR_PROCESSADO",
+            "AGUARDANDO_CONFIRMACAO",
+            "PAGAMENTO_RECUSADO"
+          ]
+        }
+      },
+      _sum: { quantidade: true }
+    }),
+    prisma.inscricao.count({ where: { eventoId, status: "PRE_INSCRITA" } }),
+    prisma.inscricao.aggregate({
+      where: { eventoId, status: "PRE_INSCRITA" },
+      _sum: { quantidade: true }
+    }),
     prisma.inscricao.count({ where: { eventoId, status: "CANCELADA" } }),
     prisma.inscricao.aggregate({
       where: { eventoId, status: { in: ["PAGAMENTO_CONFIRMADO", "INGRESSO_LIBERADO"] } },
@@ -857,11 +897,17 @@ async function dashboard(eventoId) {
   ]);
   const ocupadas = await contarOcupadas(eventoId);
   return {
-    inscritos: total,
+    inscritos: totalInscricoes,
+    pessoas: Number(totalPessoas._sum.quantidade || 0),
     confirmadas,
+    confirmadasPessoas: Number(confirmadasPessoas._sum.quantidade || 0),
     pendentes,
+    pendentesPessoas: Number(pendentesPessoas._sum.quantidade || 0),
+    preInscritos,
+    preInscritosPessoas: Number(preInscritosPessoas._sum.quantidade || 0),
     canceladas,
     valorArrecadado: Number(arrecadado._sum.valor || 0),
+    vagasOcupadas: ocupadas,
     vagasRestantes: Math.max(0, evento.vagasMaximas - ocupadas),
     vagasMaximas: evento.vagasMaximas
   };
@@ -871,7 +917,9 @@ async function dashboardGlobal() {
   const [
     eventos,
     inscritos,
+    pessoas,
     confirmadas,
+    confirmadasPessoas,
     pendentes,
     valor,
     presentes,
@@ -879,9 +927,17 @@ async function dashboardGlobal() {
     conferirExtratoRaw
   ] = await Promise.all([
     prisma.evento.count(),
-    prisma.inscricao.count(),
+    prisma.inscricao.count({ where: { status: { not: "CANCELADA" } } }),
+    prisma.inscricao.aggregate({
+      where: { status: { not: "CANCELADA" } },
+      _sum: { quantidade: true }
+    }),
     prisma.inscricao.count({
       where: { status: { in: ["PAGAMENTO_CONFIRMADO", "INGRESSO_LIBERADO"] } }
+    }),
+    prisma.inscricao.aggregate({
+      where: { status: { in: ["PAGAMENTO_CONFIRMADO", "INGRESSO_LIBERADO"] } },
+      _sum: { quantidade: true }
     }),
     prisma.inscricao.count({
       where: { status: { in: statusPendentes } }
@@ -951,7 +1007,9 @@ async function dashboardGlobal() {
   return {
     eventos,
     inscritos,
+    pessoas: Number(pessoas._sum.quantidade || 0),
     confirmadas,
+    confirmadasPessoas: Number(confirmadasPessoas._sum.quantidade || 0),
     pendentes,
     presentes,
     valorArrecadado: Number(valor._sum.valor || 0),
