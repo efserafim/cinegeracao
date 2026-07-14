@@ -108,9 +108,14 @@ export default function HomePage() {
               1º de agosto · Cinema MaxiMovie · Bacaxá
               <br />
               Sessão 18h10 · Chegada 17h10
-              <br />
-              Pipoca cortesia + Guaravita inclusos
             </h1>
+            <p
+              className="animate-fade-up mt-4 max-w-md rounded-2xl bg-[#f5c542]/95 px-4 py-3 text-sm font-bold leading-snug text-[#1a1200] shadow-[0_12px_28px_rgba(245,197,66,0.35)] ring-2 ring-white/40"
+              style={{ animationDelay: "0.22s" }}
+            >
+              Promoção: ingresso a R$&nbsp;10 + pipoca cortesia + guaravita —{" "}
+              <span className="underline decoration-2 underline-offset-2">mínimo de 100 pessoas</span>.
+            </p>
             <button
               type="button"
               onClick={scrollToInscricao}
@@ -148,6 +153,26 @@ export default function HomePage() {
             <h2 className="mt-1.5 font-display text-3xl tracking-wide text-[var(--color-ink)] dark:text-white">
               Inscrição
             </h2>
+          </div>
+
+          <div className="mb-6 overflow-hidden rounded-[1.35rem] ring-2 ring-[#e11d2e]/55 dark:ring-[#f5c542]/50">
+            <div className="bg-gradient-to-r from-[#e11d2e] to-[#b01422] px-4 py-2.5 text-center">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white">
+                Atenção · promoção do evento
+              </p>
+            </div>
+            <div className="bg-[#f5c542]/20 px-4 py-4 text-center dark:bg-[#f5c542]/12">
+              <p className="text-base font-bold leading-snug text-[#7a4b00] dark:text-[#f5c542] sm:text-lg">
+                O ingresso a <span className="text-[#e11d2e] dark:text-white">R$&nbsp;10</span>, com{" "}
+                <span className="underline decoration-2 underline-offset-2">pipoca cortesia</span> e{" "}
+                <span className="underline decoration-2 underline-offset-2">guaravita</span>, vale somente com
+                o mínimo de{" "}
+                <span className="rounded-md bg-[#e11d2e] px-2 py-0.5 text-white shadow-sm">100 pessoas</span>.
+              </p>
+              <p className="mt-2 text-xs font-medium leading-relaxed text-[#7a4b00]/90 dark:text-[#f5c542]/85">
+                Sem atingir 100 inscritos, a promoção pode não ser aplicada.
+              </p>
+            </div>
           </div>
 
           {loading && <Loading />}
