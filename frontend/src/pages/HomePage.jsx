@@ -8,7 +8,16 @@ import SpiderMark from "../components/SpiderMark";
 import InscricaoForm from "../components/InscricaoForm";
 
 function scrollToInscricao() {
-  document.getElementById("inscricao")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const el =
+    document.getElementById("formulario-inscricao") || document.getElementById("inscricao");
+  if (!el) return;
+  const header = document.querySelector("header");
+  const offset = (header?.getBoundingClientRect().height || 64) + 12;
+  const top = el.getBoundingClientRect().top + window.scrollY - offset;
+  window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  if (window.location.hash !== "#inscricao") {
+    history.replaceState(null, "", "#inscricao");
+  }
 }
 
 export default function HomePage() {
@@ -44,9 +53,9 @@ export default function HomePage() {
   useEffect(() => {
     if (loading) return;
     if (window.location.hash !== "#inscricao") return;
-    const t = window.setTimeout(scrollToInscricao, 80);
+    const t = window.setTimeout(scrollToInscricao, 120);
     return () => window.clearTimeout(t);
-  }, [loading]);
+  }, [loading, eventos.length]);
 
   const eventoAtivo = eventos.find((e) => e.id === selected) || eventos[0];
   const flyerImg = mediaUrl(eventoAtivo?.bannerUrl);
@@ -250,7 +259,7 @@ export default function HomePage() {
           )}
 
           {(unico || (varios && eventoAtivo)) && eventoAtivo && (
-            <div className="space-y-5">
+            <div id="formulario-inscricao" className="scroll-mt-24 space-y-5">
               <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start sm:gap-6">
                 {flyerImg && (
                   <figure className="w-[14rem] shrink-0 rotate-[-1deg] bg-[#0a0e1a] p-1 shadow-[0_22px_44px_-14px_rgba(11,16,32,0.5)] ring-1 ring-black/25 transition duration-300 hover:rotate-0 sm:w-[16.5rem] dark:ring-white/10">
