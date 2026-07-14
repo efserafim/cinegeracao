@@ -8,7 +8,7 @@ export default function EventoFormPage() {
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
-    defaultValues: { status: "ABERTO", valor: 10, vagasMaximas: 100 }
+    defaultValues: { status: "PRE_INSCRICAO", valor: 10, vagasMaximas: 100 }
   });
   const [banner, setBanner] = useState(null);
   const [bannerAtual, setBannerAtual] = useState(null);
@@ -85,7 +85,8 @@ export default function EventoFormPage() {
     {...register("status")}
   >
             <option value="RASCUNHO">Rascunho</option>
-            <option value="ABERTO">Aberto</option>
+            <option value="PRE_INSCRICAO">Pré-inscrição (sem pagamento)</option>
+            <option value="ABERTO">Aberto (com cobrança)</option>
             <option value="ENCERRADO">Encerrado</option>
             <option value="CANCELADO">Cancelado</option>
           </select>

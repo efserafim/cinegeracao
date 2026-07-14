@@ -39,11 +39,12 @@ function parseQuantidadeEPessoas(dados) {
 
 async function criarInscricao(eventoId, dados) {
   const evento = await prisma.evento.findUnique({ where: { id: eventoId } });
-  if (!evento || evento.status !== "ABERTO") {
+  if (!evento || !["ABERTO", "PRE_INSCRICAO"].includes(evento.status)) {
     const err = new Error("Evento não disponível para inscrição");
     err.status = 400;
     throw err;
   }
+  const isPre = evento.status === "PRE_INSCRICAO";
   const { quantidade, pessoas } = parseQuantidadeEPessoas(dados);
   const ocupadas = await contarOcupadas(eventoId);
   if (ocupadas + quantidade > evento.vagasMaximas) {
@@ -79,7 +80,9 @@ async function criarInscricao(eventoId, dados) {
   });
   if (existente) {
     const err = new Error(
-      "Já existe uma inscrição com este WhatsApp neste evento. Use o código abaixo ou fale com Eduardo/Lavínia se precisar de ajuda."
+      isPre
+        ? "Já existe uma pré-inscrição com este WhatsApp neste evento. Use o código abaixo ou fale com Eduardo/Lavínia."
+        : "Já existe uma inscrição com este WhatsApp neste evento. Use o código abaixo ou fale com Eduardo/Lavínia se precisar de ajuda."
     );
     err.status = 409;
     err.data = {
@@ -94,7 +97,7 @@ async function criarInscricao(eventoId, dados) {
   const nomeResponsavel = String(dados.nome || pessoas[0]).trim();
   const valorTotal = Number(evento.valor) * quantidade;
   const chavePixDevolucao = String(dados.chavePixDevolucao || "").trim();
-  if (!chavePixDevolucao) {
+  if (!isPre && !chavePixDevolucao) {
     const err = new Error("Informe uma chave PIX para devolução, caso seja necessário");
     err.status = 400;
     throw err;
@@ -106,9 +109,38 @@ async function criarInscricao(eventoId, dados) {
       email: dados.email || null,
       paroquia: dados.paroquia,
       cidade: dados.cidade,
-      chavePixDevolucao
+      chavePixDevolucao: chavePixDevolucao || null
     }
   });
+
+  if (isPre) {
+    const inscricao = await prisma.inscricao.create({
+      data: {
+        codigo: gerarCodigoInscricao(),
+        eventoId,
+        participanteId: participante.id,
+        status: "PRE_INSCRITA",
+        valor: valorTotal,
+        quantidade,
+        observacao: "Pré-inscrição — sem pagamento. Aguardando confirmação do evento / meta de interessados.",
+        pessoas: {
+          create: pessoas.map((nome, ordem) => ({ nome, ordem }))
+        }
+      },
+      include: includeInscricao
+    });
+    notifyAdmins({
+      title: "Nova pré-inscrição",
+      body: `${participante.nome} · ${quantidade} pessoa(s) — ${inscricao.codigo}`,
+      url: `/admin/inscricoes/${inscricao.id}`,
+    }).catch(() => {});
+    return {
+      inscricao: formatInscricao(inscricao),
+      preInscricao: true,
+      pagamento: null
+    };
+  }
+
   const metodo = String(dados.metodoPagamento || dados.metodo || "PIX").toUpperCase() === "DINHEIRO" ? "DINHEIRO" : "PIX";
   const statusInicial = metodo === "DINHEIRO" ? "AGUARDANDO_CONFIRMACAO" : "AGUARDANDO_PAGAMENTO";
   const inscricao = await prisma.inscricao.create({
@@ -154,6 +186,7 @@ async function criarInscricao(eventoId, dados) {
   }
   return {
     inscricao: formatInscricao(inscricao),
+    preInscricao: false,
     pagamento: {
       metodo,
       chavePix: evento.chavePix,
@@ -251,8 +284,12 @@ async function enviarComprovante(codigo, file) {
     err.status = 404;
     throw err;
   }
-  if (["CANCELADA", "PAGAMENTO_CONFIRMADO", "INGRESSO_LIBERADO"].includes(inscricao.status)) {
-    const err = new Error("Não é possível enviar comprovante neste status");
+  if (["CANCELADA", "PRE_INSCRITA", "PAGAMENTO_CONFIRMADO", "INGRESSO_LIBERADO"].includes(inscricao.status)) {
+    const err = new Error(
+      inscricao.status === "PRE_INSCRITA"
+        ? "Pré-inscrição ainda sem cobrança — aguarde a confirmação do evento"
+        : "Não é possível enviar comprovante neste status"
+    );
     err.status = 400;
     throw err;
   }
@@ -1019,7 +1056,8 @@ function formatInscricao(i) {
       chavePix: i.evento.chavePix,
       nomeFavorecido: i.evento.nomeFavorecido,
       valor: Number(i.evento.valor),
-      bannerUrl: i.evento.bannerUrl
+      bannerUrl: i.evento.bannerUrl,
+      status: i.evento.status
     } : void 0,
     pagamento: i.pagamento ? {
       id: i.pagamento.id,

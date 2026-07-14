@@ -47,6 +47,7 @@ export function formatDate(value) {
   return `${day}/${month}/${year}`;
 }
 export const STATUS_LABELS = {
+  PRE_INSCRITA: "Pré-inscrita",
   AGUARDANDO_PAGAMENTO: "Aguardando pagamento",
   COMPROVANTE_ENVIADO: "Comprovante enviado",
   OCR_PROCESSADO: "OCR processado",

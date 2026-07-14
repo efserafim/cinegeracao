@@ -20,7 +20,9 @@ export default function PagamentoPage() {
       const data = res.data.data;
       setInscricao(data);
       const metodo = data.pagamento?.metodo || "PIX";
-      if (["AGUARDANDO_CONFIRMACAO", "COMPROVANTE_ENVIADO", "OCR_PROCESSADO", "PAGAMENTO_CONFIRMADO", "INGRESSO_LIBERADO"].includes(data.status)) {
+      if (data.status === "PRE_INSCRITA") {
+        setStep("pre");
+      } else if (["AGUARDANDO_CONFIRMACAO", "COMPROVANTE_ENVIADO", "OCR_PROCESSADO", "PAGAMENTO_CONFIRMADO", "INGRESSO_LIBERADO"].includes(data.status)) {
         setStep(metodo === "DINHEIRO" && data.status === "AGUARDANDO_CONFIRMACAO" ? "dinheiro" : "done");
       } else if (metodo === "DINHEIRO") {
         setStep("dinheiro");
@@ -33,6 +35,7 @@ export default function PagamentoPage() {
   const favorecido = inscricao?.evento?.nomeFavorecido || "";
   const valor = inscricao?.valor;
   const isDinheiro = inscricao?.pagamento?.metodo === "DINHEIRO";
+  const isPre = inscricao?.status === "PRE_INSCRITA";
   async function copyPix() {
     if (!chavePix) return;
     await navigator.clipboard.writeText(chavePix);
@@ -68,7 +71,7 @@ export default function PagamentoPage() {
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#f5c542]">CineGeração</p>
           <h1 className="font-display text-3xl leading-none text-[var(--color-ink)] dark:text-white">
-            {isDinheiro ? "Pagamento em dinheiro" : "Pagamento PIX"}
+            {isPre ? "Pré-inscrição confirmada" : isDinheiro ? "Pagamento em dinheiro" : "Pagamento PIX"}
           </h1>
           <p className="mt-2 text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
             {inscricao.participante?.nome}
@@ -85,6 +88,35 @@ export default function PagamentoPage() {
         </div>
         <StatusBadge status={inscricao.status} />
       </div>
+
+      {step === "pre" && (
+        <div className="mt-6 space-y-4">
+          <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#0b1020] text-white shadow-xl">
+            <div className="border-b border-white/10 bg-gradient-to-r from-[#e11d2e]/90 to-[#f5c542]/55 px-5 py-4 text-center">
+              <p className="text-xs uppercase tracking-widest text-white/80">Sem pagamento por enquanto</p>
+              <p className="mt-1 font-display text-3xl">Você está na lista!</p>
+            </div>
+            <div className="space-y-4 p-5">
+              <p className="text-center text-sm leading-relaxed text-white/85">
+                Sua pré-inscrição foi registrada. Estamos medindo o interesse para confirmar a promoção
+                (R$&nbsp;10 + pipoca + guaravita com mínimo de 100 pessoas).
+              </p>
+              <ul className="space-y-2 rounded-2xl bg-white/5 p-4 text-sm text-white/80">
+                <li>
+                  · Guarde seu código:{" "}
+                  <span className="font-mono text-[#f5c542]">{inscricao.codigo}</span>
+                </li>
+                <li>· Quando liberarmos a cobrança, use o código + e-mail em Consultar</li>
+                <li>· Ou fale no WhatsApp com Eduardo ou Lavínia</li>
+              </ul>
+              <p className="text-center text-xs text-white/55">
+                Status: {STATUS_LABELS[inscricao.status] || inscricao.status}
+              </p>
+            </div>
+          </div>
+          <ContatosDuvidas />
+        </div>
+      )}
 
       {step === "dinheiro" && <div className="mt-6 space-y-4">
           <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#0b1020] text-white shadow-xl">

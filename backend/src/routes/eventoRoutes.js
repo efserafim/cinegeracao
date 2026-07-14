@@ -28,5 +28,6 @@ router.post(
 );
 router.put("/:id", authAdmin, uploadBanner.single("banner"), eventoController.atualizar);
 router.patch("/:id/encerrar", authAdmin, eventoController.encerrar);
+router.patch("/:id/abrir-cobranca", authAdmin, eventoController.abrirCobranca);
 router.delete("/:id", authAdmin, eventoController.excluir);
 module.exports = router;

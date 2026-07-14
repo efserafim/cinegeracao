@@ -29,6 +29,7 @@ model Admin {
 
 enum StatusEvento {
   RASCUNHO
+  PRE_INSCRICAO
   ABERTO
   ENCERRADO
   CANCELADO
@@ -82,6 +83,7 @@ model Participante {
 
 
 enum StatusInscricao {
+  PRE_INSCRITA
   AGUARDANDO_PAGAMENTO
   COMPROVANTE_ENVIADO
   OCR_PROCESSADO

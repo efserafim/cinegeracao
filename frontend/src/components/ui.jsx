@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 
 export function StatusBadge({ status }) {
   const map = {
+    PRE_INSCRITA: "bg-[#f5c542]/25 text-[#7a4b00] dark:bg-[#f5c542]/20 dark:text-[#f5c542]",
     AGUARDANDO_PAGAMENTO: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
     COMPROVANTE_ENVIADO: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200",
     OCR_PROCESSADO: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200",
@@ -13,6 +14,7 @@ export function StatusBadge({ status }) {
     CANCELADA: "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
   };
   const labels = {
+    PRE_INSCRITA: "Pré-inscrita",
     AGUARDANDO_PAGAMENTO: "Aguardando pagamento",
     COMPROVANTE_ENVIADO: "Comprovante enviado",
     OCR_PROCESSADO: "OCR processado",

@@ -39,7 +39,7 @@ async function main() {
         vagasMaximas: 200,
         chavePix: "22992473724",
         nomeFavorecido: "EDUARDO FERREIRA SERAFIM",
-        status: "ABERTO"
+        status: "PRE_INSCRICAO"
       }
     });
   }

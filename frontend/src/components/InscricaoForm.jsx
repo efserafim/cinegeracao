@@ -44,6 +44,7 @@ export default function InscricaoForm({ evento }) {
   const maxQtd = Math.min(MAX_INGRESSOS, Math.max(1, evento.vagasRestantes || 1));
   const total = Number(evento.valor) * quantidade;
   const esgotado = evento.vagasRestantes <= 0;
+  const isPre = evento.status === "PRE_INSCRICAO" || evento.preInscricao === true;
 
   useEffect(() => {
     const extras = Math.max(0, quantidade - 1);
@@ -118,9 +119,11 @@ export default function InscricaoForm({ evento }) {
         <div className="flex items-start gap-3">
           <Ticket className="mt-0.5 shrink-0 text-[#e11d2e]" size={20} />
           <div>
-            <p className="text-sm font-semibold text-[var(--color-ink)] dark:text-white">Você já está inscrito(a)</p>
+            <p className="text-sm font-semibold text-[var(--color-ink)] dark:text-white">
+              {duplicata.status === "PRE_INSCRITA" ? "Você já está pré-inscrito(a)" : "Você já está inscrito(a)"}
+            </p>
             <p className="mt-1 text-sm text-[var(--color-ink-soft)] dark:text-slate-300">
-              Encontramos uma inscrição com este WhatsApp
+              Encontramos um cadastro com este WhatsApp
               {duplicata.nome ? <> ({duplicata.nome})</> : null}. Use o código abaixo ou fale com Eduardo ou Lavínia.
             </p>
           </div>
@@ -186,32 +189,38 @@ export default function InscricaoForm({ evento }) {
         </Field>
       </div>
 
-      <Field
-        label="Chave PIX para devolução"
-        error={errors.chavePixDevolucao?.message}
-      >
-        <input
-          className={fieldClass}
-          placeholder="CPF, celular, e-mail ou chave aleatória"
-          {...register("chavePixDevolucao", {
-            required: "Obrigatório — usamos só se precisar devolver o valor",
-            validate: (v) => String(v || "").trim().length >= 5 || "Informe uma chave PIX válida",
-          })}
-        />
-        <p className="mt-2 rounded-xl bg-[#f5c542]/25 px-3 py-2.5 text-sm font-semibold leading-snug text-[#7a4b00] ring-1 ring-[#f5c542]/50 dark:bg-[#f5c542]/15 dark:text-[#f5c542] dark:ring-[#f5c542]/35">
-          Importante: em caso de problema (cancelamento, evento alterado etc.),{" "}
-          <span className="underline decoration-2 underline-offset-2">devolvemos o pagamento nesta chave</span>.
-        </p>
-      </Field>
+      {!isPre && (
+        <Field
+          label="Chave PIX para devolução"
+          error={errors.chavePixDevolucao?.message}
+        >
+          <input
+            className={fieldClass}
+            placeholder="CPF, celular, e-mail ou chave aleatória"
+            {...register("chavePixDevolucao", {
+              required: "Obrigatório — usamos só se precisar devolver o valor",
+              validate: (v) => String(v || "").trim().length >= 5 || "Informe uma chave PIX válida",
+            })}
+          />
+          <p className="mt-2 rounded-xl bg-[#f5c542]/25 px-3 py-2.5 text-sm font-semibold leading-snug text-[#7a4b00] ring-1 ring-[#f5c542]/50 dark:bg-[#f5c542]/15 dark:text-[#f5c542] dark:ring-[#f5c542]/35">
+            Importante: em caso de problema (cancelamento, evento alterado etc.),{" "}
+            <span className="underline decoration-2 underline-offset-2">devolvemos o pagamento nesta chave</span>.
+          </p>
+        </Field>
+      )}
 
       <div className={panelClass}>
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)] dark:text-slate-400">
-              Quantidade de ingressos
+              {isPre ? "Quantidade de pessoas" : "Quantidade de ingressos"}
             </p>
             <p className="mt-1 text-sm text-[var(--color-ink)] dark:text-white">
-              Total: <strong className="text-[#e11d2e]">{formatMoney(total)}</strong>
+              {isPre ? (
+                <>Previsão de vagas · valor se confirmar: <strong className="text-[#e11d2e]">{formatMoney(total)}</strong></>
+              ) : (
+                <>Total: <strong className="text-[#e11d2e]">{formatMoney(total)}</strong></>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -254,10 +263,10 @@ export default function InscricaoForm({ evento }) {
           </div>
           <div className="space-y-3 bg-[#e11d2e]/[0.06] p-4 dark:bg-[#e11d2e]/15">
             <p className="rounded-xl bg-[#f5c542]/20 px-3 py-2 text-sm font-semibold leading-snug text-[#7a4b00] dark:bg-[#f5c542]/15 dark:text-[#f5c542]">
-              O ingresso 1 usa o nome do responsável. Informe quem mais vai:
+              A pessoa 1 usa o nome do responsável. Informe quem mais vai:
             </p>
             {Array.from({ length: quantidade - 1 }).map((_, idx) => (
-              <Field key={idx} label={`Ingresso ${idx + 2}`} error={errors.pessoas?.[idx]?.message}>
+              <Field key={idx} label={`Pessoa ${idx + 2}`} error={errors.pessoas?.[idx]?.message}>
                 <input className={fieldClass} {...register(`pessoas.${idx}`, { required: "Obrigatório" })} />
               </Field>
             ))}
@@ -265,45 +274,54 @@ export default function InscricaoForm({ evento }) {
         </div>
       )}
 
-      <div className="space-y-2 pt-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)] dark:text-slate-400">
-          Forma de pagamento
-        </p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {[
-            { id: "PIX", title: "PIX", hint: "Pague e envie o comprovante" },
-            { id: "DINHEIRO", title: "Dinheiro", hint: "Entregue a Eduardo ou Lavínia" },
-          ].map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => setValue("metodoPagamento", opt.id)}
-              className={`rounded-[1.25rem] px-4 py-3 text-left text-sm transition ring-1 ${
-                metodoPagamento === opt.id
-                  ? "bg-[#e11d2e]/10 ring-[#e11d2e] font-semibold text-[var(--color-ink)] dark:text-white"
-                  : "bg-white/70 ring-black/5 dark:bg-white/5 dark:ring-white/10"
-              }`}
-            >
-              <span className="block font-semibold">{opt.title}</span>
-              <span className="mt-0.5 block text-xs text-[var(--color-ink-soft)] dark:text-slate-400">{opt.hint}</span>
-            </button>
-          ))}
+      {!isPre && (
+        <div className="space-y-2 pt-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)] dark:text-slate-400">
+            Forma de pagamento
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {[
+              { id: "PIX", title: "PIX", hint: "Pague e envie o comprovante" },
+              { id: "DINHEIRO", title: "Dinheiro", hint: "Entregue a Eduardo ou Lavínia" },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setValue("metodoPagamento", opt.id)}
+                className={`rounded-[1.25rem] px-4 py-3 text-left text-sm transition ring-1 ${
+                  metodoPagamento === opt.id
+                    ? "bg-[#e11d2e]/10 ring-[#e11d2e] font-semibold text-[var(--color-ink)] dark:text-white"
+                    : "bg-white/70 ring-black/5 dark:bg-white/5 dark:ring-white/10"
+                }`}
+              >
+                <span className="block font-semibold">{opt.title}</span>
+                <span className="mt-0.5 block text-xs text-[var(--color-ink-soft)] dark:text-slate-400">{opt.hint}</span>
+              </button>
+            ))}
+          </div>
+          <input type="hidden" {...register("metodoPagamento")} />
         </div>
-        <input type="hidden" {...register("metodoPagamento")} />
-      </div>
+      )}
 
       {error && <p className="text-center text-sm text-red-600">{error}</p>}
 
       <Button type="submit" disabled={loading} className="mt-2 w-full !rounded-full py-3.5 shadow-md shadow-red-900/15">
         <SpiderMark tone="light" className="h-4 w-4" />
         {loading
-          ? "Gerando..."
-          : metodoPagamento === "DINHEIRO"
-            ? `Confirmar ${quantidade} ingresso${quantidade > 1 ? "s" : ""} em dinheiro`
-            : `Continuar para o PIX · ${formatMoney(total)}`}
+          ? isPre
+            ? "Registrando…"
+            : "Gerando..."
+          : isPre
+            ? `Confirmar pré-inscrição · ${quantidade} pessoa${quantidade > 1 ? "s" : ""}`
+            : metodoPagamento === "DINHEIRO"
+              ? `Confirmar ${quantidade} ingresso${quantidade > 1 ? "s" : ""} em dinheiro`
+              : `Continuar para o PIX · ${formatMoney(total)}`}
       </Button>
       <p className="text-center text-[11px] leading-relaxed text-[var(--color-ink-soft)] dark:text-slate-400">
-        Já se inscreveu? Consulte com o código e o e-mail da inscrição.      </p>
+        {isPre
+          ? "Sem pagamento por enquanto. Se a meta for atingida, avisamos para concluir a inscrição."
+          : "Já se inscreveu? Consulte com o código e o e-mail da inscrição."}
+      </p>
     </form>
   );
 }

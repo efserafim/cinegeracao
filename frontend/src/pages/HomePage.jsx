@@ -67,6 +67,7 @@ export default function HomePage() {
   const pctMeta = Math.min(100, Math.round((inscritos / META_PROMOCAO) * 100));
   const faltam = Math.max(0, META_PROMOCAO - inscritos);
   const metaAtingida = inscritos >= META_PROMOCAO;
+  const isPre = eventoAtivo?.status === "PRE_INSCRICAO" || eventoAtivo?.preInscricao === true;
 
   return (
     <div>
@@ -131,7 +132,7 @@ export default function HomePage() {
               style={{ animationDelay: "0.26s" }}
             >
               <SpiderMark tone="light" className="h-5 w-5" />
-              Quero participar
+              {isPre ? "Quero me pré-inscrever" : "Quero participar"}
             </button>
           </div>
         </div>
@@ -157,25 +158,39 @@ export default function HomePage() {
             <div className="mb-2 flex justify-center">
               <SpiderMark className="h-9 w-9" glow />
             </div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#e11d2e]">Próximo passo</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#e11d2e]">
+              {isPre ? "Sem pagamento agora" : "Próximo passo"}
+            </p>
             <h2 className="mt-1.5 font-display text-3xl tracking-wide text-[var(--color-ink)] dark:text-white">
-              Inscrição
+              {isPre ? "Pré-inscrição" : "Inscrição"}
             </h2>
           </div>
 
           <div className="mb-6 overflow-hidden rounded-[1.35rem] ring-2 ring-[#e11d2e]/55 dark:ring-[#f5c542]/50">
             <div className="bg-gradient-to-r from-[#e11d2e] to-[#b01422] px-4 py-2.5 text-center">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white">
-                Atenção · promoção do evento
+                {isPre ? "Pré-inscrição · medindo o interesse" : "Atenção · promoção do evento"}
               </p>
             </div>
             <div className="bg-[#f5c542]/20 px-4 py-4 dark:bg-[#f5c542]/12">
               <p className="text-center text-base font-bold leading-snug text-[#7a4b00] dark:text-[#f5c542] sm:text-lg">
-                O ingresso a <span className="text-[#e11d2e] dark:text-white">R$&nbsp;10</span>, com{" "}
-                <span className="underline decoration-2 underline-offset-2">pipoca cortesia</span> e{" "}
-                <span className="underline decoration-2 underline-offset-2">guaravita</span>, vale somente com
-                o mínimo de{" "}
-                <span className="rounded-md bg-[#e11d2e] px-2 py-0.5 text-white shadow-sm">100 pessoas</span>.
+                {isPre ? (
+                  <>
+                    Cadastre-se <span className="underline decoration-2 underline-offset-2">sem pagar</span> para
+                    vermos se fechamos a promoção: ingresso a{" "}
+                    <span className="text-[#e11d2e] dark:text-white">R$&nbsp;10</span> + pipoca cortesia + guaravita,
+                    com mínimo de{" "}
+                    <span className="rounded-md bg-[#e11d2e] px-2 py-0.5 text-white shadow-sm">100 pessoas</span>.
+                  </>
+                ) : (
+                  <>
+                    O ingresso a <span className="text-[#e11d2e] dark:text-white">R$&nbsp;10</span>, com{" "}
+                    <span className="underline decoration-2 underline-offset-2">pipoca cortesia</span> e{" "}
+                    <span className="underline decoration-2 underline-offset-2">guaravita</span>, vale somente com
+                    o mínimo de{" "}
+                    <span className="rounded-md bg-[#e11d2e] px-2 py-0.5 text-white shadow-sm">100 pessoas</span>.
+                  </>
+                )}
               </p>
 
               {eventoAtivo && (
@@ -183,7 +198,7 @@ export default function HomePage() {
                   <div className="flex items-end justify-between gap-3">
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#e11d2e] dark:text-[#f5c542]">
-                        Progresso para o evento
+                        {isPre ? "Interessados até agora" : "Progresso para o evento"}
                       </p>
                       <p className="mt-1 text-sm font-semibold text-[var(--color-ink)] dark:text-white">
                         {inscritos} de {META_PROMOCAO} pessoas
@@ -208,14 +223,20 @@ export default function HomePage() {
                   </div>
                   <p className="mt-2 text-center text-xs font-semibold text-[#7a4b00] dark:text-[#f5c542]/90">
                     {metaAtingida
-                      ? "Meta atingida! A promoção está garantida."
-                      : `Faltam ${faltam} pessoa${faltam === 1 ? "" : "s"} para a promoção valer.`}
+                      ? isPre
+                        ? "Meta batida! Em breve liberamos a cobrança."
+                        : "Meta atingida! A promoção está garantida."
+                      : isPre
+                        ? `Faltam ${faltam} interessado${faltam === 1 ? "" : "s"} para chegarmos a 100.`
+                        : `Faltam ${faltam} pessoa${faltam === 1 ? "" : "s"} para a promoção valer.`}
                   </p>
                 </div>
               )}
 
               <p className="mt-3 text-center text-xs font-medium leading-relaxed text-[#7a4b00]/90 dark:text-[#f5c542]/85">
-                Sem atingir 100 inscritos, a promoção pode não ser aplicada.
+                {isPre
+                  ? "Sem PIX nesta etapa. Se o evento se confirmar, avisamos para concluir o pagamento."
+                  : "Sem atingir 100 inscritos, a promoção pode não ser aplicada."}
               </p>
             </div>
           </div>

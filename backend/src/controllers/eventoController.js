@@ -70,6 +70,21 @@ async function encerrar(req, res, next) {
     return next(err);
   }
 }
+async function abrirCobranca(req, res, next) {
+  try {
+    const data = await eventoService.abrirCobranca(req.params.id, req.admin.id, req.ip);
+    const n = data.convertidas || 0;
+    return success(
+      res,
+      data,
+      n > 0
+        ? `Cobrança liberada. ${n} pré-inscrição(ões) agora aguardam pagamento.`
+        : "Cobranções liberadas. O evento está aberto para pagamento."
+    );
+  } catch (err) {
+    return next(err);
+  }
+}
 async function excluir(req, res, next) {
   try {
     await eventoService.excluir(req.params.id, req.admin.id, req.ip);
@@ -86,5 +101,6 @@ module.exports = {
   criar,
   atualizar,
   encerrar,
+  abrirCobranca,
   excluir
 };

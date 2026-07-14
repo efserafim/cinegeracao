@@ -12,7 +12,7 @@ router.post(
   body("email").isEmail().withMessage("E-mail obrigatório"),
   body("cidade").notEmpty().withMessage("Cidade obrigatória"),
   body("paroquia").notEmpty().withMessage("Paróquia obrigatória"),
-  body("chavePixDevolucao").trim().notEmpty().withMessage("Chave PIX para devolução obrigatória"),
+  body("chavePixDevolucao").optional({ values: "falsy" }).trim(),
   body("quantidade").optional().isInt({ min: 1, max: 10 }).withMessage("Quantidade inválida"),
   body("pessoas").optional().isArray({ min: 1, max: 10 }).withMessage("Informe os nomes dos ingressos"),
   body("pessoas.*").optional().isString().notEmpty().withMessage("Nome do ingresso obrigatório"),

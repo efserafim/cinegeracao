@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Pencil, Users, Ban, Trash2 } from "lucide-react";
+import { Pencil, Users, Ban, Trash2, HandCoins } from "lucide-react";
 import api, { formatDate, formatMoney } from "../../services/api";
 import { Button, Loading, ConfirmModal } from "../../components/ui";
 
 const STATUS_EVENTO = {
+  PRE_INSCRICAO: {
+    label: "Pré-inscrição",
+    hint: "Coletando interesse sem pagamento",
+    dot: "bg-[#f5c542]",
+    ping: true,
+    className: "bg-[#f5c542]/20 text-[#7a4b00] ring-[#f5c542]/40 dark:text-[#f5c542]"
+  },
   ABERTO: {
     label: "Online",
     hint: "Inscrições abertas",
@@ -58,6 +65,7 @@ export default function EventosAdminPage() {
     const { type, id } = confirm;
     setConfirm(null);
     if (type === "encerrar") await api.patch(`/eventos/${id}/encerrar`);
+    if (type === "abrir-cobranca") await api.patch(`/eventos/${id}/abrir-cobranca`);
     if (type === "excluir") await api.delete(`/eventos/${id}`);
     load();
   }
@@ -66,13 +74,27 @@ export default function EventosAdminPage() {
   return <div className="space-y-6">
       <ConfirmModal
         open={Boolean(confirm)}
-        title={confirm?.type === "excluir" ? "Excluir evento?" : "Encerrar evento?"}
+        title={
+          confirm?.type === "excluir"
+            ? "Excluir evento?"
+            : confirm?.type === "abrir-cobranca"
+              ? "Liberar cobrança?"
+              : "Encerrar evento?"
+        }
         message={
           confirm?.type === "excluir"
             ? "Excluir permanentemente este evento e suas inscrições? Essa ação não pode ser desfeita."
-            : "Encerrar este evento? As inscrições públicas serão fechadas."
+            : confirm?.type === "abrir-cobranca"
+              ? "O evento passa a cobrar PIX. Todas as pré-inscrições passam a aguardar pagamento."
+              : "Encerrar este evento? As inscrições públicas serão fechadas."
         }
-        confirmLabel={confirm?.type === "excluir" ? "Excluir" : "Encerrar"}
+        confirmLabel={
+          confirm?.type === "excluir"
+            ? "Excluir"
+            : confirm?.type === "abrir-cobranca"
+              ? "Liberar cobrança"
+              : "Encerrar"
+        }
         danger={confirm?.type === "excluir"}
         onCancel={() => setConfirm(null)}
         onConfirm={runConfirm}
@@ -118,6 +140,11 @@ export default function EventosAdminPage() {
               <Link to={`/admin/eventos/${ev.id}/editar`}>
                 <Button variant="ghost"><Pencil size={14} /></Button>
               </Link>
+              {ev.status === "PRE_INSCRICAO" && (
+                <Button variant="secondary" onClick={() => setConfirm({ type: "abrir-cobranca", id: ev.id })}>
+                  <HandCoins size={14} /> Liberar cobrança
+                </Button>
+              )}
               <Button variant="ghost" onClick={() => setConfirm({ type: "encerrar", id: ev.id })}><Ban size={14} /></Button>
               <Button variant="ghost" onClick={() => setConfirm({ type: "excluir", id: ev.id })}><Trash2 size={14} className="text-red-600" /></Button>
             </div>
