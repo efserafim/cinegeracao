@@ -198,8 +198,9 @@ export default function InscricaoForm({ evento }) {
             validate: (v) => String(v || "").trim().length >= 5 || "Informe uma chave PIX válida",
           })}
         />
-        <p className="mt-1.5 text-xs leading-relaxed text-[var(--color-ink-soft)] dark:text-slate-400">
-          Em caso de problema (cancelamento, evento alterado etc.), devolvemos o pagamento nesta chave.
+        <p className="mt-2 rounded-xl bg-[#f5c542]/25 px-3 py-2.5 text-sm font-semibold leading-snug text-[#7a4b00] ring-1 ring-[#f5c542]/50 dark:bg-[#f5c542]/15 dark:text-[#f5c542] dark:ring-[#f5c542]/35">
+          Importante: em caso de problema (cancelamento, evento alterado etc.),{" "}
+          <span className="underline decoration-2 underline-offset-2">devolvemos o pagamento nesta chave</span>.
         </p>
       </Field>
 
