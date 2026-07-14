@@ -101,11 +101,35 @@ export default function PagamentoPage() {
                 Sua pré-inscrição foi registrada. Estamos medindo o interesse para confirmar a promoção
                 (R$&nbsp;10 + pipoca + guaravita com mínimo de 100 pessoas).
               </p>
+
+              <div className="rounded-[1.5rem] bg-[#f5c542]/15 px-4 py-5 text-center ring-2 ring-[#f5c542]/70">
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#f5c542]">
+                  Guarde este código
+                </p>
+                <p className="mt-2 font-mono text-3xl font-black tracking-[0.12em] text-[#f5c542] sm:text-4xl">
+                  {inscricao.codigo}
+                </p>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(inscricao.codigo);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    } catch {
+                      /* ignore */
+                    }
+                  }}
+                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#f5c542] px-5 py-2.5 text-sm font-bold text-[#0b1020] transition hover:bg-[#ffd56a]"
+                >
+                  {copied ? <><Check size={16} /> Código copiado</> : <><Copy size={16} /> Copiar código</>}
+                </button>
+                <p className="mt-3 text-xs font-semibold leading-snug text-[#f5c542]/90">
+                  Anote ou tire um print — você vai precisar deste código + e-mail
+                </p>
+              </div>
+
               <ul className="space-y-2 rounded-2xl bg-white/5 p-4 text-sm text-white/80">
-                <li>
-                  · Guarde seu código:{" "}
-                  <span className="font-mono text-[#f5c542]">{inscricao.codigo}</span>
-                </li>
                 <li>· Quando liberarmos a cobrança, use o código + e-mail em Consultar</li>
                 <li>· Ou fale no WhatsApp com Eduardo ou Lavínia</li>
               </ul>
