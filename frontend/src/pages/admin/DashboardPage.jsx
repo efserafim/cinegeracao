@@ -22,6 +22,12 @@ import { useAuth } from "../../context/AuthContext";
 import { logoImg } from "../../assets/brand";
 
 const STATUS_EVENTO = {
+  PRE_INSCRICAO: {
+    label: "Pré-inscrição",
+    dot: "bg-[#f5c542]",
+    ping: true,
+    className: "bg-[#f5c542]/20 text-[#f5c542] dark:bg-[#f5c542]/15 dark:text-[#f5c542]",
+  },
   ABERTO: {
     label: "Online",
     dot: "bg-emerald-500",
