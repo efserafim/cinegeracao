@@ -830,83 +830,42 @@ async function dashboard(eventoId) {
     err.status = 404;
     throw err;
   }
-  const statusAtivos = { not: "CANCELADA" };
-  const [
-    totalInscricoes,
-    totalPessoas,
-    confirmadas,
-    confirmadasPessoas,
-    pendentes,
-    pendentesPessoas,
-    preInscritos,
-    preInscritosPessoas,
-    canceladas,
-    arrecadado
-  ] = await Promise.all([
-    prisma.inscricao.count({ where: { eventoId } }),
-    prisma.inscricao.aggregate({
-      where: { eventoId, status: statusAtivos },
-      _sum: { quantidade: true }
-    }),
-    prisma.inscricao.count({
-      where: { eventoId, status: { in: ["PAGAMENTO_CONFIRMADO", "INGRESSO_LIBERADO"] } }
-    }),
-    prisma.inscricao.aggregate({
-      where: { eventoId, status: { in: ["PAGAMENTO_CONFIRMADO", "INGRESSO_LIBERADO"] } },
-      _sum: { quantidade: true }
-    }),
-    prisma.inscricao.count({
-      where: {
-        eventoId,
-        status: {
-          in: [
-            "AGUARDANDO_PAGAMENTO",
-            "COMPROVANTE_ENVIADO",
-            "OCR_PROCESSADO",
-            "AGUARDANDO_CONFIRMACAO",
-            "PAGAMENTO_RECUSADO"
-          ]
-        }
-      }
-    }),
-    prisma.inscricao.aggregate({
-      where: {
-        eventoId,
-        status: {
-          in: [
-            "AGUARDANDO_PAGAMENTO",
-            "COMPROVANTE_ENVIADO",
-            "OCR_PROCESSADO",
-            "AGUARDANDO_CONFIRMACAO",
-            "PAGAMENTO_RECUSADO"
-          ]
-        }
-      },
-      _sum: { quantidade: true }
-    }),
-    prisma.inscricao.count({ where: { eventoId, status: "PRE_INSCRITA" } }),
-    prisma.inscricao.aggregate({
-      where: { eventoId, status: "PRE_INSCRITA" },
-      _sum: { quantidade: true }
-    }),
-    prisma.inscricao.count({ where: { eventoId, status: "CANCELADA" } }),
-    prisma.inscricao.aggregate({
-      where: { eventoId, status: { in: ["PAGAMENTO_CONFIRMADO", "INGRESSO_LIBERADO"] } },
-      _sum: { valor: true }
-    })
-  ]);
+
+  // Contagens em SQL cru — inclui PRE_INSCRITA mesmo se o Prisma Client estiver defasado no deploy
+  const [totais] = await prisma.$queryRaw`
+    SELECT
+      COUNT(*)::int AS inscritos,
+      COALESCE(SUM(CASE WHEN status::text <> 'CANCELADA' THEN quantidade ELSE 0 END), 0)::int AS pessoas,
+      COUNT(*) FILTER (WHERE status::text = 'PRE_INSCRITA')::int AS pre_inscritos,
+      COALESCE(SUM(CASE WHEN status::text = 'PRE_INSCRITA' THEN quantidade ELSE 0 END), 0)::int AS pre_inscritos_pessoas,
+      COUNT(*) FILTER (WHERE status::text IN ('PAGAMENTO_CONFIRMADO', 'INGRESSO_LIBERADO'))::int AS confirmadas,
+      COALESCE(SUM(CASE WHEN status::text IN ('PAGAMENTO_CONFIRMADO', 'INGRESSO_LIBERADO') THEN quantidade ELSE 0 END), 0)::int AS confirmadas_pessoas,
+      COUNT(*) FILTER (WHERE status::text IN (
+        'AGUARDANDO_PAGAMENTO', 'COMPROVANTE_ENVIADO', 'OCR_PROCESSADO',
+        'AGUARDANDO_CONFIRMACAO', 'PAGAMENTO_RECUSADO'
+      ))::int AS pendentes,
+      COALESCE(SUM(CASE WHEN status::text IN (
+        'AGUARDANDO_PAGAMENTO', 'COMPROVANTE_ENVIADO', 'OCR_PROCESSADO',
+        'AGUARDANDO_CONFIRMACAO', 'PAGAMENTO_RECUSADO'
+      ) THEN quantidade ELSE 0 END), 0)::int AS pendentes_pessoas,
+      COUNT(*) FILTER (WHERE status::text = 'CANCELADA')::int AS canceladas,
+      COALESCE(SUM(CASE WHEN status::text IN ('PAGAMENTO_CONFIRMADO', 'INGRESSO_LIBERADO') THEN valor ELSE 0 END), 0)::float AS arrecadado
+    FROM inscricoes
+    WHERE evento_id = ${eventoId}
+  `;
+
   const ocupadas = await contarOcupadas(eventoId);
   return {
-    inscritos: totalInscricoes,
-    pessoas: Number(totalPessoas._sum.quantidade || 0),
-    confirmadas,
-    confirmadasPessoas: Number(confirmadasPessoas._sum.quantidade || 0),
-    pendentes,
-    pendentesPessoas: Number(pendentesPessoas._sum.quantidade || 0),
-    preInscritos,
-    preInscritosPessoas: Number(preInscritosPessoas._sum.quantidade || 0),
-    canceladas,
-    valorArrecadado: Number(arrecadado._sum.valor || 0),
+    inscritos: Number(totais?.inscritos || 0),
+    pessoas: Number(totais?.pessoas || 0),
+    confirmadas: Number(totais?.confirmadas || 0),
+    confirmadasPessoas: Number(totais?.confirmadas_pessoas || 0),
+    pendentes: Number(totais?.pendentes || 0),
+    pendentesPessoas: Number(totais?.pendentes_pessoas || 0),
+    preInscritos: Number(totais?.pre_inscritos || 0),
+    preInscritosPessoas: Number(totais?.pre_inscritos_pessoas || 0),
+    canceladas: Number(totais?.canceladas || 0),
+    valorArrecadado: Number(totais?.arrecadado || 0),
     vagasOcupadas: ocupadas,
     vagasRestantes: Math.max(0, evento.vagasMaximas - ocupadas),
     vagasMaximas: evento.vagasMaximas

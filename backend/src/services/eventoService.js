@@ -1,4 +1,5 @@
 const prisma = require("../config/prisma");
+const { Prisma } = require("@prisma/client");
 const { registrarLog } = require("./logService");
 
 const STATUS_OCUPAM_VAGA = [
@@ -14,11 +15,14 @@ const STATUS_OCUPAM_VAGA = [
 const STATUS_PUBLICOS = ["ABERTO", "PRE_INSCRICAO"];
 
 async function contarOcupadas(eventoId) {
-  const result = await prisma.inscricao.aggregate({
-    where: { eventoId, status: { in: STATUS_OCUPAM_VAGA } },
-    _sum: { quantidade: true }
-  });
-  return Number(result._sum.quantidade || 0);
+  // status::text evita o Client filtrar mal enums novos (ex.: PRE_INSCRITA)
+  const rows = await prisma.$queryRaw`
+    SELECT COALESCE(SUM(quantidade), 0)::int AS total
+    FROM inscricoes
+    WHERE evento_id = ${eventoId}
+      AND status::text IN (${Prisma.join(STATUS_OCUPAM_VAGA)})
+  `;
+  return Number(rows?.[0]?.total || 0);
 }
 
 async function comVagas(evento) {

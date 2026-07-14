@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Download, Search, Trash2 } from "lucide-react";
 import api, { formatDate, formatMoney } from "../../services/api";
@@ -30,6 +30,35 @@ export default function InscritosPage() {
   useEffect(() => {
     load();
   }, [id]);
+
+  const totaisLista = useMemo(() => {
+    const ativos = items.filter((i) => i.status !== "CANCELADA");
+    const pre = items.filter((i) => i.status === "PRE_INSCRITA");
+    const confirmadas = items.filter((i) =>
+      ["PAGAMENTO_CONFIRMADO", "INGRESSO_LIBERADO"].includes(i.status)
+    );
+    const pendentes = items.filter((i) =>
+      [
+        "AGUARDANDO_PAGAMENTO",
+        "COMPROVANTE_ENVIADO",
+        "OCR_PROCESSADO",
+        "AGUARDANDO_CONFIRMACAO",
+        "PAGAMENTO_RECUSADO",
+      ].includes(i.status)
+    );
+    const sumQtd = (arr) => arr.reduce((s, i) => s + (Number(i.quantidade) || 1), 0);
+    return {
+      pessoas: sumQtd(ativos),
+      cadastros: items.length,
+      preInscritos: pre.length,
+      preInscritosPessoas: sumQtd(pre),
+      confirmadas: confirmadas.length,
+      confirmadasPessoas: sumQtd(confirmadas),
+      pendentes: pendentes.length,
+      pendentesPessoas: sumQtd(pendentes),
+      canceladas: items.filter((i) => i.status === "CANCELADA").length,
+    };
+  }, [items]);
   async function exportFile(formato) {
     const res = await api.get(`/inscricoes/evento/${id}/export/${formato}`, { responseType: "blob" });
     const ext = formato === "excel" ? "xlsx" : formato;
@@ -74,36 +103,56 @@ export default function InscritosPage() {
         </div>
       </div>
 
-      {dash && <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
+      {(dash || items.length > 0) && (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
           <StatCard
             label="Pessoas / ingressos"
-            value={dash.pessoas ?? dash.vagasOcupadas ?? 0}
+            value={dash?.pessoas > 0 ? dash.pessoas : totaisLista.pessoas}
             hint="Soma das quantidades"
           />
-          <StatCard label="Cadastros" value={dash.inscritos} hint="Responsáveis" />
+          <StatCard
+            label="Cadastros"
+            value={dash?.inscritos ?? totaisLista.cadastros}
+            hint="Responsáveis"
+          />
           <StatCard
             label="Pré-inscritos"
-            value={dash.preInscritosPessoas ?? 0}
-            hint={`${dash.preInscritos || 0} cadastro(s)`}
+            value={
+              dash?.preInscritosPessoas > 0
+                ? dash.preInscritosPessoas
+                : totaisLista.preInscritosPessoas
+            }
+            hint={`${dash?.preInscritos ?? totaisLista.preInscritos} cadastro(s)`}
           />
           <StatCard
             label="Confirmadas"
-            value={dash.confirmadasPessoas ?? dash.confirmadas}
-            hint={`${dash.confirmadas || 0} cadastro(s)`}
+            value={
+              dash?.confirmadasPessoas > 0
+                ? dash.confirmadasPessoas
+                : totaisLista.confirmadasPessoas
+            }
+            hint={`${dash?.confirmadas ?? totaisLista.confirmadas} cadastro(s)`}
           />
           <StatCard
             label="Pendentes"
-            value={dash.pendentesPessoas ?? dash.pendentes}
-            hint={`${dash.pendentes || 0} cadastro(s)`}
+            value={
+              dash?.pendentesPessoas > 0 ? dash.pendentesPessoas : totaisLista.pendentesPessoas
+            }
+            hint={`${dash?.pendentes ?? totaisLista.pendentes} cadastro(s)`}
           />
-          <StatCard label="Cancelados" value={dash.canceladas} />
-          <StatCard label="Arrecadado" value={formatMoney(dash.valorArrecadado)} />
+          <StatCard label="Cancelados" value={dash?.canceladas ?? totaisLista.canceladas} />
+          <StatCard label="Arrecadado" value={formatMoney(dash?.valorArrecadado)} />
           <StatCard
             label="Vagas"
-            value={dash.vagasRestantes}
-            hint={`${dash.vagasOcupadas ?? 0} de ${dash.vagasMaximas} ocupadas`}
+            value={dash?.vagasRestantes ?? "—"}
+            hint={
+              dash
+                ? `${dash.vagasOcupadas ?? 0} de ${dash.vagasMaximas} ocupadas`
+                : `${totaisLista.pessoas} pessoas na lista`
+            }
           />
-        </div>}
+        </div>
+      )}
 
       <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-black/5 bg-white/80 p-4 dark:border-white/10 dark:bg-slate-900/70">
         <div className="min-w-[160px] flex-1">
