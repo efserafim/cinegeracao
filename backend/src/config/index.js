@@ -1,9 +1,42 @@
 require("dotenv").config();
+
+function splitUrls(value) {
+  return String(value || "")
+    .split(",")
+    .map((s) => s.trim().replace(/\/$/, ""))
+    .filter(Boolean);
+}
+
+function resolveFrontendOrigins() {
+  const fromEnv = splitUrls(process.env.FRONTEND_URL || process.env.FRONTEND_ORIGINS);
+  if (fromEnv.length) return fromEnv;
+  return [
+    "https://geucaristica.com.br",
+    "https://www.geucaristica.com.br",
+    "https://cinegeracao.netlify.app",
+    "http://localhost:5173",
+  ];
+}
+
+/** URL pública do site (e-mail / WhatsApp) — prioriza o domínio próprio. */
+function resolvePublicSiteUrl() {
+  const explicit = String(process.env.PUBLIC_SITE_URL || "").trim().replace(/\/$/, "");
+  if (explicit) return explicit;
+
+  const origins = resolveFrontendOrigins();
+  const preferred =
+    origins.find((o) => /geucaristica\.com\.br/i.test(o)) ||
+    origins.find((o) => !/localhost|127\.0\.0\.1/i.test(o)) ||
+    origins[0];
+  return preferred || "https://geucaristica.com.br";
+}
+
+const frontendOrigins = resolveFrontendOrigins();
 const config = {
   env: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT) || 3001,
-  frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
-  frontendOrigins: (process.env.FRONTEND_URL || "http://localhost:5173").split(",").map((s) => s.trim()).filter(Boolean),
+  frontendUrl: resolvePublicSiteUrl(),
+  frontendOrigins,
   jwt: {
     secret: process.env.JWT_SECRET || "dev_secret_change_me",
     expiresIn: process.env.JWT_EXPIRES_IN || "8h"

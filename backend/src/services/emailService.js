@@ -385,7 +385,7 @@ async function enviarConfirmacaoInscricao({
   if (!para) {
     return { sent: false, reason: "Participante sem e-mail" };
   }
-  const baseUrl = (config.frontendUrl || "http://localhost:5173").replace(/\/$/, "");
+  const baseUrl = (config.frontendUrl || "https://geucaristica.com.br").replace(/\/$/, "");
   const linkIngresso = `${baseUrl}/ingresso/${encodeURIComponent(codigoInscricao)}`;
   const qtd = Number(quantidade) || (Array.isArray(tickets) ? tickets.length : 1) || 1;
   const subject =
