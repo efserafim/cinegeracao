@@ -245,7 +245,10 @@ export default function ComprovantePage() {
     try {
       const payload = {
         nomeResponsavel: editNome.trim(),
-        pessoas: editPessoas.map((p) => ({ id: p.id, nome: p.nome.trim() })),
+        pessoas: editPessoas.map((p, idx) => ({
+          id: p.id,
+          nome: (idx === 0 ? editNome : p.nome).trim(),
+        })),
         ...extra,
       };
       if (!extra.removerPessoaIds) {
@@ -457,7 +460,13 @@ export default function ComprovantePage() {
                 <Input
                   label="Nome"
                   value={editNome}
-                  onChange={(e) => setEditNome(e.target.value)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setEditNome(v);
+                    setEditPessoas((prev) =>
+                      prev.length ? [{ ...prev[0], nome: v }, ...prev.slice(1)] : prev
+                    );
+                  }}
                 />
                 <Input
                   label="Valor total (R$)"
@@ -479,9 +488,11 @@ export default function ComprovantePage() {
                           label={`Pessoa ${idx + 1}`}
                           value={pessoa.nome}
                           onChange={(e) => {
+                            const v = e.target.value;
                             const next = [...editPessoas];
-                            next[idx] = { ...next[idx], nome: e.target.value };
+                            next[idx] = { ...next[idx], nome: v };
                             setEditPessoas(next);
+                            if (idx === 0) setEditNome(v);
                           }}
                         />
                       </div>
