@@ -9,8 +9,8 @@ async function main() {
   const senhaHash = await bcrypt.hash(senha, 12);
   const admin = await prisma.admin.upsert({
     where: { email },
-    update: { nome, senhaHash, ativo: true },
-    create: { email, nome, senhaHash, ativo: true }
+    update: { nome, senhaHash, ativo: true, perfil: "ADMIN" },
+    create: { email, nome, senhaHash, ativo: true, perfil: "ADMIN" }
   });
   await prisma.configuracao.upsert({
     where: { chave: "nome_sistema" },

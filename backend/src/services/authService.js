@@ -4,16 +4,50 @@ const prisma = require("../config/prisma");
 const config = require("../config");
 const { verificarTokenSupabase, supabaseAuthConfigurado } = require("../config/supabase");
 const { registrarLog } = require("./logService");
+
 const ADMIN_DISPLAY_NAMES = {
-  "laviniadossantos22@gmail.com": "Lavínia Bernardino"
+  "laviniadossantos22@gmail.com": "Lavínia Bernardino",
 };
+
+function adminPublico(admin) {
+  return {
+    id: admin.id,
+    nome: admin.nome,
+    email: admin.email,
+    perfil: admin.perfil || "ADMIN",
+    aparelhoNome: admin.aparelhoNome || null,
+    ativo: admin.ativo,
+  };
+}
+
 function emitirAccess(admin) {
   return jwt.sign(
-    { email: admin.email, nome: admin.nome, purpose: "access", provider: "local" },
+    {
+      email: admin.email,
+      nome: admin.nome,
+      perfil: admin.perfil || "ADMIN",
+      purpose: "access",
+      provider: "local",
+    },
     config.jwt.secret,
     { subject: admin.id, expiresIn: config.jwt.expiresIn }
   );
 }
+
+async function carregarAdminAuth(adminId) {
+  return prisma.admin.findUnique({
+    where: { id: adminId },
+    select: {
+      id: true,
+      nome: true,
+      email: true,
+      perfil: true,
+      aparelhoNome: true,
+      ativo: true,
+    },
+  });
+}
+
 async function loginComSenha(email, senha, ip) {
   const admin = await prisma.admin.findUnique({ where: { email: email.toLowerCase() } });
   if (!admin || !admin.ativo) {
@@ -33,14 +67,15 @@ async function loginComSenha(email, senha, ip) {
     acao: "LOGIN",
     entidade: "Admin",
     entidadeId: admin.id,
-    ip
+    ip,
   });
   return {
     token,
     provider: "local",
-    admin: { id: admin.id, nome: admin.nome, email: admin.email }
+    admin: adminPublico(admin),
   };
 }
+
 async function garantirAdminDoSupabase(user) {
   const email = (user.email || "").toLowerCase();
   if (!email) {
@@ -49,7 +84,12 @@ async function garantirAdminDoSupabase(user) {
     throw err;
   }
   let adminUser = await prisma.admin.findUnique({ where: { email } });
-  const nomePreferido = ADMIN_DISPLAY_NAMES[email] || user.user_metadata?.nome || user.user_metadata?.full_name || user.user_metadata?.name || email.split("@")[0];
+  const nomePreferido =
+    ADMIN_DISPLAY_NAMES[email] ||
+    user.user_metadata?.nome ||
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    email.split("@")[0];
   if (!adminUser) {
     const senhaHash = await bcrypt.hash(`supabase_${user.id}_${Date.now()}`, 12);
     adminUser = await prisma.admin.create({
@@ -57,15 +97,19 @@ async function garantirAdminDoSupabase(user) {
         email,
         nome: String(nomePreferido).slice(0, 120),
         senhaHash,
-        ativo: true
-      }
+        ativo: true,
+        perfil: "ADMIN",
+      },
     });
   } else {
-    const precisaAtualizarNome = ADMIN_DISPLAY_NAMES[email] || adminUser.nome === email.split("@")[0] || adminUser.nome === email;
+    const precisaAtualizarNome =
+      ADMIN_DISPLAY_NAMES[email] ||
+      adminUser.nome === email.split("@")[0] ||
+      adminUser.nome === email;
     if (precisaAtualizarNome && adminUser.nome !== String(nomePreferido).slice(0, 120)) {
       adminUser = await prisma.admin.update({
         where: { id: adminUser.id },
-        data: { nome: String(nomePreferido).slice(0, 120) }
+        data: { nome: String(nomePreferido).slice(0, 120) },
       });
     }
   }
@@ -76,6 +120,7 @@ async function garantirAdminDoSupabase(user) {
   }
   return adminUser;
 }
+
 async function loginComSupabase(accessToken, ip) {
   const user = await verificarTokenSupabase(accessToken);
   const adminUser = await garantirAdminDoSupabase(user);
@@ -85,32 +130,35 @@ async function loginComSupabase(accessToken, ip) {
     entidade: "Admin",
     entidadeId: adminUser.id,
     detalhes: { supabaseUserId: user.id, email: adminUser.email },
-    ip
+    ip,
   });
   const token = emitirAccess(adminUser);
   return {
     token,
     provider: "supabase",
     admin: {
-      id: adminUser.id,
-      nome: adminUser.nome,
-      email: adminUser.email,
-      supabaseUserId: user.id
-    }
+      ...adminPublico(adminUser),
+      supabaseUserId: user.id,
+    },
   };
 }
+
 async function me(adminId) {
-  return prisma.admin.findUnique({
+  const admin = await prisma.admin.findUnique({
     where: { id: adminId },
     select: {
       id: true,
       nome: true,
       email: true,
+      perfil: true,
+      aparelhoNome: true,
       ativo: true,
-      criadoEm: true
-    }
+      criadoEm: true,
+    },
   });
+  return admin;
 }
+
 async function resolverAdminDoToken(token) {
   try {
     const payload = jwt.verify(token, config.jwt.secret);
@@ -122,7 +170,8 @@ async function resolverAdminDoToken(token) {
     return {
       id: payload.sub,
       email: payload.email,
-      nome: payload.nome
+      nome: payload.nome,
+      perfil: payload.perfil || "ADMIN",
     };
   } catch (jwtErr) {
     if (jwtErr.status === 401) throw jwtErr;
@@ -135,7 +184,8 @@ async function resolverAdminDoToken(token) {
         id: adminUser.id,
         email: adminUser.email,
         nome: adminUser.nome,
-        supabaseUserId: user.id
+        perfil: adminUser.perfil || "ADMIN",
+        supabaseUserId: user.id,
       };
     } catch (sbErr) {
       if (sbErr.status) throw sbErr;
@@ -145,10 +195,13 @@ async function resolverAdminDoToken(token) {
   err.status = 401;
   throw err;
 }
+
 module.exports = {
   loginComSenha,
   loginComSupabase,
   me,
   resolverAdminDoToken,
-  supabaseAuthConfigurado
+  carregarAdminAuth,
+  adminPublico,
+  supabaseAuthConfigurado,
 };

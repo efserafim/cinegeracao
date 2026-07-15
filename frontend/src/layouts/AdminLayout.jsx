@@ -6,29 +6,37 @@ import { logoImg } from "../assets/brand";
 import SpiderMark from "../components/SpiderMark";
 import AdminPwaBootstrap from "../components/admin/AdminPwaBootstrap";
 
-const navGroups = [
+const navGroupsFull = [
   {
     label: "Operação",
     items: [
       { to: "/admin", end: true, label: "Dashboard", short: "Início", icon: LayoutDashboard },
       { to: "/admin/chamada", label: "Chamada", short: "Chamada", icon: ClipboardList },
-      { to: "/admin/validar", label: "Validar entrada", short: "Validar", icon: QrCode }
-    ]
+      { to: "/admin/validar", label: "Validar entrada", short: "Validar", icon: QrCode },
+    ],
   },
   {
     label: "Gestão",
-    items: [
-      { to: "/admin/eventos", label: "Eventos", short: "Eventos", icon: Calendar }
-    ]
-  }
+    items: [{ to: "/admin/eventos", label: "Eventos", short: "Eventos", icon: Calendar }],
+  },
 ];
 
-const flatLinks = navGroups.flatMap((g) => g.items);
+const navGroupsLeitor = [
+  {
+    label: "Entrada",
+    items: [
+      { to: "/admin/validar", label: "Leitor QR", short: "QR", icon: QrCode },
+      { to: "/admin/eventos", label: "Eventos online", short: "Eventos", icon: Calendar },
+    ],
+  },
+];
 
 export default function AdminLayout() {
-  const { admin, logout } = useAuth();
+  const { admin, logout, isLeitor } = useAuth();
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
+  const navGroups = isLeitor ? navGroupsLeitor : navGroupsFull;
+  const flatLinks = navGroups.flatMap((g) => g.items);
 
   function handleLogout() {
     logout();
@@ -40,7 +48,7 @@ export default function AdminLayout() {
       <AdminPwaBootstrap />
       <aside className="relative hidden w-64 shrink-0 overflow-hidden border-r border-black/5 bg-white/70 p-5 backdrop-blur dark:border-white/10 dark:bg-slate-900/70 md:block">
         <SpiderMark className="pointer-events-none absolute -right-6 bottom-8 h-28 w-28 opacity-[0.06]" />
-        <Link to="/admin" className="relative flex items-center gap-2.5">
+        <Link to={isLeitor ? "/admin/validar" : "/admin"} className="relative flex items-center gap-2.5">
           <span className="relative">
             <img src={logoImg} alt="" className="h-10 w-10 rounded-full ring-2 ring-[#e11d2e]/50" />
             <SpiderMark className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5" />
@@ -48,7 +56,7 @@ export default function AdminLayout() {
           <span>
             <span className="block font-display text-lg leading-none text-[#e11d2e]">CineGeração</span>
             <span className="mt-1 block text-[10px] uppercase tracking-[0.16em] text-[var(--color-ink-soft)] dark:text-slate-400">
-              Admin
+              {isLeitor ? "Leitor QR" : "Admin"}
             </span>
           </span>
         </Link>
@@ -107,6 +115,7 @@ export default function AdminLayout() {
           <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-3">
             <span className="hidden text-sm text-[var(--color-ink-soft)] sm:inline dark:text-slate-300">
               {admin?.nome}
+              {isLeitor ? " · Leitor" : ""}
             </span>
             <button
               type="button"

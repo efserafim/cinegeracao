@@ -14,12 +14,18 @@ import ComprovantePage from "./pages/admin/ComprovantePage.jsx";
 import ValidarPage from "./pages/admin/ValidarPage.jsx";
 import ChamadaPage from "./pages/admin/ChamadaPage.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import { useAuth } from "./context/AuthContext.jsx";
 
-/** Links antigos /evento/:id → home com o evento pré-selecionado. */
 function RedirectToInscricao() {
   const { id } = useParams();
   const to = id ? `/?evento=${encodeURIComponent(id)}#inscricao` : "/#inscricao";
   return <Navigate to={to} replace />;
+}
+
+function DashboardOrRedirect() {
+  const { isLeitor } = useAuth();
+  if (isLeitor) return <Navigate to="/admin/validar" replace />;
+  return <DashboardPage />;
 }
 
 export default function App() {
@@ -44,13 +50,48 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<DashboardPage />} />
+        <Route index element={<DashboardOrRedirect />} />
         <Route path="eventos" element={<EventosAdminPage />} />
-        <Route path="eventos/novo" element={<EventoFormPage />} />
-        <Route path="eventos/:id/editar" element={<EventoFormPage />} />
-        <Route path="eventos/:id/inscritos" element={<InscritosPage />} />
-        <Route path="inscricoes/:id" element={<ComprovantePage />} />
-        <Route path="chamada" element={<ChamadaPage />} />
+        <Route
+          path="eventos/novo"
+          element={
+            <ProtectedRoute perfis={["ADMIN"]}>
+              <EventoFormPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="eventos/:id/editar"
+          element={
+            <ProtectedRoute perfis={["ADMIN"]}>
+              <EventoFormPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="eventos/:id/inscritos"
+          element={
+            <ProtectedRoute perfis={["ADMIN"]}>
+              <InscritosPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="inscricoes/:id"
+          element={
+            <ProtectedRoute perfis={["ADMIN"]}>
+              <ComprovantePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="chamada"
+          element={
+            <ProtectedRoute perfis={["ADMIN"]}>
+              <ChamadaPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="validar" element={<ValidarPage />} />
       </Route>
     </Routes>

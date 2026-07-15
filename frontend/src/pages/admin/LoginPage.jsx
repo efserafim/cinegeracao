@@ -18,8 +18,9 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      await login(email, senha);
-      navigate("/admin");
+      const data = await login(email, senha);
+      const perfil = data?.admin?.perfil || "ADMIN";
+      navigate(perfil === "LEITOR" ? "/admin/validar" : "/admin");
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Falha no login");
     } finally {

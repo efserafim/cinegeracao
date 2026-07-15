@@ -1,45 +1,60 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 import { supabase, supabaseConfigured } from "../lib/supabase";
+
 const AuthContext = createContext(null);
+
+function normalizeAdmin(raw) {
+  if (!raw) return null;
+  return {
+    id: raw.id,
+    nome: raw.nome,
+    email: raw.email,
+    perfil: raw.perfil || "ADMIN",
+    aparelhoNome: raw.aparelhoNome || null,
+  };
+}
+
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem("cg_token"));
   const [admin, setAdmin] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("cg_admin") || "null");
+      return normalizeAdmin(JSON.parse(localStorage.getItem("cg_admin") || "null"));
     } catch {
       return null;
     }
   });
+
   function persistSession(data) {
+    const nextAdmin = normalizeAdmin(data.admin);
     localStorage.setItem("cg_token", data.token);
-    localStorage.setItem("cg_admin", JSON.stringify(data.admin));
+    localStorage.setItem("cg_admin", JSON.stringify(nextAdmin));
     setToken(data.token);
-    setAdmin(data.admin);
+    setAdmin(nextAdmin);
   }
+
   useEffect(() => {
-    if (!token) return void 0;
+    if (!token) return undefined;
     let cancelled = false;
-    api.get("/auth/me").then(({ data }) => {
-      if (cancelled || !data?.data) return;
-      const next = {
-        id: data.data.id,
-        nome: data.data.nome,
-        email: data.data.email
-      };
-      localStorage.setItem("cg_admin", JSON.stringify(next));
-      setAdmin(next);
-    }).catch(() => {
-    });
+    api
+      .get("/auth/me")
+      .then(({ data }) => {
+        if (cancelled || !data?.data) return;
+        const next = normalizeAdmin(data.data);
+        localStorage.setItem("cg_admin", JSON.stringify(next));
+        setAdmin(next);
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
   }, [token]);
+
   async function login(email, senha) {
     if (supabaseConfigured && supabase) {
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email,
-        password: senha
+        password: senha,
       });
       if (error) {
         if (error.message?.toLowerCase().includes("invalid login")) {
@@ -63,16 +78,23 @@ export function AuthProvider({ children }) {
     persistSession(data.data);
     return data.data;
   }
+
   async function logout() {
     try {
       if (supabase) await supabase.auth.signOut();
     } catch {
+      /* ignore */
     }
     localStorage.removeItem("cg_token");
     localStorage.removeItem("cg_admin");
     setToken(null);
     setAdmin(null);
   }
+
+  const perfil = admin?.perfil || "ADMIN";
+  const isLeitor = perfil === "LEITOR";
+  const isAdminFull = perfil === "ADMIN";
+
   const value = useMemo(
     () => ({
       token,
@@ -80,12 +102,17 @@ export function AuthProvider({ children }) {
       login,
       logout,
       isAuthenticated: Boolean(token),
-      supabaseConfigured
+      supabaseConfigured,
+      perfil,
+      isLeitor,
+      isAdminFull,
     }),
-    [token, admin]
+    [token, admin, perfil, isLeitor, isAdminFull]
   );
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
+
 export function useAuth() {
   return useContext(AuthContext);
 }

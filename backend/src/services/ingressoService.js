@@ -213,12 +213,21 @@ async function buscarPorCodigoInscricao(codigoInscricao) {
   };
 }
 
-async function validarEntrada({ codigoOuPayload, adminId, ip }) {
+async function validarEntrada({
+  codigoOuPayload,
+  adminId,
+  ip,
+  aparelho,
+  observacao,
+  userAgent,
+  aparelhoPadrao,
+}) {
   let codigo = codigoOuPayload;
   try {
     const parsed = JSON.parse(codigoOuPayload);
     if (parsed?.codigo) codigo = parsed.codigo;
   } catch {
+    /* payload plain */
   }
   codigo = String(codigo).trim();
   const ingresso = await prisma.ingresso.findUnique({
@@ -226,15 +235,15 @@ async function validarEntrada({ codigoOuPayload, adminId, ip }) {
     include: {
       pessoa: true,
       inscricao: {
-        include: { participante: true, evento: true }
-      }
-    }
+        include: { participante: true, evento: true },
+      },
+    },
   });
   if (!ingresso) {
     return {
       resultado: "INVALIDO",
       mensagem: "Ingresso não encontrado",
-      tela: "vermelha"
+      tela: "vermelha",
     };
   }
   let resultado;
@@ -254,33 +263,115 @@ async function validarEntrada({ codigoOuPayload, adminId, ip }) {
     tela = "verde";
     await prisma.ingresso.update({
       where: { id: ingresso.id },
-      data: { status: "UTILIZADO", utilizadoEm: new Date() }
+      data: { status: "UTILIZADO", utilizadoEm: new Date() },
     });
   }
-  await prisma.validacaoTicket.create({
+
+  const aparelhoFinal = String(aparelho || aparelhoPadrao || "").trim().slice(0, 120) || null;
+  const obsFinal = String(observacao || "").trim().slice(0, 500) || null;
+  const uaFinal = String(userAgent || "").trim().slice(0, 500) || null;
+  const lidoEm = new Date();
+
+  const validacao = await prisma.validacaoTicket.create({
     data: {
       ingressoId: ingresso.id,
       adminId: adminId || null,
-      resultado
-    }
+      resultado,
+      observacao: obsFinal,
+      aparelho: aparelhoFinal,
+      userAgent: uaFinal,
+      lidoEm,
+    },
   });
+
   await registrarLog({
     adminId,
     acao: "VALIDACAO_INGRESSO",
     entidade: "Ingresso",
     entidadeId: ingresso.id,
-    detalhes: { resultado, codigo: ingresso.codigo },
-    ip
+    detalhes: {
+      resultado,
+      codigo: ingresso.codigo,
+      aparelho: aparelhoFinal,
+      observacao: obsFinal,
+      validacaoId: validacao.id,
+    },
+    ip,
   });
+
+  const nome = ingresso.pessoa?.nome || ingresso.inscricao.participante.nome;
   return {
     resultado,
     mensagem,
     tela,
-    nome: ingresso.pessoa?.nome || ingresso.inscricao.participante.nome,
+    id: validacao.id,
+    nome,
     evento: ingresso.inscricao.evento.nome,
     status: resultado === "AUTORIZADO" ? "UTILIZADO" : ingresso.status,
     codigo: ingresso.codigo,
-    lidoEm: new Date()
+    lidoEm,
+    aparelho: aparelhoFinal,
+    observacao: obsFinal,
+    leitor: null,
+  };
+}
+
+async function listarValidacoes({ adminId, perfil, page = 1, limit = 30 }) {
+  const take = Math.min(100, Math.max(1, Number(limit) || 30));
+  const skip = (Math.max(1, Number(page) || 1) - 1) * take;
+  const where = perfil === "LEITOR" && adminId ? { adminId } : {};
+
+  const [total, rows] = await Promise.all([
+    prisma.validacaoTicket.count({ where }),
+    prisma.validacaoTicket.findMany({
+      where,
+      orderBy: { lidoEm: "desc" },
+      skip,
+      take,
+      include: {
+        admin: { select: { id: true, nome: true, email: true, perfil: true, aparelhoNome: true } },
+        ingresso: {
+          select: {
+            codigo: true,
+            status: true,
+            pessoa: { select: { nome: true } },
+            inscricao: {
+              select: {
+                codigo: true,
+                participante: { select: { nome: true } },
+                evento: { select: { id: true, nome: true } },
+              },
+            },
+          },
+        },
+      },
+    }),
+  ]);
+
+  return {
+    total,
+    page: Math.max(1, Number(page) || 1),
+    limit: take,
+    totalPages: Math.max(1, Math.ceil(total / take)),
+    items: rows.map((v) => ({
+      id: v.id,
+      resultado: v.resultado,
+      lidoEm: v.lidoEm,
+      observacao: v.observacao || "",
+      aparelho: v.aparelho || v.admin?.aparelhoNome || "—",
+      leitor: v.admin?.nome || "—",
+      leitorEmail: v.admin?.email || null,
+      perfilLeitor: v.admin?.perfil || null,
+      nome:
+        v.ingresso?.pessoa?.nome ||
+        v.ingresso?.inscricao?.participante?.nome ||
+        "—",
+      codigo: v.ingresso?.codigo || "—",
+      codigoInscricao: v.ingresso?.inscricao?.codigo || null,
+      evento: v.ingresso?.inscricao?.evento?.nome || "—",
+      eventoId: v.ingresso?.inscricao?.evento?.id || null,
+      statusIngresso: v.ingresso?.status || null,
+    })),
   };
 }
 
@@ -290,8 +381,8 @@ async function marcarPresencaChamada({ codigo, presente = true, adminId, ip }) {
     where: { codigo },
     include: {
       pessoa: true,
-      inscricao: { include: { participante: true, evento: true } }
-    }
+      inscricao: { include: { participante: true, evento: true } },
+    },
   });
   if (!ingresso) {
     const err = new Error("Ingresso não encontrado");
@@ -308,7 +399,7 @@ async function marcarPresencaChamada({ codigo, presente = true, adminId, ip }) {
     const now = new Date();
     const updated = await prisma.ingresso.update({
       where: { id: ingresso.id },
-      data: { presenteEm: ingresso.presenteEm || now }
+      data: { presenteEm: ingresso.presenteEm || now },
     });
     await registrarLog({
       adminId,
@@ -316,18 +407,18 @@ async function marcarPresencaChamada({ codigo, presente = true, adminId, ip }) {
       entidade: "Ingresso",
       entidadeId: ingresso.id,
       detalhes: { codigo: ingresso.codigo, nome },
-      ip
+      ip,
     });
     return {
       presente: true,
       codigo: ingresso.codigo,
       nome,
-      presenteEm: updated.presenteEm
+      presenteEm: updated.presenteEm,
     };
   }
   await prisma.ingresso.update({
     where: { id: ingresso.id },
-    data: { presenteEm: null }
+    data: { presenteEm: null },
   });
   await registrarLog({
     adminId,
@@ -335,13 +426,13 @@ async function marcarPresencaChamada({ codigo, presente = true, adminId, ip }) {
     entidade: "Ingresso",
     entidadeId: ingresso.id,
     detalhes: { codigo: ingresso.codigo, nome },
-    ip
+    ip,
   });
   return {
     presente: false,
     codigo: ingresso.codigo,
     nome,
-    presenteEm: null
+    presenteEm: null,
   };
 }
 
@@ -351,5 +442,6 @@ module.exports = {
   gerarQrDataUrl,
   buscarPorCodigoInscricao,
   validarEntrada,
-  marcarPresencaChamada
+  listarValidacoes,
+  marcarPresencaChamada,
 };
