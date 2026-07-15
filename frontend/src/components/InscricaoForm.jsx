@@ -79,7 +79,7 @@ export default function InscricaoForm({ evento }) {
       const listaPessoas = [responsavel, ...extras];
 
       if (!responsavel || listaPessoas.length !== qtd || listaPessoas.some((p) => !p)) {
-        setError(qtd === 1 ? "Informe o nome do responsável" : `Informe o nome de cada uma das ${qtd} pessoas`);
+        setError(qtd === 1 ? "Informe o nome" : `Informe o nome de cada uma das ${qtd} pessoas`);
         return;
       }
 
@@ -263,7 +263,7 @@ export default function InscricaoForm({ evento }) {
           </div>
           <div className="space-y-3 bg-[#e11d2e]/[0.06] p-4 dark:bg-[#e11d2e]/15">
             <p className="rounded-xl bg-[#f5c542]/20 px-3 py-2 text-sm font-semibold leading-snug text-[#7a4b00] dark:bg-[#f5c542]/15 dark:text-[#f5c542]">
-              A pessoa 1 usa o nome do responsável. Informe quem mais vai:
+              A pessoa 1 já está no campo Nome acima. Informe quem mais vai:
             </p>
             {Array.from({ length: quantidade - 1 }).map((_, idx) => (
               <Field key={idx} label={`Pessoa ${idx + 2}`} error={errors.pessoas?.[idx]?.message}>

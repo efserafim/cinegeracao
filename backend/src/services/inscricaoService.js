@@ -907,7 +907,7 @@ async function corrigirInscricao(id, dados, adminId, ip) {
   }
 
   if (nomeResponsavel !== null && !nomeResponsavel) {
-    const err = new Error("Nome do responsável não pode ficar vazio");
+    const err = new Error("Nome não pode ficar vazio");
     err.status = 400;
     throw err;
   }
