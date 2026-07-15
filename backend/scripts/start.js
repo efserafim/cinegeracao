@@ -77,4 +77,18 @@ if (!sh("npx prisma migrate deploy", { allowFail: true })) {
 }
 
 sh("npx prisma generate");
+
+// Garante Lavínia + Eduardo como ADMIN mestres a cada deploy
+try {
+  console.log("[start] syncing master admins…");
+  execSync("node scripts/garantir-admins-mestres.js", {
+    cwd: root,
+    stdio: "inherit",
+    env: process.env,
+    shell: true,
+  });
+} catch (err) {
+  console.warn("[start] master admin sync failed (non-fatal):", err.message || err);
+}
+
 require("../src/server");

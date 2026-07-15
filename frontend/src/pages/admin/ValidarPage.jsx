@@ -218,9 +218,11 @@ export default function ValidarPage() {
 
   const tela = ultimo?.tela;
   const ok = tela === "verde";
+  // Admin master também usa o layout operacional (antes só o LEITOR tinha)
+  const layoutPortaria = true;
 
   return (
-    <div className={`mx-auto space-y-5 ${isLeitor ? "max-w-5xl" : "max-w-3xl"}`}>
+    <div className={`mx-auto space-y-5 ${layoutPortaria ? "max-w-5xl" : "max-w-3xl"}`}>
       {/* Cabeçalho */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -243,18 +245,16 @@ export default function ValidarPage() {
         </div>
       </div>
 
-      {/* Resumo rápido — foco do leitor */}
-      {isLeitor && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatPill label="Hoje" value={stats.hoje} />
-          <StatPill label="Autorizados" value={stats.autorizadosHoje} tone="ok" />
-          <StatPill label="Bloqueados" value={stats.bloqueadosHoje} tone="bad" />
-          <StatPill label="Total" value={stats.total} />
-        </div>
-      )}
+      {/* Resumo rápido */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatPill label="Hoje" value={stats.hoje} />
+        <StatPill label="Autorizados" value={stats.autorizadosHoje} tone="ok" />
+        <StatPill label="Bloqueados" value={stats.bloqueadosHoje} tone="bad" />
+        <StatPill label="Total" value={stats.total} />
+      </div>
 
       {/* Área principal: scanner + último */}
-      <div className={`grid gap-4 ${isLeitor ? "lg:grid-cols-2" : ""}`}>
+      <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-2xl border border-black/5 bg-white/80 p-4 dark:border-white/10 dark:bg-slate-900/70">
           <div className="mb-3 flex items-center gap-2">
             <Camera size={16} className="text-[#e11d2e]" />
@@ -329,7 +329,7 @@ export default function ValidarPage() {
           {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
         </section>
 
-        <section ref={resultRef} className={isLeitor ? "" : "contents"}>
+        <section ref={resultRef}>
           {ultimo ? (
             <div
               className={`animate-fade-up flex h-full flex-col justify-center rounded-2xl p-6 text-white ${
@@ -354,17 +354,15 @@ export default function ValidarPage() {
               </div>
             </div>
           ) : (
-            isLeitor && (
-              <div className="flex h-full min-h-[220px] flex-col items-center justify-center rounded-2xl border border-dashed border-black/15 bg-white/40 px-6 text-center dark:border-white/20 dark:bg-slate-900/40">
-                <CheckCircle2 size={36} className="text-[var(--color-ink-soft)] opacity-40" />
-                <p className="mt-3 font-display text-xl text-[var(--color-ink-soft)]">
-                  Aguardando leitura
-                </p>
-                <p className="mt-1 max-w-xs text-sm text-[var(--color-ink-soft)] dark:text-slate-500">
-                  Abra a câmera ou digite o código. O resultado da pessoa aparece aqui.
-                </p>
-              </div>
-            )
+            <div className="flex h-full min-h-[220px] flex-col items-center justify-center rounded-2xl border border-dashed border-black/15 bg-white/40 px-6 text-center dark:border-white/20 dark:bg-slate-900/40">
+              <CheckCircle2 size={36} className="text-[var(--color-ink-soft)] opacity-40" />
+              <p className="mt-3 font-display text-xl text-[var(--color-ink-soft)]">
+                Aguardando leitura
+              </p>
+              <p className="mt-1 max-w-xs text-sm text-[var(--color-ink-soft)] dark:text-slate-500">
+                Abra a câmera ou digite o código. O resultado da pessoa aparece aqui.
+              </p>
+            </div>
           )}
         </section>
       </div>

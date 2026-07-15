@@ -1,18 +1,24 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 import { supabase, supabaseConfigured } from "../lib/supabase";
+import { isMasterAdminEmail } from "../lib/masterAdmins";
 
 const AuthContext = createContext(null);
 
 function normalizeAdmin(raw) {
   if (!raw) return null;
+  const email = String(raw.email || "").toLowerCase();
+  const isMaster = Boolean(raw.isMaster) || isMasterAdminEmail(email);
+  // Mestres nunca ficam como LEITOR no front — evita menu/botões sumindo
+  let perfil = raw.perfil || "ADMIN";
+  if (isMaster) perfil = "ADMIN";
   return {
     id: raw.id,
     nome: raw.nome,
     email: raw.email,
-    perfil: raw.perfil || "ADMIN",
+    perfil,
     aparelhoNome: raw.aparelhoNome || null,
-    isMaster: Boolean(raw.isMaster),
+    isMaster,
   };
 }
 
@@ -92,9 +98,11 @@ export function AuthProvider({ children }) {
     setAdmin(null);
   }
 
-  const perfil = admin?.perfil || "ADMIN";
-  const isLeitor = perfil === "LEITOR";
-  const isAdminFull = perfil === "ADMIN";
+  const email = admin?.email;
+  const isMaster = Boolean(admin?.isMaster) || isMasterAdminEmail(email);
+  const perfil = isMaster ? "ADMIN" : admin?.perfil || "ADMIN";
+  const isLeitor = !isMaster && perfil === "LEITOR";
+  const isAdminFull = isMaster || perfil === "ADMIN";
 
   const value = useMemo(
     () => ({
@@ -107,8 +115,9 @@ export function AuthProvider({ children }) {
       perfil,
       isLeitor,
       isAdminFull,
+      isMaster,
     }),
-    [token, admin, perfil, isLeitor, isAdminFull]
+    [token, admin, perfil, isLeitor, isAdminFull, isMaster]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

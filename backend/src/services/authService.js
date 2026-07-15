@@ -36,7 +36,7 @@ function emitirAccess(admin) {
 }
 
 async function carregarAdminAuth(adminId) {
-  return prisma.admin.findUnique({
+  const admin = await prisma.admin.findUnique({
     where: { id: adminId },
     select: {
       id: true,
@@ -47,6 +47,8 @@ async function carregarAdminAuth(adminId) {
       ativo: true,
     },
   });
+  if (!admin) return null;
+  return sincronizarMaster(admin);
 }
 
 /** Garante nome + perfil ADMIN para Lavínia / Eduardo. */
@@ -173,7 +175,7 @@ async function loginComSupabase(accessToken, ip) {
 }
 
 async function me(adminId) {
-  const admin = await prisma.admin.findUnique({
+  let admin = await prisma.admin.findUnique({
     where: { id: adminId },
     select: {
       id: true,
@@ -186,6 +188,7 @@ async function me(adminId) {
     },
   });
   if (!admin) return null;
+  admin = await sincronizarMaster(admin);
   return {
     ...admin,
     isMaster: isMasterAdminEmail(admin.email),
