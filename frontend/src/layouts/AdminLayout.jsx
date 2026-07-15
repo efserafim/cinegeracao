@@ -23,10 +23,10 @@ const navGroupsFull = [
 
 const navGroupsLeitor = [
   {
-    label: "Entrada",
+    label: "Portaria",
     items: [
-      { to: "/admin/validar", label: "Leitor QR", short: "QR", icon: QrCode },
-      { to: "/admin/eventos", label: "Eventos online", short: "Eventos", icon: Calendar },
+      { to: "/admin/validar", end: true, label: "Leitor QR", short: "Leitor", icon: QrCode },
+      { to: "/admin/eventos", label: "Eventos", short: "Eventos", icon: Calendar },
     ],
   },
 ];

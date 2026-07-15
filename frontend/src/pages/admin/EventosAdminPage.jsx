@@ -113,7 +113,11 @@ export default function EventosAdminPage() {
           <h1 className="font-display text-3xl">{isLeitor ? "Eventos online" : "Eventos"}</h1>
           {isLeitor && (
             <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
-              Somente eventos em pré-inscrição ou com inscrição aberta.
+              Consulta rápida — a leitura de QR fica em{" "}
+              <Link to="/admin/validar" className="text-[var(--color-forest)] underline">
+                Leitor QR
+              </Link>
+              .
             </p>
           )}
         </div>
@@ -122,9 +126,14 @@ export default function EventosAdminPage() {
             <Button>Novo evento</Button>
           </Link>
         )}
+        {isLeitor && (
+          <Link to="/admin/validar">
+            <Button>Abrir leitor</Button>
+          </Link>
+        )}
       </div>
 
-      <div className="grid gap-4">
+      <div className={`grid gap-4 ${isLeitor ? "sm:grid-cols-2" : ""}`}>
         {eventos.map((ev) => {
           const st = STATUS_EVENTO[ev.status] || STATUS_EVENTO.RASCUNHO;
           return (
@@ -151,11 +160,19 @@ export default function EventosAdminPage() {
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
-                  {formatDate(ev.data)} · {ev.horario} · {ev.cidade} · {formatMoney(ev.valor)}
+                  {formatDate(ev.data)} · {ev.horario} · {ev.cidade}
+                  {isAdminFull ? ` · ${formatMoney(ev.valor)}` : ""}
                 </p>
                 <p className="text-sm">
-                  Vagas: {ev.vagasRestantes}/{ev.vagasMaximas}
+                  {isLeitor
+                    ? `Local: ${ev.local || "—"}`
+                    : `Vagas: ${ev.vagasRestantes}/${ev.vagasMaximas}`}
                 </p>
+                {isLeitor && (
+                  <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
+                    Vagas restantes: {ev.vagasRestantes}/{ev.vagasMaximas}
+                  </p>
+                )}
               </div>
               {isAdminFull && (
                 <div className="flex flex-wrap gap-2">
