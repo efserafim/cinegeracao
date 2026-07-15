@@ -288,11 +288,10 @@ export default function InscritosPage() {
                   const pessoasOrd = [...(i.pessoas || [])].sort(
                     (a, b) => (a.ordem ?? 0) - (b.ordem ?? 0)
                   );
-                  const nome = pessoasOrd[0]?.nome || i.participante?.nome || "—";
+                  const nome = i.participante?.nome || pessoasOrd[0]?.nome || "—";
                   const extras = pessoasOrd
-                    .slice(1)
-                    .map((p) => p.nome)
-                    .filter(Boolean);
+                    .filter((p) => p.nome && p.nome !== nome)
+                    .map((p) => p.nome);
                   const qtd = pessoasOrd.length || i.quantidade || 1;
                   return (
                     <tr

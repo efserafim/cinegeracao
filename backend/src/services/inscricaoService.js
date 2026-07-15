@@ -950,15 +950,8 @@ async function corrigirInscricao(id, dados, adminId, ip) {
     for (const edit of pessoasEdits) {
       const pid = String(edit?.id || "");
       if (!pid || removerIds.includes(pid)) continue;
-      let nome = String(edit.nome || "").trim();
+      const nome = String(edit.nome || "").trim();
       if (!nome) continue;
-      const isPrimeira =
-        pessoasAtuais[0] &&
-        String(pessoasAtuais[0].id) === pid &&
-        !removerIds.includes(String(pessoasAtuais[0].id));
-      if (isPrimeira && nomeResponsavel) {
-        nome = nomeResponsavel;
-      }
       await tx.inscricaoPessoa.update({
         where: { id: pid },
         data: { nome },
@@ -993,21 +986,10 @@ async function corrigirInscricao(id, dados, adminId, ip) {
       });
     }
 
-    const nomeFinal =
-      nomeResponsavel ||
-      (pessoasFinais[0] && String(pessoasFinais[0].nome || "").trim()) ||
-      null;
-
-    if (nomeFinal && pessoasFinais[0]) {
-      await tx.inscricaoPessoa.update({
-        where: { id: pessoasFinais[0].id },
-        data: { nome: nomeFinal },
-      });
-    }
-    if (nomeFinal) {
+    if (nomeResponsavel) {
       await tx.participante.update({
         where: { id: inscricao.participanteId },
-        data: { nome: nomeFinal },
+        data: { nome: nomeResponsavel },
       });
     }
 
@@ -1280,7 +1262,6 @@ function formatInscricao(i) {
         presenteEm: ingressos[0].presenteEm
       }
     : null;
-  const nomePrincipal = pessoas[0]?.nome || i.participante?.nome;
   return {
     id: i.id,
     codigo: i.codigo,
@@ -1293,7 +1274,7 @@ function formatInscricao(i) {
     pessoas,
     participante: i.participante ? {
       id: i.participante.id,
-      nome: nomePrincipal,
+      nome: i.participante.nome,
       telefone: i.participante.telefone,
       email: i.participante.email,
       paroquia: i.participante.paroquia,
