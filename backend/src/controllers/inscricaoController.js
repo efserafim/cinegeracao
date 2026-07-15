@@ -1,5 +1,6 @@
 const inscricaoService = require("../services/inscricaoService");
 const exportService = require("../services/exportService");
+const prisma = require("../config/prisma");
 const { success } = require("../utils/response");
 async function criar(req, res, next) {
   try {
@@ -185,26 +186,43 @@ async function dashboardGlobal(req, res, next) {
     return next(err);
   }
 }
+function slugArquivo(nome, fallback) {
+  const base = String(nome || fallback || "inscritos")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48)
+    .toLowerCase();
+  return base || "inscritos";
+}
+
 async function exportar(req, res, next) {
   try {
     const { formato } = req.params;
     const { eventoId } = req.params;
+    const evento = await prisma.evento.findUnique({
+      where: { id: eventoId },
+      select: { nome: true },
+    });
+    const stem = `inscritos-${slugArquivo(evento?.nome, eventoId)}`;
+
     if (formato === "excel") {
       const buf = await exportService.exportarExcel(eventoId);
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-      res.setHeader("Content-Disposition", `attachment; filename="inscritos-${eventoId}.xlsx"`);
+      res.setHeader("Content-Disposition", `attachment; filename="${stem}.xlsx"`);
       return res.send(Buffer.from(buf));
     }
     if (formato === "csv") {
       const buf = await exportService.exportarCsv(eventoId);
       res.setHeader("Content-Type", "text/csv; charset=utf-8");
-      res.setHeader("Content-Disposition", `attachment; filename="inscritos-${eventoId}.csv"`);
+      res.setHeader("Content-Disposition", `attachment; filename="${stem}.csv"`);
       return res.send(buf);
     }
     if (formato === "pdf") {
       const buf = await exportService.exportarPdf(eventoId);
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename="inscritos-${eventoId}.pdf"`);
+      res.setHeader("Content-Disposition", `attachment; filename="${stem}.pdf"`);
       return res.send(buf);
     }
     const err = new Error("Formato inválido. Use excel, csv ou pdf");

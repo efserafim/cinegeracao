@@ -62,10 +62,13 @@ export default function InscritosPage() {
   async function exportFile(formato) {
     const res = await api.get(`/inscricoes/evento/${id}/export/${formato}`, { responseType: "blob" });
     const ext = formato === "excel" ? "xlsx" : formato;
+    const disposition = res.headers?.["content-disposition"] || "";
+    const match = disposition.match(/filename="?([^";]+)"?/i);
+    const filename = match?.[1] || `inscritos.${ext}`;
     const url = URL.createObjectURL(res.data);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `inscritos.${ext}`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   }

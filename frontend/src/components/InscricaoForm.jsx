@@ -153,7 +153,7 @@ export default function InscricaoForm({ evento }) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <Field label="Nome do responsável" error={errors.nome?.message}>
+      <Field label="Nome" error={errors.nome?.message}>
         <input className={fieldClass} {...register("nome", { required: "Obrigatório" })} />
       </Field>
       <Field label="WhatsApp (com DDD)" error={errors.telefone?.message}>
