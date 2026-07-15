@@ -6,6 +6,13 @@ import { Button, Input, Loading, StatCard, StatusBadge, ConfirmModal } from "../
 
 const PAGE_SIZE = 15;
 
+function formatPhone(raw) {
+  const d = String(raw || "").replace(/\D/g, "");
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return raw || "—";
+}
+
 function buildPageNumbers(current, total) {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
   const pages = new Set([1, total, current, current - 1, current + 1]);
@@ -172,7 +179,7 @@ export default function InscritosPage() {
           <StatCard
             label="Cadastros"
             value={dash?.inscritos ?? totaisLista.cadastros}
-            hint="Responsáveis"
+            hint="Cadastros"
           />
           <StatCard
             label="Pré-inscritos"
@@ -260,70 +267,97 @@ export default function InscritosPage() {
         <Loading />
       ) : (
         <div className="space-y-3">
-          <div className="overflow-x-auto rounded-2xl border border-black/5 bg-white/80 dark:border-white/10 dark:bg-slate-900/70">
-            <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-black/5 text-xs uppercase text-[var(--color-ink-soft)] dark:border-white/10">
-                <tr>
-                  <th className="px-4 py-3">Nome</th>
-                  <th className="px-4 py-3">Qtd</th>
-                  <th className="px-4 py-3">Telefone</th>
-                  <th className="px-4 py-3">Paróquia</th>
-                  <th className="px-4 py-3">Cidade</th>
-                  <th className="px-4 py-3">Data</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Pagamento</th>
-                  <th className="px-4 py-3">Valor</th>
-                  <th className="px-4 py-3" />
+          <div className="overflow-x-auto rounded-xl border border-black/5 bg-white/80 dark:border-white/10 dark:bg-slate-900/70">
+            <table className="w-full min-w-[1100px] border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-black/10 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)] dark:border-white/10">
+                  <th className="px-3 py-2.5">Nome</th>
+                  <th className="w-14 px-2 py-2.5 text-center">Qtd</th>
+                  <th className="px-3 py-2.5">Telefone</th>
+                  <th className="px-3 py-2.5">Paróquia</th>
+                  <th className="px-3 py-2.5">Cidade</th>
+                  <th className="px-3 py-2.5">Data</th>
+                  <th className="px-3 py-2.5">Status</th>
+                  <th className="px-3 py-2.5">Pag.</th>
+                  <th className="px-3 py-2.5 text-right">Valor</th>
+                  <th className="px-3 py-2.5" />
                 </tr>
               </thead>
               <tbody>
-                {pageItems.map((i) => (
-                  <tr
-                    key={i.id}
-                    className="border-b border-black/5 last:border-0 dark:border-white/5"
-                  >
-                    <td className="px-4 py-3 font-medium">
-                      <div>{i.participante?.nome}</div>
-                      {i.pessoas?.length > 1 && (
-                        <p className="mt-1 text-xs font-normal text-[var(--color-ink-soft)]">
-                          {i.pessoas.map((p) => p.nome).join(", ")}
+                {pageItems.map((i) => {
+                  const nome = i.participante?.nome || "—";
+                  const extras = (i.pessoas || [])
+                    .map((p) => p.nome)
+                    .filter((n) => n && n !== nome);
+                  return (
+                    <tr
+                      key={i.id}
+                      className="border-b border-black/5 last:border-0 hover:bg-black/[0.03] dark:border-white/5 dark:hover:bg-white/[0.03]"
+                    >
+                      <td className="max-w-[240px] px-3 py-2 align-middle">
+                        <p className="truncate font-medium" title={nome}>
+                          {nome}
                         </p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">{i.quantidade || 1}</td>
-                    <td className="px-4 py-3">{i.participante?.telefone}</td>
-                    <td className="px-4 py-3">{i.participante?.paroquia}</td>
-                    <td className="px-4 py-3">{i.participante?.cidade}</td>
-                    <td className="px-4 py-3">{formatDate(i.criadoEm)}</td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={i.status} />
-                    </td>
-                    <td className="px-4 py-3">
-                      {i.pagamento?.metodo === "DINHEIRO" ? "Dinheiro" : "PIX"}
-                    </td>
-                    <td className="px-4 py-3">{formatMoney(i.valor)}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-3">
-                        <Link
-                          to={`/admin/inscricoes/${i.id}`}
-                          className="text-[var(--color-forest)] hover:underline"
-                        >
-                          {i.pagamento?.metodo === "DINHEIRO" ? "Conferir" : "Ver comprovante"}
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => setConfirmExcluir(i)}
-                          disabled={excluindoId === i.id}
-                          className="inline-flex items-center gap-1 text-red-600 hover:underline disabled:opacity-50"
-                          title="Excluir inscrição"
-                        >
-                          <Trash2 size={14} />
-                          {excluindoId === i.id ? "Excluindo..." : "Excluir"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        {extras.length > 0 && (
+                          <p
+                            className="truncate text-[11px] text-[var(--color-ink-soft)]"
+                            title={extras.join(", ")}
+                          >
+                            +{extras.length} · {extras.join(", ")}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-2 py-2 text-center tabular-nums text-[var(--color-ink-soft)]">
+                        {i.quantidade || 1}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2 tabular-nums">
+                        {formatPhone(i.participante?.telefone)}
+                      </td>
+                      <td className="max-w-[140px] px-3 py-2">
+                        <span className="block truncate" title={i.participante?.paroquia || ""}>
+                          {i.participante?.paroquia || "—"}
+                        </span>
+                      </td>
+                      <td className="max-w-[120px] px-3 py-2">
+                        <span className="block truncate" title={i.participante?.cidade || ""}>
+                          {i.participante?.cidade || "—"}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2 text-[var(--color-ink-soft)]">
+                        {formatDate(i.criadoEm)}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2">
+                        <StatusBadge status={i.status} />
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2 text-[var(--color-ink-soft)]">
+                        {i.pagamento?.metodo === "DINHEIRO" ? "Dinheiro" : "PIX"}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">
+                        {formatMoney(i.valor)}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            to={`/admin/inscricoes/${i.id}`}
+                            className="text-xs font-semibold text-[var(--color-forest)] hover:underline"
+                          >
+                            {i.pagamento?.metodo === "DINHEIRO" ? "Conferir" : "Abrir"}
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmExcluir(i)}
+                            disabled={excluindoId === i.id}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-red-600 hover:bg-red-500/10 disabled:opacity-50"
+                            title="Excluir inscrição"
+                            aria-label="Excluir"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             {items.length === 0 && (
