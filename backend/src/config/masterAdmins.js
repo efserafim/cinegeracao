@@ -1,8 +1,6 @@
 /**
- * Contas admin mestres (acesso total).
+ * Contas admin mestres (acesso total) — mesmos e-mails do Supabase Auth.
  * LEITOR não entra nesta lista.
- *
- * Eduardo: defina EDUARDO_ADMIN_EMAIL no Render/.env se o e-mail for outro.
  */
 const MASTER_ADMINS = [
   {
@@ -10,7 +8,7 @@ const MASTER_ADMINS = [
     nome: "Lavínia Bernardino",
   },
   {
-    email: String(process.env.EDUARDO_ADMIN_EMAIL || "setorjuventude.bacaxa@gmail.com")
+    email: String(process.env.EDUARDO_ADMIN_EMAIL || "efserafimflu@gmail.com")
       .trim()
       .toLowerCase(),
     nome: "Eduardo Ferreira Serafim",
