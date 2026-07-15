@@ -24,7 +24,6 @@ async function authAdmin(req, res, next) {
   }
 }
 
-/** Só ADMIN completo (Lavínia / Eduardo). */
 function requireAdmin(req, res, next) {
   const perfil = req.admin?.perfil || "ADMIN";
   if (perfil !== "ADMIN") {

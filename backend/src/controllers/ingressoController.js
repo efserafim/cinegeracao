@@ -14,7 +14,6 @@ async function validar(req, res, next) {
   try {
     const { codigo, observacao } = req.body;
     const perfil = req.admin?.perfil || "ADMIN";
-    // LEITOR não escolhe aparelho — usa o nome cadastrado pelos admins mestres
     const aparelho =
       perfil === "LEITOR" ? undefined : req.body.aparelho;
     const data = await ingressoService.validarEntrada({

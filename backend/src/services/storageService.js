@@ -41,6 +41,5 @@ async function salvarComprovante(file) {
 
 module.exports = {
   salvarBanner,
-  salvarComprovante,
-  BUCKET: BANNER_BUCKET
+  salvarComprovante
 };

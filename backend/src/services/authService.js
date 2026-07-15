@@ -51,7 +51,6 @@ async function carregarAdminAuth(adminId) {
   return sincronizarMaster(admin);
 }
 
-/** Garante nome + perfil ADMIN para Lavínia / Eduardo. */
 async function sincronizarMaster(adminUser) {
   if (!adminUser || !isMasterAdminEmail(adminUser.email)) return adminUser;
   const nome = nomeMasterPreferido(adminUser.email) || adminUser.nome;
@@ -114,8 +113,6 @@ async function garantirAdminDoSupabase(user) {
   let adminUser = await prisma.admin.findUnique({ where: { email } });
 
   if (!adminUser) {
-    // Novos logins via Supabase só entram se forem mestres pré-cadastrados
-    // ou se já existirem no banco (ex.: conta LEITOR criada por script).
     if (!isMaster) {
       const err = new Error("Conta sem permissão de acesso administrativo");
       err.status = 403;

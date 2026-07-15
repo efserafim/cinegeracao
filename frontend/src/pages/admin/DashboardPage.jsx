@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   CalendarPlus,
@@ -9,237 +9,62 @@ import {
   QrCode,
   ArrowRight,
   Pencil,
-  Ticket,
   ClipboardList,
   AlertCircle,
-  Sparkles
+  Sparkles,
 } from "lucide-react";
 import api, { formatDate, formatMoney, STATUS_LABELS } from "../../services/api";
 import { Loading, Button } from "../../components/ui";
-import SpiderMark from "../../components/SpiderMark";
 import AdminPhoneSetup from "../../components/admin/AdminPhoneSetup";
+import { EventoStatusBadge } from "../../components/admin/EventoStatus";
 import { useAuth } from "../../context/AuthContext";
 import { logoImg } from "../../assets/brand";
 
-const STATUS_EVENTO = {
-  PRE_INSCRICAO: {
-    label: "Pré-inscrição",
-    dot: "bg-[#f5c542]",
-    ping: true,
-    className: "bg-[#f5c542]/20 text-[#f5c542] dark:bg-[#f5c542]/15 dark:text-[#f5c542]",
-  },
-  ABERTO: {
-    label: "Online",
-    dot: "bg-emerald-500",
-    ping: true,
-    className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200",
-  },
-  ENCERRADO: {
-    label: "Encerrado",
-    dot: "bg-slate-400",
-    ping: false,
-    className: "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200",
-  },
-  RASCUNHO: {
-    label: "Rascunho",
-    dot: "bg-amber-400",
-    ping: false,
-    className: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
-  },
-  CANCELADO: {
-    label: "Cancelado",
-    dot: "bg-red-500",
-    ping: false,
-    className: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200",
-  },
-};
-
-function StatusDot({ status }) {
-  const st = STATUS_EVENTO[status] || STATUS_EVENTO.RASCUNHO;
-  return (
-    <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
-      {st.ping && (
-        <span className={`absolute inline-flex h-full w-full animate-ping rounded-full ${st.dot} opacity-60`} />
-      )}
-      <span className={`relative inline-flex h-2 w-2 rounded-full ${st.dot}`} />
-    </span>
-  );
-}
-
-function StatusBadge({ status }) {
-  const st = STATUS_EVENTO[status] || STATUS_EVENTO.RASCUNHO;
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${st.className}`}>
-      <StatusDot status={status} />
-      {st.label}
-    </span>
-  );
-}
-
-function SectionTitle({ kicker, title, action }) {
-  return (
-    <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        {kicker && <p className="dash-section-kicker">{kicker}</p>}
-        <h2 className="mt-1 font-display text-2xl tracking-wide text-[var(--color-ink)] dark:text-white">
-          {title}
-        </h2>
-      </div>
-      {action}
-    </div>
-  );
-}
-
-function StatTile({ label, value, hint, icon: Icon, accent = "red", to, delay = 0 }) {
-  const accents = {
-    red: {
-      bar: "from-[#e11d2e] to-[#ff5a6a]",
-      icon: "bg-[#e11d2e]/12 text-[#e11d2e]",
-      wash: "from-[#e11d2e]/18 via-transparent to-transparent",
-    },
-    gold: {
-      bar: "from-[#f5c542] to-[#ffe08a]",
-      icon: "bg-[#f5c542]/25 text-[#b45309] dark:text-[#f5c542]",
-      wash: "from-[#f5c542]/25 via-transparent to-transparent",
-    },
-    blue: {
-      bar: "from-[#1a6cff] to-[#6aa0ff]",
-      icon: "bg-[#1a6cff]/12 text-[#1a6cff]",
-      wash: "from-[#1a6cff]/18 via-transparent to-transparent",
-    },
-    green: {
-      bar: "from-emerald-500 to-emerald-300",
-      icon: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-      wash: "from-emerald-500/18 via-transparent to-transparent",
-    },
-    amber: {
-      bar: "from-amber-500 to-amber-300",
-      icon: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-      wash: "from-amber-500/18 via-transparent to-transparent",
-    },
-  };
-  const a = accents[accent] || accents.red;
-  const inner = (
-    <div
-      className="dash-panel group relative p-4 transition duration-300 hover:-translate-y-1"
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${a.wash}`} />
-      <div className="pointer-events-none absolute -right-2 -top-2 opacity-[0.08] transition group-hover:opacity-20">
-        <SpiderMark className="h-16 w-16" />
-      </div>
-      <div className={`absolute left-0 top-0 h-1 w-full bg-gradient-to-r ${a.bar}`} />
-      <div className="relative flex items-start justify-between gap-3">
+function Stat({ label, value, hint, icon: Icon, to }) {
+  const body = (
+    <div className="rounded-2xl border border-black/5 bg-white/80 p-4 dark:border-white/10 dark:bg-slate-900/70">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-soft)] dark:text-slate-400">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-soft)]">
             {label}
           </p>
           <p className="mt-2 font-display text-3xl leading-none text-[var(--color-ink)] dark:text-white">
             {value}
           </p>
-          {hint && <p className="mt-2 text-xs text-[var(--color-ink-soft)] dark:text-slate-400">{hint}</p>}
+          {hint ? (
+            <p className="mt-2 text-xs text-[var(--color-ink-soft)] dark:text-slate-400">{hint}</p>
+          ) : null}
         </div>
-        <span className={`rounded-2xl p-2.5 ${a.icon}`}>
+        <span className="rounded-xl bg-[#e11d2e]/10 p-2.5 text-[#e11d2e]">
           <Icon size={18} />
         </span>
       </div>
     </div>
   );
-  if (to) {
-    return (
-      <Link to={to} className="block animate-fade-up">
-        {inner}
-      </Link>
-    );
-  }
-  return <div className="animate-fade-up">{inner}</div>;
+  return to ? (
+    <Link to={to} className="block transition hover:-translate-y-0.5">
+      {body}
+    </Link>
+  ) : (
+    body
+  );
 }
 
-function QuickLink({ to, icon: Icon, title, hint, tone }) {
-  const tones = {
-    red: "bg-[#e11d2e]/12 text-[#e11d2e] ring-[#e11d2e]/20",
-    blue: "bg-[#1a6cff]/12 text-[#1a6cff] ring-[#1a6cff]/20",
-    green: "bg-emerald-500/15 text-emerald-600 ring-emerald-500/20 dark:text-emerald-400",
-    gold: "bg-[#f5c542]/20 text-[#b45309] ring-[#f5c542]/35 dark:text-[#f5c542]",
-    slate: "bg-black/5 text-[var(--color-ink-soft)] ring-black/5 dark:bg-white/10 dark:text-slate-300 dark:ring-white/10",
-  };
+function Action({ to, icon: Icon, title, hint }) {
   return (
     <Link
       to={to}
-      className="dash-panel group flex items-center gap-3 px-4 py-3.5 transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(225,29,46,0.25)]"
+      className="group flex items-center gap-3 rounded-2xl border border-black/5 bg-white/80 px-4 py-3.5 transition hover:border-[#e11d2e]/30 dark:border-white/10 dark:bg-slate-900/70"
     >
-      <span className={`rounded-2xl p-2.5 ring-1 ${tones[tone] || tones.slate}`}>
+      <span className="rounded-xl bg-[#e11d2e]/10 p-2.5 text-[#e11d2e]">
         <Icon size={18} />
       </span>
       <span className="min-w-0">
         <span className="block text-sm font-semibold text-[var(--color-ink)] dark:text-white">{title}</span>
-        <span className="text-xs text-[var(--color-ink-soft)] dark:text-slate-400">{hint}</span>
+        <span className="text-xs text-[var(--color-ink-soft)]">{hint}</span>
       </span>
-      <ArrowRight
-        size={14}
-        className="ml-auto shrink-0 text-[#e11d2e] opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100"
-      />
+      <ArrowRight size={14} className="ml-auto text-[#e11d2e] opacity-0 transition group-hover:opacity-100" />
     </Link>
-  );
-}
-
-function EventoCard({ ev }) {
-  const ocupadas = Math.max(0, (ev.vagasMaximas || 0) - (ev.vagasRestantes || 0));
-  const pct = ev.vagasMaximas ? Math.min(100, Math.round((ocupadas / ev.vagasMaximas) * 100)) : 0;
-  return (
-    <div className="dash-panel relative p-4 sm:p-5">
-      <div className="pointer-events-none absolute inset-0 dash-comic-stripe opacity-40" />
-      <div className="relative flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-display text-xl tracking-wide text-[var(--color-ink)] dark:text-white">
-              {ev.nome}
-            </h3>
-            <StatusBadge status={ev.status} />
-          </div>
-          <p className="mt-1 text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
-            {formatDate(ev.data)} · {ev.horario}
-            {ev.cidade ? ` · ${ev.cidade}` : ""}
-            {" · "}
-            {formatMoney(ev.valor)}
-          </p>
-        </div>
-        <SpiderMark className="h-8 w-8 opacity-20" />
-      </div>
-
-      <div className="relative mt-4">
-        <div className="mb-1.5 flex items-center justify-between text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
-          <span>Vagas preenchidas</span>
-          <span className="font-semibold text-[var(--color-ink)] dark:text-white">
-            {ocupadas}/{ev.vagasMaximas} ({pct}%)
-          </span>
-        </div>
-        <div className="h-2.5 overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-[#e11d2e] via-[#f5c542] to-[#1a6cff] transition-all"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-      </div>
-
-      <div className="relative mt-4 flex flex-wrap gap-2">
-        <Link to={`/admin/eventos/${ev.id}/inscritos`}>
-          <Button variant="secondary" className="!rounded-full">
-            <Users size={14} /> Inscritos
-          </Button>
-        </Link>
-        <Link to={`/admin/chamada?evento=${ev.id}`}>
-          <Button variant="secondary" className="!rounded-full">
-            <ClipboardList size={14} /> Chamada
-          </Button>
-        </Link>
-        <Link to={`/admin/eventos/${ev.id}/editar`}>
-          <Button variant="ghost" className="!rounded-full">
-            <Pencil size={14} /> Editar
-          </Button>
-        </Link>
-      </div>
-    </div>
   );
 }
 
@@ -265,95 +90,68 @@ export default function DashboardPage() {
       await api.post(`/inscricoes/${id}/conferir-extrato`);
       setStats((prev) =>
         prev
-          ? {
-              ...prev,
-              conferirExtrato: (prev.conferirExtrato || []).filter((x) => x.id !== id),
-            }
+          ? { ...prev, conferirExtrato: (prev.conferirExtrato || []).filter((x) => x.id !== id) }
           : prev
       );
     } catch {
-      /* silent — admin can open detail */
+      /* ignore */
     } finally {
       setMarcandoExtrato((prev) => ({ ...prev, [id]: false }));
     }
   }
 
-  if (loading) return <Loading />;
-
-  const abertos = eventos.filter((e) => e.status === "ABERTO");
-  const eventoAberto = abertos[0] || null;
-  const eventoPrincipal = eventoAberto || eventos[0] || null;
-  const eventoAbertoOuNenhum = Boolean(eventoAberto);
+  const abertos = useMemo(() => eventos.filter((e) => e.status === "ABERTO"), [eventos]);
+  const eventoPrincipal = abertos[0] || eventos[0] || null;
   const pendentes = stats?.pendentes ?? 0;
   const presentes = stats?.presentes ?? 0;
   const pendentesRecentes = stats?.pendentesRecentes || [];
   const conferirExtrato = stats?.conferirExtrato || [];
-  const taxaConfirmacao = (stats?.pessoas || stats?.inscritos)
-    ? Math.round(((stats?.confirmadasPessoas || stats?.confirmadas || 0) / (stats.pessoas || stats.inscritos)) * 100)
-    : 0;
-  const ocupadasPrincipal = eventoPrincipal
+  const pessoas = stats?.pessoas ?? stats?.inscritos ?? 0;
+  const confirmadas = stats?.confirmadasPessoas ?? stats?.confirmadas ?? 0;
+  const taxa = pessoas ? Math.round((confirmadas / pessoas) * 100) : 0;
+  const ocupadas = eventoPrincipal
     ? Math.max(0, (eventoPrincipal.vagasMaximas || 0) - (eventoPrincipal.vagasRestantes || 0))
     : 0;
   const primeiroNome = (admin?.nome || "Admin").split(" ")[0];
+  const inscritosHref = eventoPrincipal
+    ? `/admin/eventos/${eventoPrincipal.id}/inscritos`
+    : "/admin/eventos";
+
+  if (loading) return <Loading />;
 
   return (
-    <div className="space-y-8">
-      <section className="relative overflow-hidden rounded-[1.35rem] bg-[#070a12] text-white shadow-[0_16px_40px_-24px_rgba(225,29,46,0.5)] animate-swing">
-        <div className="pointer-events-none absolute inset-0 dash-sunburst opacity-70" />
-        <div className="pointer-events-none absolute inset-0 web-mask opacity-25" />
-        <div className="pointer-events-none absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-[#e11d2e] via-[#f5c542] to-[#1a6cff]" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#f5c542]/60 to-transparent" />
-
-        <SpiderMark
-          tone="light"
-          className="pointer-events-none absolute right-3 bottom-2 h-10 w-10 opacity-12 animate-spidey-float sm:right-5 sm:h-12 sm:w-12"
-        />
-
-        <div className="relative flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:py-4">
+    <div className="space-y-6">
+      <section className="rounded-2xl bg-[#070a12] px-4 py-4 text-white sm:px-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3">
-            <img
-              src={logoImg}
-              alt="Geração Eucarística"
-              className="h-11 w-11 shrink-0 rounded-full ring-2 ring-[#f5c542]/75 sm:h-12 sm:w-12"
-            />
+            <img src={logoImg} alt="" className="h-11 w-11 rounded-full ring-2 ring-[#f5c542]/70" />
             <div className="min-w-0">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#f5c542]">
-                Geração Eucarística · CineGeração
-              </p>
-              <h1 className="font-display text-xl leading-none tracking-wide sm:text-2xl">
-                <span className="spidey-title text-[#e11d2e]">CineGeração</span>
-                <span className="ml-2 text-white/90">· Olá, {primeiroNome}</span>
+              <h1 className="font-display text-2xl leading-none">
+                Olá, {primeiroNome}
               </h1>
               {eventoPrincipal ? (
-                <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/65">
-                  <StatusBadge status={eventoPrincipal.status} />
-                  <span className="truncate">
-                    {eventoAbertoOuNenhum ? "Missão ativa: " : "Último: "}
-                    <strong className="font-medium text-white/90">{eventoPrincipal.nome}</strong>
-                  </span>
-                  <span className="text-white/45">
-                    {formatDate(eventoPrincipal.data)} · {eventoPrincipal.horario}
-                    {" · "}
-                    {ocupadasPrincipal}/{eventoPrincipal.vagasMaximas} vagas
+                <p className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-white/70">
+                  <EventoStatusBadge status={eventoPrincipal.status} />
+                  <span className="truncate font-medium text-white/90">{eventoPrincipal.nome}</span>
+                  <span>
+                    {formatDate(eventoPrincipal.data)} · {eventoPrincipal.horario} · {ocupadas}/
+                    {eventoPrincipal.vagasMaximas}
                   </span>
                 </p>
               ) : (
-                <p className="mt-1 text-xs text-white/60">
-                  Vagas, PIX, chamada e o que precisa da sua atenção.
-                </p>
+                <p className="mt-1 text-xs text-white/60">Crie um evento para começar.</p>
               )}
             </div>
           </div>
-
-          <div className="flex flex-wrap gap-2 sm:shrink-0 sm:justify-end">
+          <div className="flex flex-wrap gap-2">
             <Link to="/admin/eventos/novo">
-              <Button className="!rounded-full !bg-[#e11d2e] !px-3.5 !py-2 !text-xs hover:!bg-[#c41626]">
+              <Button className="!bg-[#e11d2e] hover:!bg-[#c41626]">
                 <CalendarPlus size={14} /> Novo evento
               </Button>
             </Link>
             {eventoPrincipal && (
-              <Link to={`/admin/eventos/${eventoPrincipal.id}/inscritos`}>
-                <Button variant="secondary" className="!rounded-full !bg-white/10 !px-3.5 !py-2 !text-xs !text-white hover:!bg-white/15">
+              <Link to={inscritosHref}>
+                <Button variant="secondary" className="!bg-white/10 !text-white hover:!bg-white/15">
                   <Users size={14} /> Inscritos
                 </Button>
               </Link>
@@ -364,61 +162,89 @@ export default function DashboardPage() {
 
       <AdminPhoneSetup />
 
-      {(pendentes > 0 || pendentesRecentes.length > 0) && (
-        <section className="animate-fade-up space-y-3">
-          <SectionTitle
-            kicker="Alerta Spidey"
-            title="Precisa de atenção"
-            action={
-              eventoPrincipal ? (
-                <Link
-                  to={`/admin/eventos/${eventoPrincipal.id}/inscritos`}
-                  className="text-xs font-semibold text-[#e11d2e] underline"
-                >
-                  Ver todos os inscritos
-                </Link>
-              ) : null
-            }
-          />
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <Stat
+          label="Eventos"
+          value={stats?.eventos ?? 0}
+          hint={`${abertos.length} online`}
+          icon={CalendarPlus}
+          to="/admin/eventos"
+        />
+        <Stat
+          label="Pessoas"
+          value={pessoas}
+          hint={`${stats?.inscritos ?? 0} cadastros`}
+          icon={Users}
+          to={inscritosHref}
+        />
+        <Stat
+          label="Confirmados"
+          value={confirmadas}
+          hint={`${taxa}% do total`}
+          icon={CheckCircle2}
+          to={inscritosHref}
+        />
+        <Stat label="Pendentes" value={pendentes} hint="Aguardando conferência" icon={AlertCircle} to={inscritosHref} />
+        <Stat
+          label="Arrecadado"
+          value={formatMoney(stats?.valorArrecadado)}
+          hint={presentes > 0 ? `${presentes} na chamada` : "Confirmados"}
+          icon={Wallet}
+        />
+      </section>
 
-          <div className="relative overflow-hidden rounded-[1.5rem] bg-gradient-to-r from-[#f5c542]/25 via-[#f5c542]/10 to-transparent px-4 py-4 ring-1 ring-[#f5c542]/45">
-            <div className="pointer-events-none absolute inset-0 dash-comic-stripe opacity-50" />
-            <div className="relative flex flex-wrap items-center justify-between gap-3">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Action
+          to={eventoPrincipal ? `/admin/chamada?evento=${eventoPrincipal.id}` : "/admin/chamada"}
+          icon={ClipboardList}
+          title="Chamada"
+          hint={presentes > 0 ? `${presentes} presentes` : "Marcar presença"}
+        />
+        <Action to="/admin/validar" icon={QrCode} title="Validar entrada" hint="Leitor de QR" />
+        <Action to={inscritosHref} icon={Users} title="Inscritos" hint="Lista e comprovantes" />
+        <Action
+          to={eventoPrincipal ? `/admin/eventos/${eventoPrincipal.id}/editar` : "/admin/eventos"}
+          icon={Pencil}
+          title="Editar evento"
+          hint={eventoPrincipal?.nome || "Sem evento"}
+        />
+      </section>
+
+      {(pendentes > 0 || pendentesRecentes.length > 0 || conferirExtrato.length > 0) && (
+        <section className="space-y-4">
+          <h2 className="font-display text-2xl">Atenção</h2>
+
+          {pendentes > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#f5c542]/40 bg-[#f5c542]/15 px-4 py-3">
               <div className="flex items-center gap-3">
-                <span className="rounded-2xl bg-[#f5c542]/40 p-2.5 text-[#7a4b00]">
-                  <Clock3 size={18} />
-                </span>
+                <Clock3 size={18} className="text-[#7a4b00]" />
                 <div>
-                  <p className="text-sm font-semibold text-[var(--color-ink)] dark:text-white">
-                    {pendentes} comprovante{pendentes === 1 ? "" : "s"} aguardando conferência
+                  <p className="text-sm font-semibold">
+                    {pendentes} comprovante{pendentes === 1 ? "" : "s"} para conferir
                   </p>
-                  <p className="text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
-                    Só quando o valor do PIX não bate ou o OCR falha. Se o valor confere, o ingresso já sai sozinho.
+                  <p className="text-xs text-[var(--color-ink-soft)]">
+                    Valor divergente ou OCR falhou — o restante libera sozinho.
                   </p>
                 </div>
               </div>
-              {eventoPrincipal && (
-                <Link to={`/admin/eventos/${eventoPrincipal.id}/inscritos`}>
-                  <Button className="!rounded-full">Ver agora</Button>
-                </Link>
-              )}
+              <Link to={inscritosHref}>
+                <Button>Ver agora</Button>
+              </Link>
             </div>
-          </div>
+          )}
 
           {pendentesRecentes.length > 0 && (
-            <ul className="dash-panel divide-y divide-black/5 overflow-hidden dark:divide-white/10">
+            <ul className="divide-y divide-black/5 rounded-2xl border border-black/5 bg-white/80 dark:divide-white/10 dark:border-white/10 dark:bg-slate-900/70">
               {pendentesRecentes.map((item) => (
                 <li key={item.id}>
                   <Link
                     to={`/admin/inscricoes/${item.id}`}
-                    className="flex flex-wrap items-center justify-between gap-2 px-4 py-3.5 transition hover:bg-[#e11d2e]/[0.04] dark:hover:bg-white/5"
+                    className="flex items-center justify-between gap-2 px-4 py-3 hover:bg-black/[0.03] dark:hover:bg-white/5"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-[var(--color-ink)] dark:text-white">
-                        {item.nome}
-                      </p>
-                      <p className="truncate text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
-                        {item.codigo} · {item.eventoNome} · {STATUS_LABELS[item.status] || item.status}
+                      <p className="truncate text-sm font-semibold">{item.nome}</p>
+                      <p className="truncate text-xs text-[var(--color-ink-soft)]">
+                        {item.codigo} · {STATUS_LABELS[item.status] || item.status}
                       </p>
                     </div>
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#e11d2e]">
@@ -429,167 +255,109 @@ export default function DashboardPage() {
               ))}
             </ul>
           )}
+
+          {conferirExtrato.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">Conferir no extrato do banco</p>
+              <ul className="divide-y divide-black/5 rounded-2xl border border-black/5 bg-white/80 dark:divide-white/10 dark:border-white/10 dark:bg-slate-900/70">
+                {conferirExtrato.map((item) => (
+                  <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                    <Link to={`/admin/inscricoes/${item.id}`} className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">
+                        {item.nome}
+                        {item.liberacaoAutomatica ? (
+                          <span className="ml-2 inline-flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-300">
+                            <Sparkles size={10} /> auto
+                          </span>
+                        ) : null}
+                      </p>
+                      <p className="truncate text-xs text-[var(--color-ink-soft)]">
+                        {item.codigo} · {formatMoney(item.valor)}
+                        {item.idTransacao ? ` · ${item.idTransacao}` : ""}
+                      </p>
+                    </Link>
+                    <Button disabled={Boolean(marcandoExtrato[item.id])} onClick={() => marcarExtrato(item.id)}>
+                      {marcandoExtrato[item.id] ? "…" : "Conferido"}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </section>
       )}
 
-      {conferirExtrato.length > 0 && (
-        <section className="animate-fade-up space-y-3">
-          <SectionTitle kicker="Extrato" title="Conferir no extrato do banco" />
-          <p className="-mt-1 text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
-            Ingressos já liberados (muitos pelo valor do PIX). Marque quando bater com o extrato da conta.
-          </p>
-          <ul className="dash-panel divide-y divide-black/5 dark:divide-white/10">
-            {conferirExtrato.map((item) => (
-              <li
-                key={item.id}
-                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5"
-              >
-                <Link to={`/admin/inscricoes/${item.id}`} className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-[var(--color-ink)] dark:text-white">
-                    {item.nome}
-                    {item.liberacaoAutomatica && (
-                      <span className="ml-2 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
-                        <Sparkles size={10} /> auto
-                      </span>
-                    )}
-                  </p>
-                  <p className="truncate text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
-                    {item.codigo} · {formatMoney(item.valor)}
-                    {item.idTransacao ? ` · ID ${item.idTransacao}` : ""}
-                  </p>
-                </Link>
-                <Button
-                  className="!rounded-full"
-                  disabled={Boolean(marcandoExtrato[item.id])}
-                  onClick={() => marcarExtrato(item.id)}
-                >
-                  {marcandoExtrato[item.id] ? "…" : "Conferido"}
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <section>
-        <SectionTitle kicker="Radar" title="Números da missão" />
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-          <StatTile
-            label="Eventos"
-            value={stats?.eventos ?? 0}
-            hint={`${abertos.length} online`}
-            icon={Ticket}
-            accent="red"
-            to="/admin/eventos"
-            delay={40}
-          />
-          <StatTile
-            label="Inscritos"
-            value={stats?.pessoas ?? stats?.inscritos ?? 0}
-            hint={`${stats?.inscritos ?? 0} cadastro(s) · soma das qtds`}
-            icon={Users}
-            accent="blue"
-            to={eventoPrincipal ? `/admin/eventos/${eventoPrincipal.id}/inscritos` : "/admin/eventos"}
-            delay={80}
-          />
-          <StatTile
-            label="Confirmados"
-            value={stats?.confirmadasPessoas ?? stats?.confirmadas ?? 0}
-            hint={`${taxaConfirmacao}% de confirmação`}
-            icon={CheckCircle2}
-            accent="green"
-            to={eventoPrincipal ? `/admin/eventos/${eventoPrincipal.id}/inscritos` : "/admin/eventos"}
-            delay={120}
-          />
-          <StatTile
-            label="Pendentes"
-            value={pendentes}
-            hint="Aguardando conferência"
-            icon={AlertCircle}
-            accent="amber"
-            to={eventoPrincipal ? `/admin/eventos/${eventoPrincipal.id}/inscritos` : "/admin/eventos"}
-            delay={160}
-          />
-          <StatTile
-            label="Arrecadado"
-            value={formatMoney(stats?.valorArrecadado)}
-            hint={presentes > 0 ? `${presentes} presente${presentes === 1 ? "" : "s"} na chamada` : "Pagamentos confirmados"}
-            icon={Wallet}
-            accent="gold"
-            delay={200}
-          />
+      <section className="space-y-3">
+        <div className="flex items-end justify-between gap-3">
+          <h2 className="font-display text-2xl">Eventos</h2>
+          <Link to="/admin/eventos" className="text-xs font-semibold text-[#e11d2e] underline">
+            Ver todos
+          </Link>
         </div>
-      </section>
-
-      <section>
-        <SectionTitle kicker="Dia D" title="No dia do cinema" />
-        <div className="grid gap-3 sm:grid-cols-3">
-          <QuickLink
-            to={eventoPrincipal ? `/admin/chamada?evento=${eventoPrincipal.id}` : "/admin/chamada"}
-            icon={ClipboardList}
-            title="Fazer chamada"
-            hint={presentes > 0 ? `${presentes} já marcados` : "Confirmar presença"}
-            tone="green"
-          />
-          <QuickLink
-            to={eventoPrincipal ? `/admin/eventos/${eventoPrincipal.id}/inscritos` : "/admin/eventos"}
-            icon={Users}
-            title="Inscritos do evento"
-            hint="Lista e comprovantes"
-            tone="blue"
-          />
-          <QuickLink
-            to="/admin/validar"
-            icon={QrCode}
-            title="Validar entrada"
-            hint="QR no dia do cinema"
-            tone="gold"
-          />
-        </div>
-      </section>
-
-      <section>
-        <SectionTitle kicker="Q.G." title="Gestão" />
-        <div className="grid gap-3 sm:grid-cols-3">
-          <QuickLink to="/admin/eventos/novo" icon={CalendarPlus} title="Criar evento" hint="Novo CineGeração" tone="red" />
-          <QuickLink to="/admin/eventos" icon={Ticket} title="Ver eventos" hint="Lista completa" tone="slate" />
-          <QuickLink
-            to={eventoPrincipal ? `/admin/eventos/${eventoPrincipal.id}/editar` : "/admin/eventos"}
-            icon={Pencil}
-            title={eventoAbertoOuNenhum ? "Editar evento ativo" : "Editar evento"}
-            hint={eventoPrincipal?.nome || "Nenhum evento"}
-            tone="slate"
-          />
-        </div>
-      </section>
-
-      <section>
-        <SectionTitle
-          kicker="Cartaz"
-          title="Seus eventos"
-          action={
-            <Link to="/admin/eventos" className="text-xs font-semibold text-[#e11d2e] underline">
-              Ver todos
-            </Link>
-          }
-        />
 
         {eventos.length === 0 ? (
-          <div className="dash-panel px-5 py-12 text-center">
-            <SpiderMark className="mx-auto mb-3 h-14 w-14 opacity-40 animate-spidey-float" />
-            <p className="font-display text-xl text-[var(--color-ink)] dark:text-white">Nenhum evento ainda</p>
-            <p className="mt-1 text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
-              Crie o próximo CineGeração e a teia começa a girar.
-            </p>
-            <Link to="/admin/eventos/novo" className="mt-5 inline-block">
-              <Button className="!rounded-full">Criar primeiro evento</Button>
+          <div className="rounded-2xl border border-dashed border-black/15 px-5 py-10 text-center dark:border-white/20">
+            <p className="font-display text-xl">Nenhum evento ainda</p>
+            <Link to="/admin/eventos/novo" className="mt-4 inline-block">
+              <Button>Criar evento</Button>
             </Link>
           </div>
         ) : (
-          <div className="grid gap-4">
-            {eventos.slice(0, 5).map((ev) => (
-              <EventoCard key={ev.id} ev={ev} />
-            ))}
+          <div className="grid gap-3">
+            {eventos.slice(0, 5).map((ev) => {
+              const filled = Math.max(0, (ev.vagasMaximas || 0) - (ev.vagasRestantes || 0));
+              const pct = ev.vagasMaximas ? Math.min(100, Math.round((filled / ev.vagasMaximas) * 100)) : 0;
+              return (
+                <div
+                  key={ev.id}
+                  className="rounded-2xl border border-black/5 bg-white/80 p-4 dark:border-white/10 dark:bg-slate-900/70"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-display text-xl">{ev.nome}</h3>
+                        <EventoStatusBadge status={ev.status} />
+                      </div>
+                      <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
+                        {formatDate(ev.data)} · {ev.horario}
+                        {ev.cidade ? ` · ${ev.cidade}` : ""} · {formatMoney(ev.valor)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <div className="mb-1 flex justify-between text-xs text-[var(--color-ink-soft)]">
+                      <span>Vagas</span>
+                      <span>
+                        {filled}/{ev.vagasMaximas} ({pct}%)
+                      </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-[#e11d2e]"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Link to={`/admin/eventos/${ev.id}/inscritos`}>
+                      <Button variant="secondary">
+                        <Users size={14} /> Inscritos
+                      </Button>
+                    </Link>
+                    <Link to={`/admin/chamada?evento=${ev.id}`}>
+                      <Button variant="secondary">
+                        <ClipboardList size={14} /> Chamada
+                      </Button>
+                    </Link>
+                    <Link to={`/admin/eventos/${ev.id}/editar`}>
+                      <Button variant="ghost">
+                        <Pencil size={14} /> Editar
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>

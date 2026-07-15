@@ -248,7 +248,6 @@ export default function ComprovantePage() {
         pessoas: editPessoas.map((p) => ({ id: p.id, nome: p.nome.trim() })),
         ...extra,
       };
-      // Em remoção, não manda valor → backend recalcula (unitário × restantes)
       if (!extra.removerPessoaIds) {
         payload.valor = editValor;
       }

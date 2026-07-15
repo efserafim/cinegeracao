@@ -112,7 +112,6 @@ export default function ValidarPage() {
     try {
       const { data } = await api.post("/ingressos/validar", {
         codigo,
-        // Aparelho vem da conta (configurado pelos admins mestres)
         observacao: observacao.trim() || undefined,
       });
       const row = {
@@ -218,12 +217,9 @@ export default function ValidarPage() {
 
   const tela = ultimo?.tela;
   const ok = tela === "verde";
-  // Admin master também usa o layout operacional (antes só o LEITOR tinha)
-  const layoutPortaria = true;
 
   return (
-    <div className={`mx-auto space-y-5 ${layoutPortaria ? "max-w-5xl" : "max-w-3xl"}`}>
-      {/* Cabeçalho */}
+    <div className="mx-auto max-w-5xl space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl">
@@ -245,7 +241,6 @@ export default function ValidarPage() {
         </div>
       </div>
 
-      {/* Resumo rápido */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatPill label="Hoje" value={stats.hoje} />
         <StatPill label="Autorizados" value={stats.autorizadosHoje} tone="ok" />
@@ -253,7 +248,6 @@ export default function ValidarPage() {
         <StatPill label="Total" value={stats.total} />
       </div>
 
-      {/* Área principal: scanner + último */}
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-2xl border border-black/5 bg-white/80 p-4 dark:border-white/10 dark:bg-slate-900/70">
           <div className="mb-3 flex items-center gap-2">
@@ -367,7 +361,6 @@ export default function ValidarPage() {
         </section>
       </div>
 
-      {/* Histórico */}
       <section className="rounded-2xl border border-black/5 bg-white/80 p-4 dark:border-white/10 dark:bg-slate-900/70">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">

@@ -1,7 +1,3 @@
-/**
- * Contas admin mestres (acesso total) — mesmos e-mails do Supabase Auth.
- * LEITOR não entra nesta lista.
- */
 const MASTER_ADMINS = [
   {
     email: "laviniadossantos22@gmail.com",

@@ -9,7 +9,6 @@ function normalizeAdmin(raw) {
   if (!raw) return null;
   const email = String(raw.email || "").toLowerCase();
   const isMaster = Boolean(raw.isMaster) || isMasterAdminEmail(email);
-  // Mestres nunca ficam como LEITOR no front — evita menu/botões sumindo
   let perfil = raw.perfil || "ADMIN";
   if (isMaster) perfil = "ADMIN";
   return {

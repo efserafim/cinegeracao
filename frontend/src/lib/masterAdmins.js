@@ -1,4 +1,3 @@
-/** E-mails dos admins mestres (Lavínia + Eduardo) — espelho do backend/Supabase. */
 export const MASTER_ADMIN_EMAILS = [
   "laviniadossantos22@gmail.com",
   "efserafimflu@gmail.com",
