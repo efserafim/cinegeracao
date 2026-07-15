@@ -285,10 +285,15 @@ export default function InscritosPage() {
               </thead>
               <tbody>
                 {pageItems.map((i) => {
-                  const nome = i.participante?.nome || "—";
-                  const extras = (i.pessoas || [])
+                  const pessoasOrd = [...(i.pessoas || [])].sort(
+                    (a, b) => (a.ordem ?? 0) - (b.ordem ?? 0)
+                  );
+                  const nome = pessoasOrd[0]?.nome || i.participante?.nome || "—";
+                  const extras = pessoasOrd
+                    .slice(1)
                     .map((p) => p.nome)
-                    .filter((n) => n && n !== nome);
+                    .filter(Boolean);
+                  const qtd = pessoasOrd.length || i.quantidade || 1;
                   return (
                     <tr
                       key={i.id}
@@ -308,7 +313,7 @@ export default function InscritosPage() {
                         )}
                       </td>
                       <td className="px-2 py-2 text-center tabular-nums text-[var(--color-ink-soft)]">
-                        {i.quantidade || 1}
+                        {qtd}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2 tabular-nums">
                         {formatPhone(i.participante?.telefone)}

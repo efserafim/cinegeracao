@@ -987,26 +987,27 @@ async function corrigirInscricao(id, dados, adminId, ip) {
     }
 
     if (nomeResponsavel) {
-      await tx.participante.update({
-        where: { id: inscricao.participanteId },
-        data: { nome: nomeResponsavel },
-      });
-      // Mantém a 1ª pessoa alinhada ao responsável quando o admin altera só o nome principal
-      if (pessoasFinais[0] && !pessoasEdits.some((e) => String(e?.id) === pessoasFinais[0].id)) {
+      const editouPrimeira = pessoasFinais[0]
+        ? pessoasEdits.some((e) => String(e?.id) === pessoasFinais[0].id)
+        : false;
+      if (pessoasFinais[0] && !editouPrimeira) {
         await tx.inscricaoPessoa.update({
           where: { id: pessoasFinais[0].id },
           data: { nome: nomeResponsavel },
         });
+        pessoasFinais[0] = { ...pessoasFinais[0], nome: nomeResponsavel };
       }
-    } else if (pessoasFinais[0]) {
-      // Se a 1ª pessoa foi renomeada, sincroniza o responsável
-      const editPrimeira = pessoasEdits.find((e) => String(e?.id) === pessoasFinais[0].id);
-      if (editPrimeira?.nome) {
-        await tx.participante.update({
-          where: { id: inscricao.participanteId },
-          data: { nome: String(editPrimeira.nome).trim() },
-        });
-      }
+    }
+
+    const nomeFinal =
+      (pessoasFinais[0] && String(pessoasFinais[0].nome || "").trim()) ||
+      nomeResponsavel ||
+      null;
+    if (nomeFinal) {
+      await tx.participante.update({
+        where: { id: inscricao.participanteId },
+        data: { nome: nomeFinal },
+      });
     }
 
     detalhes.depois = {
@@ -1215,7 +1216,10 @@ async function marcarConferidoExtrato(id, adminId, ip) {
   return buscarAdmin(id);
 }
 function formatInscricao(i) {
-  const pessoas = (i.pessoas || []).map((p) => ({
+  const pessoas = (i.pessoas || [])
+    .slice()
+    .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
+    .map((p) => ({
     id: p.id,
     nome: p.nome,
     ordem: p.ordem,
@@ -1228,6 +1232,33 @@ function formatInscricao(i) {
         }
       : null
   }));
+  const qtdPessoas = pessoas.length > 0 ? pessoas.length : i.quantidade || 1;
+  if (pessoas.length > 0 && pessoas.length !== Number(i.quantidade || 1)) {
+    const dataHeal = { quantidade: pessoas.length };
+    if (
+      ["PRE_INSCRITA", "AGUARDANDO_PAGAMENTO"].includes(i.status) &&
+      i.evento &&
+      i.evento.valor != null
+    ) {
+      dataHeal.valor = Number(i.evento.valor) * pessoas.length;
+    }
+    prisma.inscricao
+      .update({ where: { id: i.id }, data: dataHeal })
+      .catch(() => {});
+    if (dataHeal.valor != null) i.valor = dataHeal.valor;
+    if (
+      i.pagamento &&
+      dataHeal.valor != null &&
+      ["PRE_INSCRITA", "AGUARDANDO_PAGAMENTO"].includes(i.status)
+    ) {
+      prisma.pagamento
+        .update({
+          where: { inscricaoId: i.id },
+          data: { valorEsperado: dataHeal.valor },
+        })
+        .catch(() => {});
+    }
+  }
   const ingressos = (i.ingressos || []).map((ig) => ({
     id: ig.id,
     codigo: ig.codigo,
@@ -1248,19 +1279,20 @@ function formatInscricao(i) {
         presenteEm: ingressos[0].presenteEm
       }
     : null;
+  const nomePrincipal = pessoas[0]?.nome || i.participante?.nome;
   return {
     id: i.id,
     codigo: i.codigo,
     status: i.status,
     valor: Number(i.valor),
-    quantidade: i.quantidade || 1,
+    quantidade: qtdPessoas,
     observacao: i.observacao,
     criadoEm: i.criadoEm,
     atualizadoEm: i.atualizadoEm,
     pessoas,
     participante: i.participante ? {
       id: i.participante.id,
-      nome: i.participante.nome,
+      nome: nomePrincipal,
       telefone: i.participante.telefone,
       email: i.participante.email,
       paroquia: i.participante.paroquia,
