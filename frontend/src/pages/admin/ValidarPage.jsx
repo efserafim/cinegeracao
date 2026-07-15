@@ -7,15 +7,12 @@ import {
   FlashlightOff,
   History,
   Keyboard,
-  Settings2,
   Smartphone,
   XCircle,
 } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { Button, Input, Loading, TextArea } from "../../components/ui";
-
-const APARELHO_KEY = "cg_aparelho_nome";
 
 function formatLidoEm(value) {
   if (!value) return "—";
@@ -59,16 +56,9 @@ function isMesmoDia(iso) {
 
 export default function ValidarPage() {
   const { admin, isAdminFull, isLeitor } = useAuth();
+  const aparelhoConta = String(admin?.aparelhoNome || "").trim();
   const [manual, setManual] = useState("");
-  const [aparelho, setAparelho] = useState(() => {
-    try {
-      return localStorage.getItem(APARELHO_KEY) || admin?.aparelhoNome || "";
-    } catch {
-      return admin?.aparelhoNome || "";
-    }
-  });
   const [observacao, setObservacao] = useState("");
-  const [showConfig, setShowConfig] = useState(false);
   const [ultimo, setUltimo] = useState(null);
   const [historico, setHistorico] = useState([]);
   const [histMeta, setHistMeta] = useState({ page: 1, totalPages: 1, total: 0 });
@@ -80,18 +70,6 @@ export default function ValidarPage() {
   const scannerRef = useRef(null);
   const running = useRef(false);
   const resultRef = useRef(null);
-
-  useEffect(() => {
-    if (!aparelho && admin?.aparelhoNome) setAparelho(admin.aparelhoNome);
-  }, [admin?.aparelhoNome, aparelho]);
-
-  useEffect(() => {
-    try {
-      if (aparelho) localStorage.setItem(APARELHO_KEY, aparelho);
-    } catch {
-      /* ignore */
-    }
-  }, [aparelho]);
 
   const loadHistorico = useCallback(async (page = 1) => {
     setHistLoading(true);
@@ -134,7 +112,7 @@ export default function ValidarPage() {
     try {
       const { data } = await api.post("/ingressos/validar", {
         codigo,
-        aparelho: aparelho.trim() || undefined,
+        // Aparelho vem da conta (configurado pelos admins mestres)
         observacao: observacao.trim() || undefined,
       });
       const row = {
@@ -256,18 +234,12 @@ export default function ValidarPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white/80 px-3 py-1.5 text-xs font-medium dark:border-white/15 dark:bg-slate-900/70">
-            <Smartphone size={14} className="text-[#e11d2e]" />
-            {aparelho.trim() || "Aparelho sem nome"}
-          </span>
-          <button
-            type="button"
-            onClick={() => setShowConfig((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white/80 px-3 py-1.5 text-xs font-medium hover:bg-black/5 dark:border-white/15 dark:bg-slate-900/70 dark:hover:bg-white/10"
-          >
-            <Settings2 size={14} />
-            {showConfig ? "Fechar" : "Configurar"}
-          </button>
+          {aparelhoConta ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white/80 px-3 py-1.5 text-xs font-medium dark:border-white/15 dark:bg-slate-900/70">
+              <Smartphone size={14} className="text-[#e11d2e]" />
+              {aparelhoConta}
+            </span>
+          ) : null}
         </div>
       </div>
 
@@ -278,32 +250,6 @@ export default function ValidarPage() {
           <StatPill label="Autorizados" value={stats.autorizadosHoje} tone="ok" />
           <StatPill label="Bloqueados" value={stats.bloqueadosHoje} tone="bad" />
           <StatPill label="Total" value={stats.total} />
-        </div>
-      )}
-
-      {/* Configuração recolhível */}
-      {showConfig && (
-        <div className="rounded-2xl border border-black/5 bg-white/80 p-4 dark:border-white/10 dark:bg-slate-900/70">
-          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-soft)]">
-            Configuração deste aparelho
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Input
-              label="Nome do aparelho"
-              placeholder="Ex.: Celular portaria 1"
-              value={aparelho}
-              onChange={(e) => setAparelho(e.target.value)}
-            />
-            <div className="sm:col-span-2">
-              <TextArea
-                label="Observação (opcional — vai junto na próxima leitura)"
-                rows={2}
-                placeholder="Ex.: entrada lateral, acompanhante, etc."
-                value={observacao}
-                onChange={(e) => setObservacao(e.target.value)}
-              />
-            </div>
-          </div>
         </div>
       )}
 
@@ -367,6 +313,17 @@ export default function ValidarPage() {
               />
               <Button onClick={() => validateCode(manual)}>Validar</Button>
             </div>
+            {!isLeitor && (
+              <div className="mt-3">
+                <TextArea
+                  label="Observação (opcional)"
+                  rows={2}
+                  placeholder="Nota desta leitura"
+                  value={observacao}
+                  onChange={(e) => setObservacao(e.target.value)}
+                />
+              </div>
+            )}
           </div>
 
           {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
@@ -391,7 +348,7 @@ export default function ValidarPage() {
               )}
               <div className="mt-5 space-y-1 border-t border-white/20 pt-4 text-sm text-white/90">
                 <p>Data: {formatLidoEm(ultimo.lidoEm)}</p>
-                <p>Aparelho: {ultimo.aparelho || aparelho || "—"}</p>
+                <p>Aparelho: {ultimo.aparelho || aparelhoConta || "—"}</p>
                 {isAdminFull && <p>Leitor: {ultimo.leitor || admin?.nome || "—"}</p>}
                 {ultimo.observacao && <p>Obs.: {ultimo.observacao}</p>}
               </div>

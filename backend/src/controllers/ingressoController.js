@@ -12,13 +12,17 @@ async function obterPublico(req, res, next) {
 
 async function validar(req, res, next) {
   try {
-    const { codigo, aparelho, observacao } = req.body;
+    const { codigo, observacao } = req.body;
+    const perfil = req.admin?.perfil || "ADMIN";
+    // LEITOR não escolhe aparelho — usa o nome cadastrado pelos admins mestres
+    const aparelho =
+      perfil === "LEITOR" ? undefined : req.body.aparelho;
     const data = await ingressoService.validarEntrada({
       codigoOuPayload: codigo,
       adminId: req.admin?.id,
       ip: req.ip,
       aparelho,
-      observacao,
+      observacao: perfil === "LEITOR" ? undefined : observacao,
       userAgent: req.get("user-agent"),
       aparelhoPadrao: req.admin?.aparelhoNome,
     });
