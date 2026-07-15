@@ -115,7 +115,7 @@ export default function AdminLayout() {
           <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-3">
             <span className="hidden text-sm text-[var(--color-ink-soft)] sm:inline dark:text-slate-300">
               {admin?.nome}
-              {isLeitor ? " · Leitor" : ""}
+              {isLeitor ? " · Leitor" : admin?.isMaster || admin?.perfil === "ADMIN" ? " · Admin" : ""}
             </span>
             <button
               type="button"

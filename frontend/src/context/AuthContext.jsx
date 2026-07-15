@@ -12,6 +12,7 @@ function normalizeAdmin(raw) {
     email: raw.email,
     perfil: raw.perfil || "ADMIN",
     aparelhoNome: raw.aparelhoNome || null,
+    isMaster: Boolean(raw.isMaster),
   };
 }
 

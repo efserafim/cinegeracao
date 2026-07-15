@@ -4,10 +4,10 @@ const prisma = require("../config/prisma");
 const config = require("../config");
 const { verificarTokenSupabase, supabaseAuthConfigurado } = require("../config/supabase");
 const { registrarLog } = require("./logService");
-
-const ADMIN_DISPLAY_NAMES = {
-  "laviniadossantos22@gmail.com": "Lavínia Bernardino",
-};
+const {
+  isMasterAdminEmail,
+  nomeMasterPreferido,
+} = require("../config/masterAdmins");
 
 function adminPublico(admin) {
   return {
@@ -17,6 +17,7 @@ function adminPublico(admin) {
     perfil: admin.perfil || "ADMIN",
     aparelhoNome: admin.aparelhoNome || null,
     ativo: admin.ativo,
+    isMaster: isMasterAdminEmail(admin.email),
   };
 }
 
@@ -48,8 +49,23 @@ async function carregarAdminAuth(adminId) {
   });
 }
 
+/** Garante nome + perfil ADMIN para Lavínia / Eduardo. */
+async function sincronizarMaster(adminUser) {
+  if (!adminUser || !isMasterAdminEmail(adminUser.email)) return adminUser;
+  const nome = nomeMasterPreferido(adminUser.email) || adminUser.nome;
+  if (adminUser.perfil === "ADMIN" && adminUser.nome === nome) return adminUser;
+  return prisma.admin.update({
+    where: { id: adminUser.id },
+    data: {
+      perfil: "ADMIN",
+      nome: String(nome).slice(0, 120),
+      ativo: true,
+    },
+  });
+}
+
 async function loginComSenha(email, senha, ip) {
-  const admin = await prisma.admin.findUnique({ where: { email: email.toLowerCase() } });
+  let admin = await prisma.admin.findUnique({ where: { email: email.toLowerCase() } });
   if (!admin || !admin.ativo) {
     const err = new Error("Credenciais inválidas");
     err.status = 401;
@@ -61,6 +77,7 @@ async function loginComSenha(email, senha, ip) {
     err.status = 401;
     throw err;
   }
+  admin = await sincronizarMaster(admin);
   const token = emitirAccess(admin);
   await registrarLog({
     adminId: admin.id,
@@ -83,14 +100,25 @@ async function garantirAdminDoSupabase(user) {
     err.status = 401;
     throw err;
   }
-  let adminUser = await prisma.admin.findUnique({ where: { email } });
+
+  const isMaster = isMasterAdminEmail(email);
   const nomePreferido =
-    ADMIN_DISPLAY_NAMES[email] ||
+    nomeMasterPreferido(email) ||
     user.user_metadata?.nome ||
     user.user_metadata?.full_name ||
     user.user_metadata?.name ||
     email.split("@")[0];
+
+  let adminUser = await prisma.admin.findUnique({ where: { email } });
+
   if (!adminUser) {
+    // Novos logins via Supabase só entram se forem mestres pré-cadastrados
+    // ou se já existirem no banco (ex.: conta LEITOR criada por script).
+    if (!isMaster) {
+      const err = new Error("Conta sem permissão de acesso administrativo");
+      err.status = 403;
+      throw err;
+    }
     const senhaHash = await bcrypt.hash(`supabase_${user.id}_${Date.now()}`, 12);
     adminUser = await prisma.admin.create({
       data: {
@@ -101,11 +129,11 @@ async function garantirAdminDoSupabase(user) {
         perfil: "ADMIN",
       },
     });
+  } else if (isMaster) {
+    adminUser = await sincronizarMaster(adminUser);
   } else {
     const precisaAtualizarNome =
-      ADMIN_DISPLAY_NAMES[email] ||
-      adminUser.nome === email.split("@")[0] ||
-      adminUser.nome === email;
+      adminUser.nome === email.split("@")[0] || adminUser.nome === email;
     if (precisaAtualizarNome && adminUser.nome !== String(nomePreferido).slice(0, 120)) {
       adminUser = await prisma.admin.update({
         where: { id: adminUser.id },
@@ -113,6 +141,7 @@ async function garantirAdminDoSupabase(user) {
       });
     }
   }
+
   if (!adminUser.ativo) {
     const err = new Error("Administrador desativado");
     err.status = 403;
@@ -156,7 +185,11 @@ async function me(adminId) {
       criadoEm: true,
     },
   });
-  return admin;
+  if (!admin) return null;
+  return {
+    ...admin,
+    isMaster: isMasterAdminEmail(admin.email),
+  };
 }
 
 async function resolverAdminDoToken(token) {
@@ -203,5 +236,6 @@ module.exports = {
   resolverAdminDoToken,
   carregarAdminAuth,
   adminPublico,
+  sincronizarMaster,
   supabaseAuthConfigurado,
 };
