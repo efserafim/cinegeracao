@@ -48,4 +48,17 @@ router.post("/:id/recusar", authAdmin, inscricaoController.recusar);
 router.post("/:id/cancelar", authAdmin, inscricaoController.cancelar);
 router.delete("/:id", authAdmin, inscricaoController.excluir);
 router.patch("/:id/observacao", authAdmin, inscricaoController.observacao);
+router.patch(
+  "/:id/corrigir",
+  authAdmin,
+  body("nomeResponsavel").optional({ values: "falsy" }).trim().isLength({ min: 1 }).withMessage("Nome inválido"),
+  body("valor").optional({ values: "falsy" }),
+  body("pessoas").optional().isArray(),
+  body("pessoas.*.id").optional().isString(),
+  body("pessoas.*.nome").optional().isString(),
+  body("removerPessoaIds").optional().isArray(),
+  body("removerPessoaIds.*").optional().isString(),
+  validate,
+  inscricaoController.corrigir
+);
 module.exports = router;

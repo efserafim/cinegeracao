@@ -823,6 +823,210 @@ async function atualizarObservacao(id, observacao, adminId, ip) {
   });
   return buscarAdmin(id);
 }
+
+function parseValorAdmin(raw) {
+  if (raw == null || raw === "") return null;
+  if (typeof raw === "number") return Number.isFinite(raw) ? raw : null;
+  const s = String(raw).trim().replace(/\s/g, "").replace("R$", "").replace("r$", "");
+  // 10,50 or 1.234,56 → BR; 10.50 → US
+  const normalized = s.includes(",")
+    ? s.replace(/\./g, "").replace(",", ".")
+    : s;
+  const n = Number(normalized);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
+}
+
+/**
+ * Admin: corrige valor, altera nomes das pessoas / responsável e remove pessoas.
+ */
+async function corrigirInscricao(id, dados, adminId, ip) {
+  const inscricao = await prisma.inscricao.findUnique({
+    where: { id },
+    include: {
+      evento: true,
+      participante: true,
+      pagamento: true,
+      pessoas: { orderBy: { ordem: "asc" }, include: { ingresso: true } },
+    },
+  });
+  if (!inscricao) {
+    const err = new Error("Inscrição não encontrada");
+    err.status = 404;
+    throw err;
+  }
+  if (inscricao.status === "CANCELADA") {
+    const err = new Error("Não é possível editar uma inscrição cancelada");
+    err.status = 400;
+    throw err;
+  }
+
+  const removerIds = Array.isArray(dados.removerPessoaIds)
+    ? [...new Set(dados.removerPessoaIds.map(String).filter(Boolean))]
+    : [];
+  const pessoasEdits = Array.isArray(dados.pessoas) ? dados.pessoas : [];
+  const nomeResponsavel =
+    dados.nomeResponsavel != null ? String(dados.nomeResponsavel).trim() : null;
+  const valorInformado =
+    dados.valor !== undefined && dados.valor !== null && dados.valor !== ""
+      ? parseValorAdmin(dados.valor)
+      : undefined;
+
+  if (dados.valor !== undefined && dados.valor !== null && dados.valor !== "" && valorInformado == null) {
+    const err = new Error("Valor inválido");
+    err.status = 400;
+    throw err;
+  }
+
+  const pessoasAtuais = inscricao.pessoas || [];
+  const idsExistentes = new Set(pessoasAtuais.map((p) => p.id));
+
+  for (const rid of removerIds) {
+    if (!idsExistentes.has(rid)) {
+      const err = new Error("Pessoa a remover não pertence a esta inscrição");
+      err.status = 400;
+      throw err;
+    }
+  }
+
+  const restantesAposRemocao = pessoasAtuais.filter((p) => !removerIds.includes(p.id));
+  if (removerIds.length && restantesAposRemocao.length < 1) {
+    const err = new Error("Deve permanecer pelo menos uma pessoa. Cancele a inscrição se precisar remover todas.");
+    err.status = 400;
+    throw err;
+  }
+
+  for (const edit of pessoasEdits) {
+    const pid = String(edit?.id || "");
+    if (!pid || !idsExistentes.has(pid) || removerIds.includes(pid)) continue;
+    const nome = String(edit.nome || "").trim();
+    if (!nome) {
+      const err = new Error("Nome da pessoa não pode ficar vazio");
+      err.status = 400;
+      throw err;
+    }
+  }
+
+  if (nomeResponsavel !== null && !nomeResponsavel) {
+    const err = new Error("Nome do responsável não pode ficar vazio");
+    err.status = 400;
+    throw err;
+  }
+
+  const detalhes = {
+    antes: {
+      valor: Number(inscricao.valor),
+      quantidade: inscricao.quantidade,
+      nome: inscricao.participante?.nome,
+      pessoas: pessoasAtuais.map((p) => ({ id: p.id, nome: p.nome })),
+    },
+  };
+
+  await prisma.$transaction(async (tx) => {
+    for (const pessoaId of removerIds) {
+      const pessoa = pessoasAtuais.find((p) => p.id === pessoaId);
+      if (pessoa?.ingresso?.id) {
+        await tx.ingresso.update({
+          where: { id: pessoa.ingresso.id },
+          data: { status: "CANCELADO", pessoaId: null },
+        });
+      }
+      await tx.inscricaoPessoa.delete({ where: { id: pessoaId } });
+    }
+
+    const pessoasDepoisRemocao = await tx.inscricaoPessoa.findMany({
+      where: { inscricaoId: id },
+      orderBy: { ordem: "asc" },
+    });
+
+    for (let i = 0; i < pessoasDepoisRemocao.length; i++) {
+      if (pessoasDepoisRemocao[i].ordem !== i) {
+        await tx.inscricaoPessoa.update({
+          where: { id: pessoasDepoisRemocao[i].id },
+          data: { ordem: i },
+        });
+      }
+    }
+
+    for (const edit of pessoasEdits) {
+      const pid = String(edit?.id || "");
+      if (!pid || removerIds.includes(pid)) continue;
+      const nome = String(edit.nome || "").trim();
+      if (!nome) continue;
+      await tx.inscricaoPessoa.update({
+        where: { id: pid },
+        data: { nome },
+      });
+    }
+
+    const pessoasFinais = await tx.inscricaoPessoa.findMany({
+      where: { inscricaoId: id },
+      orderBy: { ordem: "asc" },
+    });
+    const quantidade = Math.max(1, pessoasFinais.length);
+
+    let novoValor;
+    if (valorInformado != null) {
+      novoValor = valorInformado;
+    } else if (removerIds.length > 0) {
+      novoValor = Number(inscricao.evento.valor) * quantidade;
+    } else {
+      novoValor = Number(inscricao.valor);
+    }
+
+    const dataInscricao = {
+      quantidade,
+      valor: novoValor,
+    };
+    await tx.inscricao.update({ where: { id }, data: dataInscricao });
+
+    if (inscricao.pagamento) {
+      await tx.pagamento.update({
+        where: { inscricaoId: id },
+        data: { valorEsperado: novoValor },
+      });
+    }
+
+    if (nomeResponsavel) {
+      await tx.participante.update({
+        where: { id: inscricao.participanteId },
+        data: { nome: nomeResponsavel },
+      });
+      // Mantém a 1ª pessoa alinhada ao responsável quando o admin altera só o nome principal
+      if (pessoasFinais[0] && !pessoasEdits.some((e) => String(e?.id) === pessoasFinais[0].id)) {
+        await tx.inscricaoPessoa.update({
+          where: { id: pessoasFinais[0].id },
+          data: { nome: nomeResponsavel },
+        });
+      }
+    } else if (pessoasFinais[0]) {
+      // Se a 1ª pessoa foi renomeada, sincroniza o responsável
+      const editPrimeira = pessoasEdits.find((e) => String(e?.id) === pessoasFinais[0].id);
+      if (editPrimeira?.nome) {
+        await tx.participante.update({
+          where: { id: inscricao.participanteId },
+          data: { nome: String(editPrimeira.nome).trim() },
+        });
+      }
+    }
+
+    detalhes.depois = {
+      valor: novoValor,
+      quantidade,
+      removerPessoaIds: removerIds,
+    };
+  });
+
+  await registrarLog({
+    adminId,
+    acao: "INSCRICAO_CORRIGIDA",
+    entidade: "Inscricao",
+    entidadeId: id,
+    detalhes,
+    ip,
+  });
+
+  return buscarAdmin(id);
+}
 async function dashboard(eventoId) {
   const evento = await prisma.evento.findUnique({ where: { id: eventoId } });
   if (!evento) {
@@ -1177,6 +1381,7 @@ module.exports = {
   cancelar,
   excluir,
   atualizarObservacao,
+  corrigirInscricao,
   marcarConferidoExtrato,
   dashboard,
   dashboardGlobal,

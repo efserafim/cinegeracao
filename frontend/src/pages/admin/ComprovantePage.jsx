@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Check } from "lucide-react";
+import { Check, Pencil, Trash2 } from "lucide-react";
 import api, { formatDate, formatMoney, mediaUrl, ALERTA_LABELS } from "../../services/api";
-import { Button, Loading, StatusBadge, TextArea, ConfirmModal, Modal } from "../../components/ui";
+import { Button, Input, Loading, StatusBadge, TextArea, ConfirmModal, Modal } from "../../components/ui";
+
+function valorParaInput(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "";
+  return n.toFixed(2).replace(".", ",");
+}
 
 export default function ComprovantePage() {
   const { id } = useParams();
@@ -21,6 +27,22 @@ export default function ComprovantePage() {
   const [ocrTried, setOcrTried] = useState(false);
   const [conferindoExtrato, setConferindoExtrato] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [editNome, setEditNome] = useState("");
+  const [editValor, setEditValor] = useState("");
+  const [editPessoas, setEditPessoas] = useState([]);
+  const [removerConfirm, setRemoverConfirm] = useState(null);
+  const [salvandoCorrecao, setSalvandoCorrecao] = useState(false);
+
+  function syncEditFromItem(data) {
+    setEditNome(data?.participante?.nome || "");
+    setEditValor(valorParaInput(data?.valor));
+    setEditPessoas(
+      (data?.pessoas || []).map((p) => ({
+        id: p.id,
+        nome: p.nome || "",
+      }))
+    );
+  }
 
   async function load() {
     setLoading(true);
@@ -28,6 +50,7 @@ export default function ComprovantePage() {
       const { data } = await api.get(`/inscricoes/${id}`);
       setItem(data.data);
       setObs(data.data.observacao || "");
+      syncEditFromItem(data.data);
     } finally {
       setLoading(false);
     }
@@ -72,6 +95,7 @@ export default function ComprovantePage() {
     setOcrBusy(true);
     api.post(`/inscricoes/${id}/reprocessar-ocr`).then(({ data }) => {
       setItem(data.data);
+      syncEditFromItem(data.data);
       if (data.data?.autoConfirmado) {
         setMsg("Valor do PIX confere — ingresso e e-mail liberados automaticamente.");
         setShowConfirmAnim(true);
@@ -88,6 +112,7 @@ export default function ComprovantePage() {
     try {
       const { data } = await api.post(`/inscricoes/${id}/confirmar`, null, { timeout: 45000 });
       setItem(data.data);
+      syncEditFromItem(data.data);
       setWhatsapp(data.data.whatsappLink || "");
       setEmailInfo(data.data.emailResult || null);
       const er = data.data.emailResult;
@@ -123,6 +148,7 @@ export default function ComprovantePage() {
     try {
       const { data } = await api.post(`/inscricoes/${id}/liberar-ingressos`);
       setItem(data.data);
+      syncEditFromItem(data.data);
       const qtd = data.data.quantidade || data.data.ingressos?.length || 0;
       setMsg(`${qtd} ingresso(s) liberado(s) com sucesso.`);
       setShowConfirmAnim(true);
@@ -156,6 +182,7 @@ export default function ComprovantePage() {
   async function recusar() {
     const { data } = await api.post(`/inscricoes/${id}/recusar`, { observacao: obs });
     setItem(data.data);
+    syncEditFromItem(data.data);
     setMsg("Pagamento recusado.");
   }
 
@@ -167,12 +194,14 @@ export default function ComprovantePage() {
     setConfirmCancel(false);
     const { data } = await api.post(`/inscricoes/${id}/cancelar`, { observacao: obs });
     setItem(data.data);
+    syncEditFromItem(data.data);
     setMsg("Inscrição cancelada.");
   }
 
   async function salvarObs() {
     const { data } = await api.patch(`/inscricoes/${id}/observacao`, { observacao: obs });
     setItem(data.data);
+    syncEditFromItem(data.data);
     setMsg("Observação salva.");
   }
 
@@ -181,6 +210,7 @@ export default function ComprovantePage() {
     try {
       const { data } = await api.post(`/inscricoes/${id}/reprocessar-ocr`);
       setItem(data.data);
+      syncEditFromItem(data.data);
       if (data.data?.autoConfirmado) {
         setMsg("Valor do PIX confere — ingresso e e-mail liberados automaticamente.");
         setShowConfirmAnim(true);
@@ -200,12 +230,44 @@ export default function ComprovantePage() {
     try {
       const { data } = await api.post(`/inscricoes/${id}/conferir-extrato`);
       setItem(data.data);
+      syncEditFromItem(data.data);
       setMsg("Conferência no extrato do banco registrada.");
     } catch (err) {
       setMsg(err.response?.data?.message || "Falha ao marcar conferência no extrato.");
     } finally {
       setConferindoExtrato(false);
     }
+  }
+
+  async function salvarCorrecao(extra = {}) {
+    setSalvandoCorrecao(true);
+    setMsg("");
+    try {
+      const payload = {
+        nomeResponsavel: editNome.trim(),
+        pessoas: editPessoas.map((p) => ({ id: p.id, nome: p.nome.trim() })),
+        ...extra,
+      };
+      // Em remoção, não manda valor → backend recalcula (unitário × restantes)
+      if (!extra.removerPessoaIds) {
+        payload.valor = editValor;
+      }
+      const { data } = await api.patch(`/inscricoes/${id}/corrigir`, payload);
+      setItem(data.data);
+      syncEditFromItem(data.data);
+      setMsg("Inscrição corrigida com sucesso.");
+    } catch (err) {
+      setMsg(err.response?.data?.message || "Falha ao corrigir inscrição.");
+    } finally {
+      setSalvandoCorrecao(false);
+    }
+  }
+
+  async function confirmarRemocaoPessoa() {
+    if (!removerConfirm) return;
+    const pessoaId = removerConfirm.id;
+    setRemoverConfirm(null);
+    await salvarCorrecao({ removerPessoaIds: [pessoaId] });
   }
 
   if (loading) return <Loading />;
@@ -233,6 +295,8 @@ export default function ComprovantePage() {
   ].includes(item.status);
   const jaLiberado = ["INGRESSO_LIBERADO", "PAGAMENTO_CONFIRMADO"].includes(item.status);
   const precisaConferirExtrato = jaLiberado && p?.metodo !== "DINHEIRO" && !p?.conferidoExtratoEm;
+  const podeEditar = item.status !== "CANCELADA";
+  const unitario = Number(item.evento?.valor);
 
   return (
     <div className="space-y-6">
@@ -244,6 +308,20 @@ export default function ComprovantePage() {
         danger
         onCancel={() => setConfirmCancel(false)}
         onConfirm={confirmarCancelamento}
+      />
+      <ConfirmModal
+        open={Boolean(removerConfirm)}
+        title="Remover pessoa?"
+        message={
+          removerConfirm
+            ? `Remover "${removerConfirm.nome}" desta inscrição?\nA quantidade e o valor serão recalculados (valor unitário × pessoas restantes), a menos que você altere o valor manualmente antes.`
+            : ""
+        }
+        confirmLabel="Remover"
+        danger
+        busy={salvandoCorrecao}
+        onCancel={() => setRemoverConfirm(null)}
+        onConfirm={confirmarRemocaoPessoa}
       />
       <Modal open={showConfirmAnim} className="!max-w-sm overflow-hidden bg-[#070a12] text-center text-white !border-[#e11d2e]/40">
         <div className="px-6 py-8">
@@ -365,6 +443,73 @@ export default function ComprovantePage() {
             </dl>
           </div>
 
+          {podeEditar && (
+            <div className="rounded-2xl border border-amber-500/25 bg-amber-50/60 p-4 dark:border-amber-400/20 dark:bg-amber-950/20">
+              <div className="flex items-center gap-2">
+                <Pencil size={16} className="text-amber-700 dark:text-amber-300" />
+                <h2 className="font-display text-xl">Corrigir inscrição</h2>
+              </div>
+              <p className="mt-1 text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
+                Altere o nome, o valor cobrado ou os nomes das pessoas. Ao remover alguém, a quantidade cai e o valor volta para unitário × restantes
+                {Number.isFinite(unitario) ? ` (R$ ${valorParaInput(unitario)} cada)` : ""}, se você não informar outro valor.
+              </p>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <Input
+                  label="Nome"
+                  value={editNome}
+                  onChange={(e) => setEditNome(e.target.value)}
+                />
+                <Input
+                  label="Valor total (R$)"
+                  value={editValor}
+                  onChange={(e) => setEditValor(e.target.value)}
+                  placeholder="0,00"
+                />
+              </div>
+
+              {editPessoas.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)]">
+                    Pessoas / ingressos
+                  </p>
+                  {editPessoas.map((pessoa, idx) => (
+                    <div key={pessoa.id} className="flex flex-wrap items-end gap-2">
+                      <div className="min-w-[180px] flex-1">
+                        <Input
+                          label={`Pessoa ${idx + 1}`}
+                          value={pessoa.nome}
+                          onChange={(e) => {
+                            const next = [...editPessoas];
+                            next[idx] = { ...next[idx], nome: e.target.value };
+                            setEditPessoas(next);
+                          }}
+                        />
+                      </div>
+                      {editPessoas.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="danger"
+                          className="mb-0.5 inline-flex items-center gap-1"
+                          onClick={() => setRemoverConfirm(pessoa)}
+                          disabled={salvandoCorrecao}
+                        >
+                          <Trash2 size={14} /> Remover
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-4">
+                <Button onClick={() => salvarCorrecao()} disabled={salvandoCorrecao}>
+                  {salvandoCorrecao ? "Salvando…" : "Salvar correções"}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {pessoas.length > 0 && (
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -379,7 +524,7 @@ export default function ComprovantePage() {
               </div>
               {pendentes.length > 0 && (
                 <p className="text-sm text-amber-700 dark:text-amber-300">
-                  {pendentes.map((p) => p.nome).join(", ")} ainda sem QR. Clique em liberar após o deploy.
+                  {pendentes.map((pe) => pe.nome).join(", ")} ainda sem QR. Clique em liberar após o deploy.
                 </p>
               )}
               <div className="grid gap-3">

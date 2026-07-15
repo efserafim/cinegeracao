@@ -170,6 +170,19 @@ async function observacao(req, res, next) {
     return next(err);
   }
 }
+async function corrigir(req, res, next) {
+  try {
+    const data = await inscricaoService.corrigirInscricao(
+      req.params.id,
+      req.body || {},
+      req.admin.id,
+      req.ip
+    );
+    return success(res, data, "Inscrição corrigida");
+  } catch (err) {
+    return next(err);
+  }
+}
 async function dashboard(req, res, next) {
   try {
     const data = await inscricaoService.dashboard(req.params.eventoId);
@@ -257,6 +270,7 @@ module.exports = {
   cancelar,
   excluir,
   observacao,
+  corrigir,
   dashboard,
   dashboardGlobal,
   exportar,
