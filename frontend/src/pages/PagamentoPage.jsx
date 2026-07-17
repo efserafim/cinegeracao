@@ -4,7 +4,6 @@ import { Copy, Check, Upload, Banknote, User, KeyRound, HandCoins, AlertTriangle
 import api, { formatMoney, STATUS_LABELS } from "../services/api";
 import { Button, Loading, StatusBadge } from "../components/ui";
 import ContatosDuvidas from "../components/ContatosDuvidas";
-import { chavePixImg } from "../assets/brand";
 export default function PagamentoPage() {
   const { codigo } = useParams();
   const [inscricao, setInscricao] = useState(null);
@@ -34,11 +33,14 @@ export default function PagamentoPage() {
   const chavePix = inscricao?.evento?.chavePix || "";
   const favorecido = inscricao?.evento?.nomeFavorecido || "";
   const valor = inscricao?.valor;
+  const pixCopiaECola = inscricao?.pagamento?.pixPayload || "";
+  const qrCodePix = inscricao?.pagamento?.qrCodeDataUrl || "";
   const isDinheiro = inscricao?.pagamento?.metodo === "DINHEIRO";
   const isPre = inscricao?.status === "PRE_INSCRITA";
   async function copyPix() {
-    if (!chavePix) return;
-    await navigator.clipboard.writeText(chavePix);
+    const texto = pixCopiaECola || chavePix;
+    if (!texto) return;
+    await navigator.clipboard.writeText(texto);
     setCopied(true);
     setTimeout(() => setCopied(false), 2e3);
   }
@@ -187,15 +189,21 @@ export default function PagamentoPage() {
             <div className="space-y-5 p-5">
               <div>
                 <p className="mb-2 text-center text-xs text-white/60">1. Escaneie o QR Code no app do seu banco</p>
-                <img
-    src={chavePixImg}
-    alt="QR Code PIX"
-    className="mx-auto w-full max-w-[240px] rounded-2xl bg-white p-3 object-contain"
-  />
+                {qrCodePix ? (
+                  <img
+                    src={qrCodePix}
+                    alt={`QR Code PIX no valor de ${formatMoney(valor)}`}
+                    className="mx-auto w-full max-w-[240px] rounded-2xl bg-white p-3 object-contain"
+                  />
+                ) : (
+                  <p className="text-center text-sm text-white/75">
+                    Use o PIX copia e cola abaixo.
+                  </p>
+                )}
               </div>
 
               <div className="rounded-2xl bg-white/5 p-4">
-                <p className="mb-3 text-center text-xs text-white/60">2. Ou pague com a chave PIX (celular)</p>
+                <p className="mb-3 text-center text-xs text-white/60">2. Ou use o PIX copia e cola</p>
                 <ul className="space-y-3 text-sm">
                   <li className="flex items-start gap-3">
                     <User size={16} className="mt-0.5 shrink-0 text-[#f5c542]" />
@@ -226,7 +234,7 @@ export default function PagamentoPage() {
     onClick={copyPix}
     className="w-full bg-white text-[#0b1020] hover:bg-white/90"
   >
-                {copied ? <><Check size={16} /> Chave copiada</> : <><Copy size={16} /> Copiar chave PIX</>}
+                {copied ? <><Check size={16} /> PIX copiado</> : <><Copy size={16} /> Copiar PIX copia e cola</>}
               </Button>
               <Button onClick={() => setStep("upload")} className="w-full">
                 Já realizei o pagamento

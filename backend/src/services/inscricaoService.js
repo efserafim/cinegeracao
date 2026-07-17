@@ -1,6 +1,7 @@
 const QRCode = require("qrcode");
 const prisma = require("../config/prisma");
 const { gerarCodigoInscricao } = require("../utils/codes");
+const { gerarPixCopiaECola } = require("../utils/pix");
 const { onlyDigits, normalizarWhatsApp } = require("../utils/sanitize");
 const { gerarLinkWhatsApp } = require("../utils/whatsapp");
 const { processarComprovante } = require("./ocrService");
@@ -35,6 +36,22 @@ function parseQuantidadeEPessoas(dados) {
     throw err;
   }
   return { quantidade, pessoas };
+}
+
+async function gerarDadosPix(evento, valor, codigo) {
+  const pixPayload = gerarPixCopiaECola({
+    chave: evento.chavePix,
+    nome: evento.nomeFavorecido,
+    cidade: evento.cidade,
+    valor,
+    txid: codigo,
+  });
+  const qrCodeDataUrl = await QRCode.toDataURL(pixPayload, {
+    errorCorrectionLevel: "M",
+    margin: 2,
+    width: 280,
+  });
+  return { pixPayload, qrCodeDataUrl };
 }
 
 async function criarInscricao(eventoId, dados) {
@@ -165,18 +182,7 @@ async function criarInscricao(eventoId, dados) {
     },
     include: includeInscricao
   });
-  const pixPayload = [
-    `PIX: ${evento.chavePix}`,
-    `Favorecido: ${evento.nomeFavorecido}`,
-    `Valor: R$ ${valorTotal.toFixed(2).replace(".", ",")}`,
-    `Ref: ${inscricao.codigo}`,
-    quantidade > 1 ? `Ingressos: ${quantidade}` : null
-  ].filter(Boolean).join("\n");
-  const qrCodeDataUrl = await QRCode.toDataURL(evento.chavePix, {
-    errorCorrectionLevel: "M",
-    margin: 2,
-    width: 280
-  });
+  const { pixPayload, qrCodeDataUrl } = await gerarDadosPix(evento, valorTotal, inscricao.codigo);
   if (metodo === "DINHEIRO") {
     notifyAdmins({
       title: "Pagamento em dinheiro",
@@ -207,7 +213,14 @@ async function buscarPorCodigo(codigo) {
     err.status = 404;
     throw err;
   }
-  return formatInscricao(inscricao);
+  const resultado = formatInscricao(inscricao);
+  if (resultado.pagamento?.metodo === "PIX" && inscricao.status !== "PRE_INSCRITA") {
+    Object.assign(
+      resultado.pagamento,
+      await gerarDadosPix(inscricao.evento, Number(inscricao.valor), inscricao.codigo)
+    );
+  }
+  return resultado;
 }
 
 async function buscarPorCodigoEEmail(codigoRaw, emailRaw) {

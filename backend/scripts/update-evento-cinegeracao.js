@@ -22,7 +22,7 @@ const EVENTO = {
   horario: "18:10",
   local: "Cinema MaxiMovie – Rua Beatriz Amaral Pereira, 106 - Bacaxá",
   cidade: "Saquarema",
-  chavePix: "22992473724",
+  chavePix: "64.451.288/0001-01",
   nomeFavorecido: "EDUARDO FERREIRA SERAFIM",
 };
 

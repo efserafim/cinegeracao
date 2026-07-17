@@ -37,7 +37,7 @@ async function main() {
         local: "Cinema MaxiMovie – Rua Beatriz Amaral Pereira, 106 - Bacaxá",
         cidade: "Saquarema",
         vagasMaximas: 200,
-        chavePix: "22992473724",
+        chavePix: "64.451.288/0001-01",
         nomeFavorecido: "EDUARDO FERREIRA SERAFIM",
         status: "PRE_INSCRICAO"
       }
