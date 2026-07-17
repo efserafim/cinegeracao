@@ -20,7 +20,7 @@ async function obterPorCodigo(req, res, next) {
 }
 async function consultar(req, res, next) {
   try {
-    const data = await inscricaoService.buscarPorCodigoEEmail(req.body.codigo, req.body.email);
+    const data = await inscricaoService.buscarPorEmail(req.body.email);
     return success(res, data);
   } catch (err) {
     return next(err);

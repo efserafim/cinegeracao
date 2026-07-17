@@ -14,6 +14,7 @@ function gerarLinkWhatsApp({
   horario,
   local,
   cidade,
+  valor,
   codigoIngresso,
   codigoInscricao,
   chegada,
@@ -25,6 +26,10 @@ function gerarLinkWhatsApp({
   const primeiroNome = String(nome || "").trim().split(/\s+/)[0] || "herói";
   const chegadaTxt = chegada || "17h10";
   const qtd = Number(quantidade) || (Array.isArray(tickets) ? tickets.length : 0) || 1;
+  const valorNum = Number(valor);
+  const valorFmt = Number.isFinite(valorNum)
+    ? valorNum.toFixed(2).replace(".", ",")
+    : "";
   const linkIngresso = codigoInscricao
     ? `${siteBase()}/ingresso/${codigoInscricao}`
     : null;
@@ -48,6 +53,7 @@ function gerarLinkWhatsApp({
     "",
     `🎬 *${evento || "CineGeração – Homem-Aranha: Um novo dia"}*`,
     `📅 Data: *${data}*`,
+    valorFmt ? `💰 Valor: *R$ ${valorFmt}*` : null,
     `🕐 Sessão: *${horario}* · Chegada *${chegadaTxt}*`,
     `📍 Local: *${local}${cidade ? ` – ${cidade}` : ""}*`,
     "",

@@ -223,21 +223,24 @@ async function buscarPorCodigo(codigo) {
   return resultado;
 }
 
-async function buscarPorCodigoEEmail(codigoRaw, emailRaw) {
-  const codigo = String(codigoRaw || "").trim().toUpperCase();
+async function buscarPorEmail(emailRaw) {
   const email = String(emailRaw || "").trim().toLowerCase();
-  if (!codigo || !email) {
-    const err = new Error("Informe o código e o e-mail da inscrição");
+  if (!email) {
+    const err = new Error("Informe o e-mail da inscrição");
     err.status = 400;
     throw err;
   }
-  const inscricao = await prisma.inscricao.findUnique({
-    where: { codigo },
-    include: includeInscricao
+  const inscricao = await prisma.inscricao.findFirst({
+    where: {
+      participante: {
+        email: { equals: email, mode: "insensitive" }
+      }
+    },
+    include: includeInscricao,
+    orderBy: { criadoEm: "desc" }
   });
-  const emailCadastro = String(inscricao?.participante?.email || "").trim().toLowerCase();
-  if (!inscricao || !emailCadastro || emailCadastro !== email) {
-    const err = new Error("Código ou e-mail não conferem. Confira e tente de novo.");
+  if (!inscricao) {
+    const err = new Error("Não encontramos inscrição com este e-mail. Confira e tente de novo.");
     err.status = 404;
     throw err;
   }
@@ -580,6 +583,7 @@ async function confirmarPagamento(id, adminId, ip, opcoes = {}) {
         horario: inscricao.evento.horario,
         local: inscricao.evento.local,
         cidade: inscricao.evento.cidade,
+        valor: Number(inscricao.valor),
         codigoIngresso: codigosIngresso,
         codigoInscricao: inscricao.codigo,
         chegada: "17h10",
@@ -640,6 +644,7 @@ async function confirmarPagamento(id, adminId, ip, opcoes = {}) {
     horario: inscricao.evento.horario,
     local: inscricao.evento.local,
     cidade: inscricao.evento.cidade,
+    valor: Number(inscricao.valor),
     codigoIngresso: codigosIngresso,
     codigoInscricao: inscricao.codigo,
     chegada: "17h10",
@@ -1375,6 +1380,7 @@ async function reenviarEmailConfirmacao(id, adminId, ip) {
     horario: inscricao.evento.horario,
     local: inscricao.evento.local,
     cidade: inscricao.evento.cidade,
+    valor: Number(inscricao.valor),
     codigoIngresso: ticketsEmail.map((t) => t.codigo).join(", "),
     codigoInscricao: inscricao.codigo,
     chegada: "17h10",
@@ -1395,7 +1401,7 @@ async function reenviarEmailConfirmacao(id, adminId, ip) {
 module.exports = {
   criarInscricao,
   buscarPorCodigo,
-  buscarPorCodigoEEmail,
+  buscarPorEmail,
   buscarPorWhatsApp,
   enviarComprovante,
   reprocessarOcr,

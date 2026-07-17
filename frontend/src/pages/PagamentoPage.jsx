@@ -127,12 +127,12 @@ export default function PagamentoPage() {
                   {copied ? <><Check size={16} /> Código copiado</> : <><Copy size={16} /> Copiar código</>}
                 </button>
                 <p className="mt-3 text-xs font-semibold leading-snug text-[#f5c542]/90">
-                  Anote ou tire um print — você vai precisar deste código + e-mail
+                  Anote ou tire um print — você vai precisar deste código
                 </p>
               </div>
 
               <ul className="space-y-2 rounded-2xl bg-white/5 p-4 text-sm text-white/80">
-                <li>· Quando liberarmos a cobrança, use o código + e-mail em Consultar</li>
+                <li>· Quando liberarmos a cobrança, use o e-mail em Consultar</li>
                 <li>· Ou fale no WhatsApp com Eduardo ou Lavínia</li>
               </ul>
 

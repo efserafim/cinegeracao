@@ -4,7 +4,6 @@ import api from "../services/api";
 import { Button, Input } from "../components/ui";
 
 export default function ConsultarPage() {
-  const [codigo, setCodigo] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -13,16 +12,14 @@ export default function ConsultarPage() {
   async function go(e) {
     e.preventDefault();
     setError("");
-    const codigoLimpo = String(codigo || "").trim().toUpperCase();
     const emailLimpo = String(email || "").trim();
-    if (!codigoLimpo || !emailLimpo) {
-      setError("Informe o código e o e-mail usados na inscrição.");
+    if (!emailLimpo) {
+      setError("Informe o e-mail usado na inscrição.");
       return;
     }
     setLoading(true);
     try {
       const { data } = await api.post("/inscricoes/consultar", {
-        codigo: codigoLimpo,
         email: emailLimpo,
       });
       navigate(`/inscricao/${data.data.codigo}`);
@@ -37,17 +34,9 @@ export default function ConsultarPage() {
     <div className="mx-auto max-w-md px-4 py-10 animate-fade-up">
       <h1 className="font-display text-2xl">Consultar inscrição</h1>
       <p className="mt-1 text-sm text-[var(--color-ink-soft)] dark:text-slate-400">
-        Digite o código da inscrição e o e-mail cadastrado.
+        Digite o e-mail cadastrado na inscrição.
       </p>
       <form onSubmit={go} className="mt-6 space-y-4">
-        <Input
-          label="Código da inscrição"
-          value={codigo}
-          onChange={(e) => setCodigo(e.target.value.toUpperCase())}
-          placeholder="Ex.: CG-XXXX"
-          autoComplete="off"
-          autoCapitalize="characters"
-        />
         <Input
           label="E-mail"
           type="email"

@@ -320,7 +320,7 @@ export default function InscricaoForm({ evento }) {
       <p className="text-center text-[11px] leading-relaxed text-[var(--color-ink-soft)] dark:text-slate-400">
         {isPre
           ? "Sem pagamento por enquanto. Se a meta for atingida, avisamos para concluir a inscrição."
-          : "Já se inscreveu? Consulte com o código e o e-mail da inscrição."}
+          : "Já se inscreveu? Consulte com o e-mail da inscrição."}
       </p>
     </form>
   );

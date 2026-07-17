@@ -22,7 +22,6 @@ router.post(
 router.get("/codigo/:codigo", inscricaoController.obterPorCodigo);
 router.post(
   "/consultar",
-  body("codigo").trim().notEmpty().withMessage("Código obrigatório"),
   body("email").isEmail().withMessage("E-mail inválido"),
   validate,
   inscricaoController.consultar

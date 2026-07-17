@@ -174,6 +174,12 @@ function montarListaTickets(tickets = [], codigoIngresso) {
   return "";
 }
 
+function formatMoneyBr(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "";
+  return n.toFixed(2).replace(".", ",");
+}
+
 function buildConfirmacaoHtml({
   nome,
   evento,
@@ -181,6 +187,7 @@ function buildConfirmacaoHtml({
   horario,
   local,
   cidade,
+  valor,
   codigoIngresso,
   codigoInscricao,
   chegada,
@@ -196,6 +203,8 @@ function buildConfirmacaoHtml({
   const localSafe = escapeHtml(local);
   const cidadeSafe = escapeHtml(cidade);
   const chegadaSafe = escapeHtml(chegada || "17h10");
+  const valorFmt = formatMoneyBr(valor);
+  const valorSafe = valorFmt ? escapeHtml(`R$ ${valorFmt}`) : "";
   const codigoInscSafe = escapeHtml(codigoInscricao);
   const qtd = Number(quantidade) || (Array.isArray(tickets) ? tickets.length : 1) || 1;
   const listaTickets = montarListaTickets(tickets, codigoIngresso);
@@ -275,7 +284,11 @@ function buildConfirmacaoHtml({
                     <p style="margin:0;font-size:14px;line-height:1.65;color:#374151">
                       <strong style="color:#1a6cff">Data</strong> ${dataSafe}<br>
                       <strong style="color:#1a6cff">Chegada</strong> ${chegadaSafe} · <strong style="color:#1a6cff">Sessão</strong> ${horarioSafe}<br>
-                      <strong style="color:#1a6cff">Local</strong> ${localSafe}${cidadeSafe ? ` – ${cidadeSafe}` : ""}
+                      <strong style="color:#1a6cff">Local</strong> ${localSafe}${cidadeSafe ? ` – ${cidadeSafe}` : ""}${
+                        valorSafe
+                          ? `<br><strong style="color:#1a6cff">Valor</strong> ${valorSafe}`
+                          : ""
+                      }
                     </p>
                     ${
                       codigoInscSafe
@@ -376,6 +389,7 @@ async function enviarConfirmacaoInscricao({
   horario,
   local,
   cidade,
+  valor,
   codigoIngresso,
   codigoInscricao,
   chegada,
@@ -388,6 +402,7 @@ async function enviarConfirmacaoInscricao({
   const baseUrl = (config.frontendUrl || "https://geucaristica.com.br").replace(/\/$/, "");
   const linkIngresso = `${baseUrl}/ingresso/${encodeURIComponent(codigoInscricao)}`;
   const qtd = Number(quantidade) || (Array.isArray(tickets) ? tickets.length : 1) || 1;
+  const valorFmt = formatMoneyBr(valor);
   const subject =
     qtd > 1
       ? `🕷️ CineGeração — ${qtd} ingressos confirmados · Homem-Aranha: Um novo dia`
@@ -400,6 +415,7 @@ async function enviarConfirmacaoInscricao({
     horario,
     local,
     cidade,
+    valor,
     codigoIngresso,
     codigoInscricao,
     chegada,
@@ -415,6 +431,7 @@ async function enviarConfirmacaoInscricao({
     `Evento: ${evento}`,
     `Data: ${data} · Sessão ${horario} · Chegada ${chegada || "17h10"}`,
     `Local: ${local}${cidade ? ` – ${cidade}` : ""}`,
+    valorFmt ? `Valor: R$ ${valorFmt}` : null,
     "",
     Array.isArray(tickets) && tickets.length
       ? tickets.map((t) => `- ${t.nome || "Participante"}: ${t.codigo}`).join("\n")
@@ -428,7 +445,9 @@ async function enviarConfirmacaoInscricao({
     `"${VERSO_BIBLICO.texto}" (${VERSO_BIBLICO.referencia})`,
     "",
     "Que Deus abençoe este encontro. Coordenação Grupo Jovem Geração Eucarística."
-  ].join("\n");
+  ]
+    .filter((line) => line !== null && line !== undefined)
+    .join("\n");
 
   if (!emailConfigurado()) {
     console.warn(`[EMAIL] Nenhum provedor configurado – não enviado para ${para}`);
