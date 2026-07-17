@@ -22,7 +22,7 @@ router.post(
 router.get("/codigo/:codigo", inscricaoController.obterPorCodigo);
 router.post(
   "/consultar",
-  body("email").isEmail().withMessage("E-mail inválido"),
+  body("email").trim().notEmpty().withMessage("E-mail obrigatório").isEmail().withMessage("E-mail inválido"),
   validate,
   inscricaoController.consultar
 );

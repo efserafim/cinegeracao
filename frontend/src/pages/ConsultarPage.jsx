@@ -24,7 +24,18 @@ export default function ConsultarPage() {
       });
       navigate(`/inscricao/${data.data.codigo}`);
     } catch (err) {
-      setError(err.response?.data?.message || "Não foi possível encontrar a inscrição.");
+      const details = err.response?.data?.errors;
+      const fieldMsg = Array.isArray(details) && details[0]?.message ? details[0].message : "";
+      const msg = err.response?.data?.message || "";
+      if (fieldMsg.toLowerCase().includes("código") || fieldMsg.toLowerCase().includes("codigo")) {
+        setError("A API ainda está atualizando. Aguarde 1–2 minutos e tente de novo.");
+      } else if (msg && msg !== "Dados inválidos") {
+        setError(msg);
+      } else if (fieldMsg) {
+        setError(fieldMsg);
+      } else {
+        setError(msg || "Não foi possível encontrar a inscrição.");
+      }
     } finally {
       setLoading(false);
     }
