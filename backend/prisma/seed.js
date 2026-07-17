@@ -32,7 +32,7 @@ async function main() {
           "Pipoca cortesia + Guaravita inclusos"
         ].join("\n"),
         valor: 10,
-        data: new Date("2026-08-01T12:00:00.000Z"),
+        data: new Date("2026-08-02T12:00:00.000Z"),
         horario: "18:10",
         local: "Cinema MaxiMovie – Rua Beatriz Amaral Pereira, 106 - Bacaxá",
         cidade: "Saquarema",

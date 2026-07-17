@@ -18,7 +18,7 @@ const EVENTO = {
     "Lavínia – (22) 99818-7602",
   ].join("\n"),
   // Coluna DATE no Postgres: gravar meio-dia UTC só para documentar a intenção do dia civil
-  data: new Date("2026-08-01T12:00:00.000Z"),
+  data: new Date("2026-08-02T12:00:00.000Z"),
   horario: "18:10",
   local: "Cinema MaxiMovie – Rua Beatriz Amaral Pereira, 106 - Bacaxá",
   cidade: "Saquarema",

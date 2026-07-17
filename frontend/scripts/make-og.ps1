@@ -65,7 +65,7 @@ New-Og "og-spiderman.jpg" {
   $g.DrawString("Homem-Aranha: Um novo dia", $fFilm, $white, $tx, 270)
   $pill = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(50, 245, 197, 66))
   $g.FillRectangle($pill, $tx, 330, 360, 48)
-  $g.DrawString("1º de agosto  ·  18h10", $fMeta, $gold, ($tx + 18), 338)
+  $g.DrawString("2 de agosto  ·  18h10", $fMeta, $gold, ($tx + 18), 338)
   $g.DrawString("Cinema MaxiMovie  ·  Saquarema/RJ", $fMeta, $muted, $tx, 400)
   $g.DrawString("Pipoca + Guaravita inclusos", $fMeta, $muted, $tx, 440)
 }

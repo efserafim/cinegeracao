@@ -121,7 +121,7 @@ export default function HomePage() {
               className="animate-fade-up mt-4 max-w-sm text-sm font-medium leading-relaxed text-white/90 sm:text-base"
               style={{ animationDelay: "0.18s" }}
             >
-              1º de agosto · Cinema MaxiMovie · Bacaxá
+              2 de agosto · Cinema MaxiMovie · Bacaxá
               <br />
               Sessão 18h10 · Chegada 17h10
             </h1>
