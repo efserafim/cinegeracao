@@ -99,7 +99,7 @@ export default function PagamentoPage() {
             <div className="space-y-4 p-5">
               <p className="text-center text-sm leading-relaxed text-white/85">
                 Sua pré-inscrição foi registrada. Estamos medindo o interesse para confirmar a promoção
-                (R$&nbsp;10 + pipoca + guaravita com mínimo de 100 pessoas).
+                (R$&nbsp;12 + pipoca + guaravita com mínimo de 100 pessoas).
               </p>
 
               <div className="rounded-[1.5rem] bg-[#f5c542]/15 px-4 py-5 text-center ring-2 ring-[#f5c542]/70">

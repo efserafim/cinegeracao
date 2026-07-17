@@ -31,7 +31,7 @@ async function main() {
           "Sessão às 18h10 | Chegada às 17h10",
           "Pipoca cortesia + Guaravita inclusos"
         ].join("\n"),
-        valor: 10,
+        valor: 12,
         data: new Date("2026-08-02T12:00:00.000Z"),
         horario: "18:10",
         local: "Cinema MaxiMovie – Rua Beatriz Amaral Pereira, 106 - Bacaxá",

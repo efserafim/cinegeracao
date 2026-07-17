@@ -8,7 +8,7 @@ export default function EventoFormPage() {
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
-    defaultValues: { status: "PRE_INSCRICAO", valor: 10, vagasMaximas: 100 }
+    defaultValues: { status: "PRE_INSCRICAO", valor: 12, vagasMaximas: 100 }
   });
   const [banner, setBanner] = useState(null);
   const [bannerAtual, setBannerAtual] = useState(null);

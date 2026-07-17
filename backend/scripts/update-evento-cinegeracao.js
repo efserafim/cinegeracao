@@ -47,7 +47,7 @@ async function main() {
     const created = await prisma.evento.create({
       data: {
         ...EVENTO,
-        valor: 10,
+        valor: 12,
         vagasMaximas: 200,
         status: "ABERTO",
       },

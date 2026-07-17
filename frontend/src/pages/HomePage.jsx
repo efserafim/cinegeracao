@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import api, { formatDate, formatMoney, mediaUrl } from "../services/api";
 import { Loading } from "../components/ui";
@@ -154,6 +155,27 @@ export default function HomePage() {
         <SpiderMark className="pointer-events-none absolute -left-8 bottom-16 h-36 w-36 -rotate-12 opacity-[0.07]" />
 
         <div className="relative mx-auto max-w-3xl animate-fade-up">
+          <div
+            className="mb-6 overflow-hidden rounded-[1.35rem] ring-2 ring-[#e11d2e]/60 dark:ring-[#f5c542]/60"
+            role="alert"
+          >
+            <div className="flex items-center justify-center gap-2 bg-[#e11d2e] px-4 py-2.5 text-center">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-white" aria-hidden />
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white">
+                Atenção · mudança de data e valor
+              </p>
+            </div>
+            <div className="bg-white/85 px-4 py-3.5 dark:bg-white/5">
+              <p className="text-center text-sm font-semibold leading-relaxed text-[var(--color-ink)] dark:text-white sm:text-base">
+                O evento passou do dia{" "}
+                <span className="line-through opacity-60">1º de agosto</span> para{" "}
+                <span className="text-[#e11d2e] dark:text-[#f5c542]">2 de agosto</span> e o ingresso
+                passou de <span className="line-through opacity-60">R$&nbsp;10</span> para{" "}
+                <span className="text-[#e11d2e] dark:text-[#f5c542]">R$&nbsp;12</span>.
+              </p>
+            </div>
+          </div>
+
           <div className="mb-6 text-center">
             <div className="mb-2 flex justify-center">
               <SpiderMark className="h-9 w-9" glow />
@@ -178,13 +200,13 @@ export default function HomePage() {
                   <>
                     Cadastre-se <span className="underline decoration-2 underline-offset-2">sem pagar</span> para
                     vermos se fechamos a promoção: ingresso a{" "}
-                    <span className="text-[#e11d2e] dark:text-white">R$&nbsp;10</span> + pipoca cortesia + guaravita,
+                    <span className="text-[#e11d2e] dark:text-white">R$&nbsp;12</span> + pipoca cortesia + guaravita,
                     com mínimo de{" "}
                     <span className="rounded-md bg-[#e11d2e] px-2 py-0.5 text-white shadow-sm">100 pessoas</span>.
                   </>
                 ) : (
                   <>
-                    O ingresso a <span className="text-[#e11d2e] dark:text-white">R$&nbsp;10</span>, com{" "}
+                    O ingresso a <span className="text-[#e11d2e] dark:text-white">R$&nbsp;12</span>, com{" "}
                     <span className="underline decoration-2 underline-offset-2">pipoca cortesia</span> e{" "}
                     <span className="underline decoration-2 underline-offset-2">guaravita</span>, vale somente com
                     o mínimo de{" "}
