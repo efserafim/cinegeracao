@@ -63,11 +63,6 @@ export default function HomePage() {
   const unico = !loading && eventos.length === 1;
   const varios = !loading && eventos.length > 1;
 
-  const META_PROMOCAO = 100;
-  const inscritos = Number(eventoAtivo?.vagasOcupadas || 0);
-  const pctMeta = Math.min(100, Math.round((inscritos / META_PROMOCAO) * 100));
-  const faltam = Math.max(0, META_PROMOCAO - inscritos);
-  const metaAtingida = inscritos >= META_PROMOCAO;
   const isPre = eventoAtivo?.status === "PRE_INSCRICAO" || eventoAtivo?.preInscricao === true;
 
   return (
@@ -186,84 +181,6 @@ export default function HomePage() {
             <h2 className="mt-1.5 font-display text-3xl tracking-wide text-[var(--color-ink)] dark:text-white">
               {isPre ? "Pré-inscrição" : "Inscrição"}
             </h2>
-          </div>
-
-          <div className="mb-6 overflow-hidden rounded-[1.35rem] ring-2 ring-[#e11d2e]/55 dark:ring-[#f5c542]/50">
-            <div className="bg-gradient-to-r from-[#e11d2e] to-[#b01422] px-4 py-2.5 text-center">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white">
-                {isPre ? "Pré-inscrição · medindo o interesse" : "Atenção · promoção do evento"}
-              </p>
-            </div>
-            <div className="bg-[#f5c542]/20 px-4 py-4 dark:bg-[#f5c542]/12">
-              <p className="text-center text-base font-bold leading-snug text-[#7a4b00] dark:text-[#f5c542] sm:text-lg">
-                {isPre ? (
-                  <>
-                    Cadastre-se <span className="underline decoration-2 underline-offset-2">sem pagar</span> para
-                    vermos se fechamos a promoção: ingresso a{" "}
-                    <span className="text-[#e11d2e] dark:text-white">R$&nbsp;12</span> + pipoca cortesia + guaravita,
-                    com mínimo de{" "}
-                    <span className="rounded-md bg-[#e11d2e] px-2 py-0.5 text-white shadow-sm">100 pessoas</span>.
-                  </>
-                ) : (
-                  <>
-                    O ingresso a <span className="text-[#e11d2e] dark:text-white">R$&nbsp;12</span>, com{" "}
-                    <span className="underline decoration-2 underline-offset-2">pipoca cortesia</span> e{" "}
-                    <span className="underline decoration-2 underline-offset-2">guaravita</span>, vale somente com
-                    o mínimo de{" "}
-                    <span className="rounded-md bg-[#e11d2e] px-2 py-0.5 text-white shadow-sm">100 pessoas</span>.
-                  </>
-                )}
-              </p>
-
-              {eventoAtivo && (
-                <div className="mx-auto mt-4 max-w-md rounded-2xl bg-white/80 px-4 py-3.5 shadow-sm ring-1 ring-[#e11d2e]/20 dark:bg-black/25 dark:ring-[#f5c542]/25">
-                  <div className="flex items-end justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#e11d2e] dark:text-[#f5c542]">
-                        {isPre ? "Interessados até agora" : "Progresso para o evento"}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-[var(--color-ink)] dark:text-white">
-                        {inscritos} de {META_PROMOCAO} pessoa{inscritos === 1 ? "" : "s"}
-                      </p>
-                      <p className="text-[11px] text-[var(--color-ink-soft)] dark:text-slate-400">
-                        Contando cada ingresso da quantidade informada
-                      </p>
-                    </div>
-                    <p className="font-display text-4xl leading-none tracking-wide text-[#e11d2e] dark:text-[#f5c542]">
-                      {pctMeta}%
-                    </p>
-                  </div>
-                  <div
-                    className="mt-3 h-3 overflow-hidden rounded-full bg-black/10 dark:bg-white/15"
-                    role="progressbar"
-                    aria-valuenow={pctMeta}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={`${pctMeta}% do mínimo de ${META_PROMOCAO} pessoas`}
-                  >
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-[#e11d2e] to-[#f5c542] transition-[width] duration-700 ease-out"
-                      style={{ width: `${pctMeta}%` }}
-                    />
-                  </div>
-                  <p className="mt-2 text-center text-xs font-semibold text-[#7a4b00] dark:text-[#f5c542]/90">
-                    {metaAtingida
-                      ? isPre
-                        ? "Meta batida! Em breve liberamos a cobrança."
-                        : "Meta atingida! A promoção está garantida."
-                      : isPre
-                        ? `Faltam ${faltam} interessado${faltam === 1 ? "" : "s"} para chegarmos a 100.`
-                        : `Faltam ${faltam} pessoa${faltam === 1 ? "" : "s"} para a promoção valer.`}
-                  </p>
-                </div>
-              )}
-
-              <p className="mt-3 text-center text-xs font-medium leading-relaxed text-[#7a4b00]/90 dark:text-[#f5c542]/85">
-                {isPre
-                  ? "Sem PIX nesta etapa. Se o evento se confirmar, avisamos para concluir o pagamento."
-                  : "Sem atingir 100 inscritos, a promoção pode não ser aplicada."}
-              </p>
-            </div>
           </div>
 
           {loading && <Loading />}
