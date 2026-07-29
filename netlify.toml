@@ -7,7 +7,10 @@
 # falha o build porque Vite embute a variável no bundle do browser.
 [build.environment]
   VITE_API_URL = "/api"
-  SECRETS_SCAN_OMIT_KEYS = "VITE_API_URL"
+  # Chaves publishable (vão no bundle do browser). Sem isso o login só usa senha local → 401 com senha do Supabase Auth.
+  VITE_SUPABASE_URL = "https://jbwevorqvologcdhnspe.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "sb_publishable_xSgO54jaYOjf8jxXJnXsug_Pk1NhAja"
+  SECRETS_SCAN_OMIT_KEYS = "VITE_API_URL,VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY"
 
 [[headers]]
   for = "/admin/sw.js"
