@@ -1,6 +1,7 @@
 const ExcelJS = require("exceljs");
 const PDFDocument = require("pdfkit");
 const prisma = require("../config/prisma");
+const { onlyDigits } = require("../utils/sanitize");
 
 const STATUS_LABELS = {
   PRE_INSCRITA: "Pré-inscrito(a)",
@@ -69,9 +70,31 @@ async function obterEvento(eventoId) {
   return prisma.evento.findUnique({ where: { id: eventoId } });
 }
 
-async function obterLinhas(eventoId) {
+async function obterLinhas(eventoId, filtros = {}) {
+  const where = { eventoId };
+  if (filtros.status) where.status = filtros.status;
+  if (filtros.q || filtros.nome || filtros.telefone || filtros.cidade) {
+    const and = [];
+    if (filtros.nome || filtros.q) {
+      const termo = filtros.nome || filtros.q;
+      and.push({
+        OR: [
+          { participante: { nome: { contains: termo, mode: "insensitive" } } },
+          { pessoas: { some: { nome: { contains: termo, mode: "insensitive" } } } }
+        ]
+      });
+    }
+    if (filtros.telefone) {
+      and.push({ participante: { telefone: { contains: onlyDigits(filtros.telefone) } } });
+    }
+    if (filtros.cidade) {
+      and.push({ participante: { cidade: { contains: filtros.cidade, mode: "insensitive" } } });
+    }
+    where.AND = and;
+  }
+
   const items = await prisma.inscricao.findMany({
-    where: { eventoId },
+    where,
     include: {
       participante: true,
       pessoas: { orderBy: { ordem: "asc" }, include: { ingresso: true } },

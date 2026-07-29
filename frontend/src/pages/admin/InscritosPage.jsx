@@ -108,7 +108,11 @@ export default function InscritosPage() {
   }, [page, totalPages]);
 
   async function exportFile(formato) {
-    const res = await api.get(`/inscricoes/evento/${id}/export/${formato}`, { responseType: "blob" });
+    const params = Object.fromEntries(Object.entries(filters).filter(([, v]) => v));
+    const res = await api.get(`/inscricoes/evento/${id}/export/${formato}`, {
+      params,
+      responseType: "blob"
+    });
     const ext = formato === "excel" ? "xlsx" : formato;
     const disposition = res.headers?.["content-disposition"] || "";
     const match = disposition.match(/filename="?([^";]+)"?/i);

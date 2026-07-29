@@ -10,6 +10,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:migrate:deploy-if-db": "node scripts/prisma-migrate-if-db.js",
     "prisma:seed": "node prisma/seed.js",
     "prisma:studio": "prisma studio"
   },

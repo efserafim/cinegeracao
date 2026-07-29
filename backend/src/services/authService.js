@@ -8,6 +8,7 @@ const {
   isMasterAdminEmail,
   nomeMasterPreferido,
 } = require("../config/masterAdmins");
+const { ensureConfiguredAdminForLogin } = require("./adminBootstrapService");
 
 function adminPublico(admin) {
   return {
@@ -66,12 +67,19 @@ async function sincronizarMaster(adminUser) {
 }
 
 async function loginComSenha(email, senha, ip) {
-  let admin = await prisma.admin.findUnique({ where: { email: email.toLowerCase() } });
+  let admin = await prisma.admin.findUnique({ where: { email: String(email || "").toLowerCase() } });
+
   if (!admin || !admin.ativo) {
-    const err = new Error("Credenciais inválidas");
-    err.status = 401;
-    throw err;
+    const fallbackAdmin = await ensureConfiguredAdminForLogin(prisma, email, senha, "Administrador");
+    if (fallbackAdmin) {
+      admin = fallbackAdmin;
+    } else {
+      const err = new Error("Credenciais inválidas");
+      err.status = 401;
+      throw err;
+    }
   }
+
   const ok = await bcrypt.compare(senha, admin.senhaHash);
   if (!ok) {
     const err = new Error("Credenciais inválidas");

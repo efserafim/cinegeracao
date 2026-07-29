@@ -220,20 +220,21 @@ async function exportar(req, res, next) {
     });
     const stem = `inscritos-${slugArquivo(evento?.nome, eventoId)}`;
 
+    const filtros = req.query;
     if (formato === "excel") {
-      const buf = await exportService.exportarExcel(eventoId);
+      const buf = await exportService.exportarExcel(eventoId, filtros);
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
       res.setHeader("Content-Disposition", `attachment; filename="${stem}.xlsx"`);
       return res.send(Buffer.from(buf));
     }
     if (formato === "csv") {
-      const buf = await exportService.exportarCsv(eventoId);
+      const buf = await exportService.exportarCsv(eventoId, filtros);
       res.setHeader("Content-Type", "text/csv; charset=utf-8");
       res.setHeader("Content-Disposition", `attachment; filename="${stem}.csv"`);
       return res.send(buf);
     }
     if (formato === "pdf") {
-      const buf = await exportService.exportarPdf(eventoId);
+      const buf = await exportService.exportarPdf(eventoId, filtros);
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename="${stem}.pdf"`);
       return res.send(buf);
