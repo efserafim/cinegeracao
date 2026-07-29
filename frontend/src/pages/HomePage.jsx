@@ -258,9 +258,9 @@ export default function HomePage() {
             </div>
           )}
 
-          <p className="mt-6 text-center text-xs text-[var(--color-ink-soft)] dark:text-slate-400">
-            Já se inscreveu?{" "}
-            <Link to="/consultar" className="font-semibold text-[#e11d2e] underline">
+          <p className="mt-6 text-center text-sm font-semibold text-[#f8fafc] sm:text-base">
+            Fez pré-inscrição? Acesse seu QR code de pagamento em:
+            <Link to="/consultar" className="ml-1 text-[#e11d2e] underline">
               Consultar pelo e-mail
             </Link>
           </p>

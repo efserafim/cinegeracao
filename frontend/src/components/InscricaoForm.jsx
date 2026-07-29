@@ -317,10 +317,10 @@ export default function InscricaoForm({ evento }) {
               ? `Confirmar ${quantidade} ingresso${quantidade > 1 ? "s" : ""} em dinheiro`
               : `Continuar para o PIX · ${formatMoney(total)}`}
       </Button>
-      <p className="text-center text-[11px] leading-relaxed text-[var(--color-ink-soft)] dark:text-slate-400">
+      <p className="text-center text-[12px] leading-relaxed text-[var(--color-ink-soft)] dark:text-slate-400">
         {isPre
-          ? "Sem pagamento por enquanto. Se a meta for atingida, avisamos para concluir a inscrição."
-          : "Já se inscreveu? Consulte com o e-mail da inscrição."}
+          ? "Sem pagamento por enquanto. Se sua pré-inscrição já estiver registrada, consulte o QR code em Consultar pelo e-mail."
+          : "Já se inscreveu? Consulte pelo e-mail da inscrição para ver o QR code de pagamento."}
       </p>
     </form>
   );
