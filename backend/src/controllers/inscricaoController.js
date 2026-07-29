@@ -78,6 +78,16 @@ async function confirmar(req, res, next) {
     return next(err);
   }
 }
+async function enviarLembretePagamento(req, res, next) {
+  try {
+    const data = await inscricaoService.enviarLembretePagamentoEvento(req.params.eventoId, req.admin.id, req.ip);
+    return success(res, data, "Lembretes enviados");
+  } catch (err) {
+    err.expose = true;
+    return next(err);
+  }
+}
+
 async function reenviarEmail(req, res, next) {
   try {
     const data = await inscricaoService.reenviarEmailConfirmacao(req.params.id, req.admin.id, req.ip);
@@ -264,6 +274,7 @@ module.exports = {
   obterAdmin,
   confirmar,
   liberarIngressos,
+  enviarLembretePagamento,
   reenviarEmail,
   reprocessarOcr,
   conferirExtrato,

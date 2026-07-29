@@ -381,6 +381,179 @@ function buildConfirmacaoHtml({
 </html>`;
 }
 
+function buildLembretePagamentoHtml({
+  nome,
+  evento,
+  data,
+  horario,
+  local,
+  cidade,
+  valor,
+  codigoInscricao,
+  linkPagamento,
+  prazo = "amanhã"
+}) {
+  const nomeSafe = escapeHtml(nome || "participante");
+  const primeiroNome = escapeHtml(String(nome || "" ).trim().split(/\s+/)[0] || "herói");
+  const eventoSafe = escapeHtml(evento || "evento");
+  const dataSafe = escapeHtml(data || "—");
+  const horarioSafe = escapeHtml(horario || "—");
+  const localSafe = escapeHtml(local || "—");
+  const cidadeSafe = escapeHtml(cidade || "");
+  const valorFmt = formatMoneyBr(valor);
+  const valorSafe = valorFmt ? escapeHtml(`R$ ${valorFmt}`) : "";
+  const codigoSafe = escapeHtml(codigoInscricao || "");
+  const linkSafe = escapeHtml(linkPagamento || "");
+  const consultaUrl = "https://geucaristica.com.br/consultar";
+  const consultaSafe = escapeHtml(consultaUrl);
+  const prazoSafe = escapeHtml(prazo || "amanhã");
+
+  return `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CineGeração — lembrete de pagamento</title>
+</head>
+<body style="margin:0;padding:0;background:#070a12;font-family:Arial,Helvetica,sans-serif">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0">
+    ${primeiroNome}, ainda dá tempo de concluir sua inscrição até amanhã às 23h59.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#070a12;padding:28px 12px">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#0b1020;border-radius:20px;overflow:hidden;border:1px solid rgba(225,29,46,.35)">
+          <tr>
+            <td style="height:6px;line-height:6px;font-size:0;background:linear-gradient(90deg,#e11d2e 0%,#1a6cff 50%,#f5c542 100%)">&nbsp;</td>
+          </tr>
+
+          <tr>
+            <td style="background:#0a0e1a;padding:32px 24px 28px;text-align:center">
+              <p style="margin:0;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#f5c542;font-weight:bold">★ CineGeração ★</p>
+              <h1 style="margin:12px 0 0;font-family:Impact,Haettenschweiler,'Arial Black',Arial,sans-serif;font-size:36px;line-height:1.05;letter-spacing:1px;color:#ffffff;text-transform:uppercase">
+                Última chance!
+              </h1>
+              <p style="margin:12px 0 0;font-family:Impact,Haettenschweiler,'Arial Black',Arial,sans-serif;font-size:20px;letter-spacing:1px;color:#f5c542;text-transform:uppercase">
+                Até amanhã às 23h59
+              </p>
+              <p style="margin:10px 0 0;font-size:14px;color:rgba(255,255,255,.65)">
+                ${eventoSafe}
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:28px 24px;background:#ffffff;color:#0b1020">
+              <p style="margin:0 0 6px;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#e11d2e;font-weight:bold">
+                Olá, ${primeiroNome}!
+              </p>
+              <p style="margin:0 0 18px;font-size:16px;line-height:1.7;color:#1f2937">
+                Ainda dá tempo de concluir sua inscrição com tranquilidade, mas o prazo está chegando ao fim. A equipe do <strong style="color:#e11d2e">CineGeração</strong> estendeu o pagamento até <strong>amanhã às 23h59</strong>.
+              </p>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;border-radius:14px;overflow:hidden;border:2px solid #1a6cff;background:#eff6ff">
+                <tr>
+                  <td style="padding:14px 16px">
+                    <p style="margin:0 0 6px;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#1a6cff;font-weight:bold">Ação urgente</p>
+                    <p style="margin:0 0 8px;font-size:15px;line-height:1.5;color:#0b1020">
+                      Acesse <a href="${consultaUrl}" style="color:#e11d2e;font-weight:bold;text-decoration:none">https://geucaristica.com.br/consultar</a> para consultar sua inscrição e localizar o <strong>QR code de pagamento</strong> de forma prática.
+                    </p>
+                    <p style="margin:0;font-size:13px;color:#1d4ed8;font-weight:bold">
+                      🔎 O QR code aparece na página de consulta da sua inscrição. Não deixe para a última hora.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;border-radius:14px;overflow:hidden;border:2px solid #0b1020">
+                <tr>
+                  <td style="background:#e11d2e;padding:10px 16px">
+                    <p style="margin:0;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#fff;font-weight:bold">
+                      Detalhes da sua inscrição
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background:#f8fafc;padding:16px 18px">
+                    <p style="margin:0 0 8px;font-size:18px;font-weight:bold;color:#0b1020">${eventoSafe}</p>
+                    <p style="margin:0;font-size:14px;line-height:1.65;color:#374151">
+                      <strong style="color:#1a6cff">Data</strong> ${dataSafe}<br>
+                      <strong style="color:#1a6cff">Sessão</strong> ${horarioSafe}<br>
+                      <strong style="color:#1a6cff">Local</strong> ${localSafe}${cidadeSafe ? ` – ${cidadeSafe}` : ""}${valorSafe ? `<br><strong style="color:#1a6cff">Valor</strong> ${valorSafe}` : ""}
+                    </p>
+                    ${codigoSafe ? `<p style="margin:12px 0 0;font-size:13px;color:#6b7280">Código da inscrição: <strong style="color:#e11d2e;font-family:Consolas,'Courier New',monospace">${codigoSafe}</strong></p>` : ""}
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px">
+                <tr>
+                  <td align="center">
+                    <a href="${linkPagamento}" style="display:inline-block;background:#e11d2e;color:#ffffff;text-decoration:none;padding:16px 34px;border-radius:999px;font-weight:bold;font-size:16px;letter-spacing:0.5px;border:3px solid #0b1020;box-shadow:5px 5px 0 #1a6cff">
+                      PAGAR AGORA
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:0 0 24px;text-align:center;font-size:12px;color:#9ca3af;word-break:break-all">
+                Ou copie o link:<br>
+                <a href="${linkPagamento}" style="color:#1a6cff">${linkSafe}</a>
+              </p>
+              <p style="margin:0 0 8px;font-size:13px;color:#6b7280;line-height:1.6;text-align:center">
+                Também pode consultar sua inscrição em <a href="${consultaUrl}" style="color:#e11d2e;font-weight:bold;text-decoration:none">geucaristica.com.br/consultar</a>.
+              </p>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 22px;border-radius:12px;overflow:hidden;border-left:6px solid #f5c542;background:#fff8e7">
+                <tr>
+                  <td style="padding:16px 18px">
+                    <p style="margin:0 0 8px;font-size:13px;font-weight:bold;color:#92400e;text-transform:uppercase;letter-spacing:1px">
+                      ⚠ Importante
+                    </p>
+                    <ul style="margin:0;padding-left:18px;color:#78350f;font-size:13px;line-height:1.7">
+                      <li>O pagamento precisa ser concluído até <strong>amanhã às 23h59</strong>.</li>
+                      <li>Depois desse horário, a vaga pode ser liberada para outra pessoa.</li>
+                      <li>Se tiver qualquer dúvida, fale com Lavínia ou Eduardo imediatamente.</li>
+                    </ul>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.6">
+                Dúvidas na teia? Chama no WhatsApp:<br>
+                <strong style="color:#0b1020">Eduardo</strong> · (22) 99247-3724<br>
+                <strong style="color:#0b1020">Lavínia</strong> · (22) 99818-7602
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background:#070a12;padding:26px 24px;text-align:center;border-top:3px solid #e11d2e">
+              <p style="margin:0 0 8px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#f5c542;font-weight:bold">
+                Palavra do dia
+              </p>
+              <p style="margin:0;font-size:15px;line-height:1.55;font-style:italic;color:#ffffff">
+                “${VERSO_BIBLICO.texto}”
+              </p>
+              <p style="margin:10px 0 0;font-size:13px;color:#f5c542">${VERSO_BIBLICO.referencia}</p>
+              <p style="margin:18px 0 0;font-size:13px;color:rgba(255,255,255,.65);line-height:1.55">
+                Que Deus abençoe este encontro e cada um de vocês.<br>
+                Com carinho, coordenação <strong style="color:#fff">Grupo Jovem Geração Eucarística</strong>.
+              </p>
+              <p style="margin:18px 0 0;font-family:Impact,Haettenschweiler,'Arial Black',Arial,sans-serif;font-size:14px;letter-spacing:1px;color:#e11d2e;text-transform:uppercase">
+                Homem-Aranha: Um novo dia
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 async function enviarConfirmacaoInscricao({
   para,
   nome,
@@ -510,4 +683,90 @@ async function enviarConfirmacaoInscricao({
   }
 }
 
-module.exports = { enviarConfirmacaoInscricao, smtpConfigurado, emailConfigurado };
+async function enviarLembretePagamento({
+  para,
+  nome,
+  evento,
+  data,
+  horario,
+  local,
+  cidade,
+  valor,
+  codigoInscricao,
+  linkPagamento,
+  prazo = "amanhã"
+}) {
+  if (!para) {
+    return { sent: false, reason: "Participante sem e-mail" };
+  }
+  const subject = "🕷️ CineGeração — prazo estendido até amanhã às 23h59";
+  const html = buildLembretePagamentoHtml({
+    nome,
+    evento,
+    data,
+    horario,
+    local,
+    cidade,
+    valor,
+    codigoInscricao,
+    linkPagamento,
+    prazo
+  });
+  const text = [
+    `Olá, ${nome}!`,
+    "",
+    `A coordenação do CineGeração estendeu o prazo para pagamento até ${prazo} às 23h59.`,
+    `Evento: ${evento}`,
+    `Data: ${data}`,
+    `Sessão: ${horario}`,
+    `Local: ${local}${cidade ? ` – ${cidade}` : ""}`,
+    valor != null ? `Valor: R$ ${formatMoneyBr(valor)}` : null,
+    `Código: ${codigoInscricao || "—"}`,
+    "",
+    `Acesse: ${linkPagamento}`,
+    "",
+    "Que Deus abençoe este encontro. Coordenação Grupo Jovem Geração Eucarística."
+  ].filter((line) => line !== null && line !== undefined).join("\n");
+
+  if (!emailConfigurado()) {
+    console.warn(`[EMAIL] Nenhum provedor configurado – não enviado para ${para}`);
+    return { sent: false, reason: "E-mail não configurado. No Render, use BREVO_API_KEY + SMTP_FROM com domínio autenticado." };
+  }
+
+  try {
+    if (config.brevoApiKey) {
+      const result = await withTimeout(enviarViaBrevo({ para, subject, html, text }), 15000, "Tempo esgotado na API Brevo");
+      console.log(`[EMAIL] Brevo lembrete OK → ${para}`);
+      return result;
+    }
+    if (config.resendApiKey) {
+      const result = await withTimeout(enviarViaResend({ para, subject, html, text }), 15000, "Tempo esgotado na API Resend");
+      console.log(`[EMAIL] Resend lembrete OK → ${para}`);
+      return result;
+    }
+    if (config.sendgridApiKey) {
+      const result = await withTimeout(enviarViaSendGrid({ para, subject, html, text }), 15000, "Tempo esgotado na API SendGrid");
+      console.log(`[EMAIL] SendGrid lembrete OK → ${para}`);
+      return result;
+    }
+
+    const tx = getTransporter();
+    await withTimeout(tx.sendMail({
+      from: config.smtp.from || "CineGeração <noreply@geucaristica.com.br>",
+      to: para,
+      subject,
+      html,
+      text
+    }), 12000, "Connection timeout no SMTP. Configure BREVO_API_KEY no Render.");
+    console.log(`[EMAIL] SMTP lembrete OK → ${para}`);
+    return { sent: true, to: para, provider: "smtp" };
+  } catch (err) {
+    console.error("[EMAIL] Falha ao enviar lembrete:", err.message);
+    const reason = /timeout|ETIMEDOUT|ECONNREFUSED/i.test(err.message)
+      ? `${err.message} — use BREVO_API_KEY no Render.`
+      : err.message;
+    return { sent: false, reason };
+  }
+}
+
+module.exports = { enviarConfirmacaoInscricao, enviarLembretePagamento, buildLembretePagamentoHtml, smtpConfigurado, emailConfigurado };

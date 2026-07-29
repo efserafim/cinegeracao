@@ -1,18 +1,26 @@
 const QRCode = require("qrcode");
 const prisma = require("../config/prisma");
+const config = require("../config");
 const { gerarCodigoInscricao } = require("../utils/codes");
 const { gerarPixCopiaECola } = require("../utils/pix");
 const { onlyDigits, normalizarWhatsApp } = require("../utils/sanitize");
 const { gerarLinkWhatsApp } = require("../utils/whatsapp");
 const { processarComprovante } = require("./ocrService");
 const { criarIngressos } = require("./ingressoService");
-const { enviarConfirmacaoInscricao } = require("./emailService");
+const { enviarConfirmacaoInscricao, enviarLembretePagamento } = require("./emailService");
 const { registrarLog } = require("./logService");
 const { contarOcupadas, STATUS_OCUPAM_VAGA } = require("./eventoService");
 const { salvarComprovante } = require("./storageService");
 const { notifyAdmins } = require("./pushService");
 
 const MAX_INGRESSOS = 10;
+const STATUS_PENDENTES_PAGAMENTO = [
+  "AGUARDANDO_PAGAMENTO",
+  "AGUARDANDO_CONFIRMACAO",
+  "COMPROVANTE_ENVIADO",
+  "OCR_PROCESSADO",
+  "PAGAMENTO_RECUSADO"
+];
 
 const includeInscricao = {
   participante: true,
@@ -1334,6 +1342,83 @@ function formatInscricao(i) {
     ingressos
   };
 }
+async function enviarLembretePagamentoEvento(eventoId, adminId, ip) {
+  const evento = await prisma.evento.findUnique({ where: { id: eventoId } });
+  if (!evento) {
+    const err = new Error("Evento não encontrado");
+    err.status = 404;
+    throw err;
+  }
+
+  const inscricoes = await prisma.inscricao.findMany({
+    where: {
+      eventoId,
+      status: { in: STATUS_PENDENTES_PAGAMENTO }
+    },
+    include: { participante: true }
+  });
+
+  const resultados = [];
+  let enviados = 0;
+  let falhas = 0;
+  const baseUrl = (config.frontendUrl || "https://geucaristica.com.br").replace(/\/$/, "");
+
+  for (const inscricao of inscricoes) {
+    const email = inscricao.participante?.email;
+    if (!email) {
+      falhas += 1;
+      resultados.push({ id: inscricao.id, sent: false, reason: "Participante sem e-mail cadastrado" });
+      continue;
+    }
+
+    const dataEvt = new Date(evento.data);
+    const dataFmt = `${String(dataEvt.getUTCDate()).padStart(2, "0")}/${String(dataEvt.getUTCMonth() + 1).padStart(2, "0")}/${dataEvt.getUTCFullYear()}`;
+    const linkPagamento = `${baseUrl}/inscricao/${encodeURIComponent(inscricao.codigo)}`;
+    const emailResult = await enviarLembretePagamento({
+      para: email,
+      nome: inscricao.participante?.nome || "Participante",
+      evento: evento.nome,
+      data: dataFmt,
+      horario: evento.horario,
+      local: evento.local,
+      cidade: evento.cidade,
+      valor: Number(inscricao.valor),
+      codigoInscricao: inscricao.codigo,
+      linkPagamento,
+      prazo: "amanhã"
+    });
+
+    if (emailResult.sent) {
+      enviados += 1;
+    } else {
+      falhas += 1;
+    }
+
+    resultados.push({
+      id: inscricao.id,
+      sent: Boolean(emailResult.sent),
+      to: email,
+      reason: emailResult.reason || null
+    });
+  }
+
+  await registrarLog({
+    adminId,
+    acao: "EMAIL_LEMBRETE_PAGAMENTO",
+    entidade: "Evento",
+    entidadeId: eventoId,
+    detalhes: { total: inscricoes.length, enviados, falhas },
+    ip
+  });
+
+  return {
+    total: inscricoes.length,
+    enviados,
+    falhas,
+    resultados
+  };
+}
+
 async function reenviarEmailConfirmacao(id, adminId, ip) {
   const inscricao = await prisma.inscricao.findUnique({
     where: { id },
@@ -1410,6 +1495,7 @@ module.exports = {
   confirmarPagamento,
   liberarIngressosFaltantes,
   reenviarEmailConfirmacao,
+  enviarLembretePagamentoEvento,
   recusarPagamento,
   cancelar,
   excluir,

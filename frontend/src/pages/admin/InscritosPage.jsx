@@ -37,6 +37,8 @@ export default function InscritosPage() {
   const [excluindoId, setExcluindoId] = useState(null);
   const [confirmExcluir, setConfirmExcluir] = useState(null);
   const [page, setPage] = useState(1);
+  const [enviandoLembrete, setEnviandoLembrete] = useState(false);
+  const [lembreteMsg, setLembreteMsg] = useState("");
   const [filters, setFilters] = useState({ q: "", status: "", cidade: "", telefone: "" });
 
   async function load() {
@@ -146,6 +148,22 @@ export default function InscritosPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  async function enviarLembretePagamento() {
+    setEnviandoLembrete(true);
+    setLembreteMsg("");
+    try {
+      const { data } = await api.post(`/inscricoes/evento/${id}/lembrete-pagamento`);
+      const res = data.data || {};
+      setLembreteMsg(
+        `Lembrete enviado para ${res.enviados ?? 0} de ${res.total ?? 0} inscrição(ões) pendente(s).${res.falhas ? ` ${res.falhas} falha(s).` : ""}`
+      );
+    } catch (err) {
+      setLembreteMsg(err.response?.data?.message || "Falha ao enviar o lembrete de pagamento.");
+    } finally {
+      setEnviandoLembrete(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <ConfirmModal
@@ -170,8 +188,17 @@ export default function InscritosPage() {
           <Button variant="secondary" onClick={() => exportFile("pdf")}>
             PDF
           </Button>
+          <Button variant="secondary" onClick={enviarLembretePagamento} disabled={enviandoLembrete}>
+            {enviandoLembrete ? "Enviando…" : "Enviar lembrete de pagamento"}
+          </Button>
         </div>
       </div>
+
+      {lembreteMsg && (
+        <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
+          {lembreteMsg}
+        </p>
+      )}
 
       {(dash || items.length > 0) && (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
