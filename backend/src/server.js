@@ -2,9 +2,27 @@ const app = require("./app");
 const config = require("./config");
 const prisma = require("./config/prisma");
 
+async function connectWithRetry(maxAttempts = 8, delayMs = 4000) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await prisma.$connect();
+      return;
+    } catch (err) {
+      const retryable = /max clients reached|EMAXCONNSESSION|too many connections/i.test(
+        String(err?.message || err)
+      );
+      if (!retryable || attempt === maxAttempts) throw err;
+      console.warn(
+        `[boot] Pool ocupado (tentativa ${attempt}/${maxAttempts}) — aguardando ${delayMs}ms…`
+      );
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+}
+
 async function start() {
   try {
-    await prisma.$connect();
+    await connectWithRetry();
     app.listen(config.port, () => {
       console.log(`API rodando em http://localhost:${config.port}`);
       console.log(`Swagger: http://localhost:${config.port}/api/docs`);

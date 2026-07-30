@@ -1,9 +1,10 @@
 require("dotenv").config();
 const bcrypt = require("bcryptjs");
-const { PrismaClient } = require("@prisma/client");
+const { applyDatabasePoolLimitToEnv } = require("../src/config/databaseUrl");
+const prisma = require("../src/config/prisma");
 const { MASTER_ADMINS } = require("../src/config/masterAdmins");
 
-const prisma = new PrismaClient();
+applyDatabasePoolLimitToEnv();
 
 /**
  * Garante Lavínia e Eduardo como ADMIN mestres (perfil completo).

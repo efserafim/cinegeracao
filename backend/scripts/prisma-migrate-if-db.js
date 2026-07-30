@@ -23,6 +23,10 @@ function sh(command, { allowFail = false } = {}) {
   }
 }
 
+const { applyDatabasePoolLimitToEnv } = require("../src/config/databaseUrl");
+
+applyDatabasePoolLimitToEnv();
+
 if (!process.env.DATABASE_URL) {
   console.warn("[prisma-migrate-if-db] DATABASE_URL is not configured. Skipping Prisma migrate deploy.");
   process.exit(0);
