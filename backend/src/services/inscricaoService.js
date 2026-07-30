@@ -11,6 +11,7 @@ const { enviarConfirmacaoInscricao, enviarLembretePagamento } = require("./email
 const {
   enviarLembretePagamentoWhatsApp,
   whatsappConfigurado,
+  garantirEvolutionDisponivel,
   buildLembretePagamentoWhatsAppText
 } = require("./whatsappService");
 const { registrarLog } = require("./logService");
@@ -1377,6 +1378,14 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
   let whatsappFalhas = 0;
   const baseUrl = (config.frontendUrl || "https://geucaristica.com.br").replace(/\/$/, "");
 
+  let whatsappBloqueado = null;
+  if (whatsapp) {
+    const evolution = await garantirEvolutionDisponivel();
+    if (!evolution.ok) {
+      whatsappBloqueado = evolution.reason;
+    }
+  }
+
   for (const inscricao of inscricoes) {
     const participanteEmail = inscricao.participante?.email;
     const telefone = inscricao.participante?.telefone;
@@ -1413,13 +1422,15 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
 
     let whatsappResult = null;
     if (whatsapp) {
-      whatsappResult = await enviarLembretePagamentoWhatsApp({
-        telefone,
-        text: buildLembretePagamentoWhatsAppText({
-          ...lembreteBase,
-          prazo: "hoje"
-        })
-      });
+      whatsappResult = whatsappBloqueado
+        ? { sent: false, reason: whatsappBloqueado }
+        : await enviarLembretePagamentoWhatsApp({
+            telefone,
+            text: buildLembretePagamentoWhatsAppText({
+              ...lembreteBase,
+              prazo: "hoje"
+            })
+          });
       if (whatsappResult.sent) {
         whatsappEnviados += 1;
       } else {

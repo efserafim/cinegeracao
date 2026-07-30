@@ -1,7 +1,14 @@
 const config = require("../config");
 const { onlyDigits } = require("../utils/sanitize");
 
-const WHATSAPP_FETCH_TIMEOUT_MS = 15000;
+const WHATSAPP_SEND_TIMEOUT_MS = 45000;
+const WHATSAPP_WAKE_TIMEOUT_MS = 90000;
+const WHATSAPP_MAX_RETRIES = 3;
+const WHATSAPP_RETRY_DELAY_MS = 3000;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function whatsappConfigurado() {
   return Boolean(
@@ -65,6 +72,53 @@ function buildLembretePagamentoWhatsAppText({
     .join("\n");
 }
 
+function evolutionHeaders(extra = {}) {
+  return {
+    apikey: config.whatsappApiKey,
+    ...extra
+  };
+}
+
+async function garantirEvolutionDisponivel() {
+  if (!whatsappConfigurado()) {
+    return { ok: false, reason: "WhatsApp API não configurada." };
+  }
+
+  const base = config.whatsappApiUrl.replace(/\/$/, "");
+  const instance = encodeURIComponent(config.whatsappApiInstanceName);
+
+  try {
+    console.log("[WHATSAPP] Acordando Evolution API...");
+    await fetch(`${base}/`, {
+      headers: evolutionHeaders(),
+      signal: AbortSignal.timeout(WHATSAPP_WAKE_TIMEOUT_MS)
+    });
+  } catch (err) {
+    console.warn("[WHATSAPP] Evolution demorou ao acordar:", err.message || err);
+  }
+
+  try {
+    const res = await fetch(`${base}/instance/connectionState/${instance}`, {
+      headers: evolutionHeaders(),
+      signal: AbortSignal.timeout(30000)
+    });
+    const body = await res.json().catch(() => null);
+    const state = body?.instance?.state || body?.state || null;
+
+    if (state && state !== "open") {
+      const reason = `Instância WhatsApp desconectada (${state}). Escaneie o QR novamente.`;
+      console.error(`[WHATSAPP] ${reason}`);
+      return { ok: false, reason, state };
+    }
+
+    console.log(`[WHATSAPP] Evolution disponível${state ? ` (state=${state})` : ""}.`);
+    return { ok: true, state: state || "unknown" };
+  } catch (err) {
+    console.warn("[WHATSAPP] Não foi possível verificar conexão:", err.message || err);
+    return { ok: true, state: "unknown" };
+  }
+}
+
 async function enviarLembretePagamentoWhatsApp({ telefone, text }) {
   if (!whatsappConfigurado()) {
     return { sent: false, reason: "WhatsApp API não configurada." };
@@ -78,43 +132,55 @@ async function enviarLembretePagamentoWhatsApp({ telefone, text }) {
   const url = `${config.whatsappApiUrl.replace(/\/$/, "")}/message/sendText/${encodeURIComponent(
     config.whatsappApiInstanceName
   )}`;
-  const payload = {
-    number,
-    text,
-  };
+  const payload = { number, text };
 
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: config.whatsappApiKey
-      },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(WHATSAPP_FETCH_TIMEOUT_MS)
-    });
+  let lastReason = "Falha ao enviar mensagem WhatsApp";
 
-    let body;
+  for (let attempt = 1; attempt <= WHATSAPP_MAX_RETRIES; attempt += 1) {
     try {
-      body = await res.json();
-    } catch {
-      body = null;
-    }
+      const res = await fetch(url, {
+        method: "POST",
+        headers: evolutionHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(WHATSAPP_SEND_TIMEOUT_MS)
+      });
 
-    if (!res.ok) {
-      const message = body?.error?.message || body?.error || body?.message || `WhatsApp HTTP ${res.status}`;
-      return { sent: false, reason: message };
-    }
+      let body;
+      try {
+        body = await res.json();
+      } catch {
+        body = null;
+      }
 
-    return { sent: true, provider: "evolution-api", result: body };
-  } catch (err) {
-    console.error("[WHATSAPP] Falha ao enviar lembrete:", err.message || err);
-    return { sent: false, reason: err.message || "Falha ao enviar mensagem WhatsApp" };
+      if (res.ok) {
+        return { sent: true, provider: "evolution-api", result: body };
+      }
+
+      lastReason = body?.error?.message || body?.error || body?.message || `WhatsApp HTTP ${res.status}`;
+      const retryable = res.status >= 500 || res.status === 408 || res.status === 429;
+      if (!retryable || attempt === WHATSAPP_MAX_RETRIES) {
+        return { sent: false, reason: lastReason };
+      }
+    } catch (err) {
+      lastReason = err.message || "Falha ao enviar mensagem WhatsApp";
+      if (attempt === WHATSAPP_MAX_RETRIES) {
+        console.error("[WHATSAPP] Falha ao enviar lembrete:", lastReason);
+        return { sent: false, reason: lastReason };
+      }
+      console.warn(`[WHATSAPP] Tentativa ${attempt}/${WHATSAPP_MAX_RETRIES} falhou (${lastReason}), repetindo...`);
+      if (attempt === 1) {
+        await garantirEvolutionDisponivel();
+      }
+      await sleep(WHATSAPP_RETRY_DELAY_MS);
+    }
   }
+
+  return { sent: false, reason: lastReason };
 }
 
 module.exports = {
   whatsappConfigurado,
+  garantirEvolutionDisponivel,
   enviarLembretePagamentoWhatsApp,
   buildLembretePagamentoWhatsAppText,
   formatWhatsAppNumber
