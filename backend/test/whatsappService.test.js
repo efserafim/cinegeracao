@@ -21,7 +21,8 @@ test('gerar texto de lembrete de pagamento para WhatsApp', () => {
   assert.match(text, /hoje às 23h59/);
   assert.match(text, /melhores assentos/i);
   assert.doesNotMatch(text, /geucaristica\.com\.br\/consultar/);
-  assert.doesNotMatch(text, /leve o ingresso do cinema/i);
+  assert.match(text, /Lavínia.*99818-7602/);
+  assert.doesNotMatch(text, /Eduardo/i);
 });
 
 test('formata telefone WhatsApp com prefixo 55', () => {

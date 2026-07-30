@@ -55,7 +55,7 @@ function buildLembretePagamentoWhatsAppText({
     "",
     `Acesse e confirme sua inscrição: ${linkPagamento}`,
     "",
-    "Qualquer dúvida, chama no WhatsApp com Eduardo ou Lavínia.",
+    "Qualquer dúvida, entre em contato com Lavínia: (22) 99818-7602.",
     "",
     "Que Deus abençoe este encontro. — Coordenação Grupo Jovem Geração Eucarística"
   ]
