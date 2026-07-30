@@ -63,7 +63,7 @@ const config = {
   sendgridApiKey: (process.env.SENDGRID_API_KEY || "").trim(),
   brevoApiKey: (process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY || "").trim(),
   resendApiKey: (process.env.RESEND_API_KEY || "").trim(),
-  whatsappApiUrl: (process.env.WHATSAPP_API_URL || "").trim().replace(/\/$/, ""),
+  whatsappApiUrl: (process.env.WHATSAPP_API_URL || process.env.WHATSAPP_URL || "").trim().replace(/\/$/, ""),
   whatsappApiKey: (process.env.WHATSAPP_API_KEY || "").trim(),
   whatsappApiInstanceName: (process.env.WHATSAPP_API_INSTANCE_NAME || "").trim(),
   vapid: {

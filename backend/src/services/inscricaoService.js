@@ -1348,7 +1348,9 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
     throw err;
   }
   if (whatsapp && !whatsappConfigurado()) {
-    const err = new Error("WhatsApp API não configurada no servidor");
+    const err = new Error(
+      "WhatsApp API não configurada no servidor. Defina WHATSAPP_API_URL (ou WHATSAPP_URL), WHATSAPP_API_KEY e WHATSAPP_API_INSTANCE_NAME no Render."
+    );
     err.status = 503;
     throw err;
   }
@@ -1423,6 +1425,7 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
       } else {
         whatsappFalhas += 1;
       }
+      await new Promise((resolve) => setTimeout(resolve, 1200));
     }
 
     resultados.push({
@@ -1471,6 +1474,24 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
     whatsappFalhas,
     resultados
   };
+}
+
+async function contarLembretePagamento(eventoId) {
+  const evento = await prisma.evento.findUnique({
+    where: { id: eventoId },
+    select: { id: true }
+  });
+  if (!evento) {
+    const err = new Error("Evento não encontrado");
+    err.status = 404;
+    throw err;
+  }
+  return prisma.inscricao.count({
+    where: {
+      eventoId,
+      status: { in: STATUS_LEMBRETE_PAGAMENTO }
+    }
+  });
 }
 
 async function reenviarEmailConfirmacao(id, adminId, ip) {
@@ -1550,6 +1571,7 @@ module.exports = {
   liberarIngressosFaltantes,
   reenviarEmailConfirmacao,
   enviarLembretePagamentoEvento,
+  contarLembretePagamento,
   recusarPagamento,
   cancelar,
   excluir,

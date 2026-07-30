@@ -1,5 +1,6 @@
 const inscricaoService = require("../services/inscricaoService");
 const exportService = require("../services/exportService");
+const { whatsappConfigurado } = require("../services/whatsappService");
 const prisma = require("../config/prisma");
 const { success } = require("../utils/response");
 async function criar(req, res, next) {
@@ -95,13 +96,36 @@ async function enviarLembretePagamentoEmail(req, res, next) {
 
 async function enviarLembretePagamentoWhatsApp(req, res, next) {
   try {
-    const data = await inscricaoService.enviarLembretePagamentoEvento(
-      req.params.eventoId,
-      req.admin.id,
-      req.ip,
-      { whatsapp: true }
+    if (!whatsappConfigurado()) {
+      const err = new Error(
+        "WhatsApp API não configurada no servidor. Defina WHATSAPP_API_URL (ou WHATSAPP_URL), WHATSAPP_API_KEY e WHATSAPP_API_INSTANCE_NAME no Render."
+      );
+      err.status = 503;
+      throw err;
+    }
+
+    const eventoId = req.params.eventoId;
+    const total = await inscricaoService.contarLembretePagamento(eventoId);
+
+    inscricaoService
+      .enviarLembretePagamentoEvento(eventoId, req.admin.id, req.ip, { whatsapp: true })
+      .then((data) => {
+        console.log(
+          `[WHATSAPP] Lembrete concluído: ${data.whatsappEnviados}/${data.total} enviados, ${data.whatsappFalhas} falha(s)`
+        );
+      })
+      .catch((err) => {
+        console.error("[WHATSAPP] Lembrete falhou:", err.message || err);
+      });
+
+    return success(
+      res,
+      { total, status: "processing", whatsapp: true },
+      total > 0
+        ? `Envio por WhatsApp iniciado para ${total} inscrição(ões). Pode levar alguns minutos.`
+        : "Nenhuma inscrição aguardando pagamento para enviar WhatsApp.",
+      202
     );
-    return success(res, data, "Lembretes por WhatsApp enviados");
   } catch (err) {
     err.expose = true;
     return next(err);

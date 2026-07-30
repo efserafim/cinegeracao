@@ -157,9 +157,17 @@ export default function InscritosPage() {
     try {
       const { data } = await api.post(`/inscricoes/evento/${id}/lembrete-pagamento/${canal}`);
       const res = data.data || {};
-      let msg = isEmail
-        ? `E-mail enviado para ${res.emailEnviados ?? 0} de ${res.total ?? 0} inscrição(ões) aguardando pagamento.`
-        : `WhatsApp enviado para ${res.whatsappEnviados ?? 0} de ${res.total ?? 0} inscrição(ões) aguardando pagamento.`;
+      let msg;
+      if (!isEmail && res.status === "processing") {
+        msg =
+          res.total > 0
+            ? `Envio por WhatsApp iniciado para ${res.total} inscrição(ões) aguardando pagamento. Pode levar alguns minutos.`
+            : "Nenhuma inscrição aguardando pagamento para enviar WhatsApp.";
+      } else {
+        msg = isEmail
+          ? `E-mail enviado para ${res.emailEnviados ?? 0} de ${res.total ?? 0} inscrição(ões) aguardando pagamento.`
+          : `WhatsApp enviado para ${res.whatsappEnviados ?? 0} de ${res.total ?? 0} inscrição(ões) aguardando pagamento.`;
+      }
       if (isEmail && res.emailFalhas) {
         msg += ` ${res.emailFalhas} falha(s).`;
       }

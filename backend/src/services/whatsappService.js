@@ -1,6 +1,8 @@
 const config = require("../config");
 const { onlyDigits } = require("../utils/sanitize");
 
+const WHATSAPP_FETCH_TIMEOUT_MS = 15000;
+
 function whatsappConfigurado() {
   return Boolean(
     config.whatsappApiUrl &&
@@ -88,7 +90,8 @@ async function enviarLembretePagamentoWhatsApp({ telefone, text }) {
         "Content-Type": "application/json",
         apikey: config.whatsappApiKey
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(WHATSAPP_FETCH_TIMEOUT_MS)
     });
 
     let body;
