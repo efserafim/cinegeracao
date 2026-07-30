@@ -23,6 +23,17 @@ const MAX_INGRESSOS = 10;
 const STATUS_LEMBRETE_PAGAMENTO = ["AGUARDANDO_PAGAMENTO"];
 let whatsappLembreteEmAndamento = false;
 
+const FUSO_BRASIL = "America/Sao_Paulo";
+
+function dataCalendarioBrasil(date = new Date()) {
+  return date.toLocaleDateString("en-CA", { timeZone: FUSO_BRASIL });
+}
+
+function jaRecebeuLembreteWhatsappHoje(lembreteWhatsappEm) {
+  if (!lembreteWhatsappEm) return false;
+  return dataCalendarioBrasil(lembreteWhatsappEm) === dataCalendarioBrasil();
+}
+
 const includeInscricao = {
   participante: true,
   evento: true,
@@ -1422,6 +1433,7 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
   let emailFalhas = 0;
   let whatsappEnviados = 0;
   let whatsappFalhas = 0;
+  let whatsappIgnorados = 0;
   const baseUrl = (config.frontendUrl || "https://geucaristica.com.br").replace(/\/$/, "");
 
   let whatsappBloqueado = null;
@@ -1437,6 +1449,7 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
         emailFalhas: 0,
         whatsappEnviados: 0,
         whatsappFalhas: 0,
+        whatsappIgnorados: 0,
         resultados: [],
         ignorado: true,
         motivo: "Envio WhatsApp já em andamento"
@@ -1486,21 +1499,35 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
 
     let whatsappResult = null;
     if (whatsapp) {
-      whatsappResult = whatsappBloqueado
-        ? { sent: false, reason: whatsappBloqueado }
-        : await enviarLembretePagamentoWhatsApp({
-            telefone,
-            text: buildLembretePagamentoWhatsAppText({
-              ...lembreteBase,
-              prazo: "hoje"
-            })
-          });
-      if (whatsappResult.sent) {
-        whatsappEnviados += 1;
-      } else {
+      if (whatsappBloqueado) {
+        whatsappResult = { sent: false, reason: whatsappBloqueado };
         whatsappFalhas += 1;
+      } else if (jaRecebeuLembreteWhatsappHoje(inscricao.lembreteWhatsappEm)) {
+        whatsappResult = {
+          sent: false,
+          skipped: true,
+          reason: "Lembrete WhatsApp já enviado hoje"
+        };
+        whatsappIgnorados += 1;
+      } else {
+        whatsappResult = await enviarLembretePagamentoWhatsApp({
+          telefone,
+          text: buildLembretePagamentoWhatsAppText({
+            ...lembreteBase,
+            prazo: "hoje"
+          })
+        });
+        if (whatsappResult.sent) {
+          whatsappEnviados += 1;
+          await prisma.inscricao.update({
+            where: { id: inscricao.id },
+            data: { lembreteWhatsappEm: new Date() }
+          });
+        } else {
+          whatsappFalhas += 1;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1200));
       }
-      await new Promise((resolve) => setTimeout(resolve, 1200));
     }
 
     resultados.push({
@@ -1533,7 +1560,8 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
       emailEnviados,
       emailFalhas,
       whatsappEnviados,
-      whatsappFalhas
+      whatsappFalhas,
+      whatsappIgnorados
     },
     ip
   });
@@ -1547,6 +1575,7 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
     emailFalhas,
     whatsappEnviados,
     whatsappFalhas,
+    whatsappIgnorados,
     resultados
   };
   } finally {
@@ -1554,6 +1583,36 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
       whatsappLembreteEmAndamento = false;
     }
   }
+}
+
+async function contarLembretePagamentoWhatsapp(eventoId) {
+  const evento = await prisma.evento.findUnique({
+    where: { id: eventoId },
+    select: { id: true }
+  });
+  if (!evento) {
+    const err = new Error("Evento não encontrado");
+    err.status = 404;
+    throw err;
+  }
+
+  const inscricoes = await prisma.inscricao.findMany({
+    where: {
+      eventoId,
+      status: { in: STATUS_LEMBRETE_PAGAMENTO }
+    },
+    select: { id: true, lembreteWhatsappEm: true }
+  });
+
+  const jaEnviadosHoje = inscricoes.filter((i) =>
+    jaRecebeuLembreteWhatsappHoje(i.lembreteWhatsappEm)
+  ).length;
+
+  return {
+    total: inscricoes.length,
+    elegiveis: inscricoes.length - jaEnviadosHoje,
+    jaEnviadosHoje
+  };
 }
 
 async function contarLembretePagamento(eventoId) {
@@ -1652,6 +1711,7 @@ module.exports = {
   reenviarEmailConfirmacao,
   enviarLembretePagamentoEvento,
   contarLembretePagamento,
+  contarLembretePagamentoWhatsapp,
   recusarPagamento,
   cancelar,
   excluir,

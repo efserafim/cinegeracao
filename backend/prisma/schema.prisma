@@ -113,6 +113,7 @@ model Inscricao {
   quantidade     Int              @default(1)
   assentosSimulados String?       @map("assentos_simulados")
   observacao     String?          @db.Text
+  lembreteWhatsappEm DateTime?    @map("lembrete_whatsapp_em")
   criadoEm       DateTime         @default(now()) @map("criado_em")
   atualizadoEm   DateTime         @updatedAt @map("atualizado_em")
 
