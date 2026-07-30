@@ -1,3 +1,5 @@
+# Gera imagens Open Graph (UTF-8). Prefira o script Node (sem bug de acentos no Windows):
+#   cd backend && node scripts/make-og-images.js
 Add-Type -AssemblyName System.Drawing
 $ErrorActionPreference = "Stop"
 $root = Resolve-Path (Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) "..")
