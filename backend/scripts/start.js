@@ -54,26 +54,30 @@ function dbExecute(sql) {
 }
 
 console.log("[start] clearing failed pré-inscrição migration rows…");
-dbExecute(`
+if (!process.env.RENDER) {
+  dbExecute(`
 DELETE FROM "_prisma_migrations"
 WHERE migration_name IN (
   '${PRE_MIGRATIONS.join("',\n  '")}'
 );
 `);
 
-for (const name of PRE_MIGRATIONS) {
-  sh(`npx prisma migrate resolve --rolled-back "${name}"`, { allowFail: true });
-}
-
-if (!sh("npx prisma migrate deploy", { allowFail: true })) {
-  console.warn("[start] migrate deploy failed — marking pré-inscrição migrations as applied…");
   for (const name of PRE_MIGRATIONS) {
-    sh(`npx prisma migrate resolve --applied "${name}"`, { allowFail: true });
+    sh(`npx prisma migrate resolve --rolled-back "${name}"`, { allowFail: true });
   }
+
   if (!sh("npx prisma migrate deploy", { allowFail: true })) {
-    console.error("[start] prisma migrate deploy still failing");
-    process.exit(1);
+    console.warn("[start] migrate deploy failed — marking pré-inscrição migrations as applied…");
+    for (const name of PRE_MIGRATIONS) {
+      sh(`npx prisma migrate resolve --applied "${name}"`, { allowFail: true });
+    }
+    if (!sh("npx prisma migrate deploy", { allowFail: true })) {
+      console.error("[start] prisma migrate deploy still failing");
+      process.exit(1);
+    }
   }
+} else {
+  console.log("[start] Render: migrations já aplicadas no build — pulando migrate no boot");
 }
 
 sh("npx prisma generate");
