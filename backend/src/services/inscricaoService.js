@@ -8,19 +8,18 @@ const { gerarLinkWhatsApp } = require("../utils/whatsapp");
 const { processarComprovante } = require("./ocrService");
 const { criarIngressos } = require("./ingressoService");
 const { enviarConfirmacaoInscricao, enviarLembretePagamento } = require("./emailService");
+const {
+  enviarLembretePagamentoWhatsApp,
+  whatsappConfigurado,
+  buildLembretePagamentoWhatsAppText
+} = require("./whatsappService");
 const { registrarLog } = require("./logService");
 const { contarOcupadas, STATUS_OCUPAM_VAGA } = require("./eventoService");
 const { salvarComprovante } = require("./storageService");
 const { notifyAdmins } = require("./pushService");
 
 const MAX_INGRESSOS = 10;
-const STATUS_PENDENTES_PAGAMENTO = [
-  "AGUARDANDO_PAGAMENTO",
-  "AGUARDANDO_CONFIRMACAO",
-  "COMPROVANTE_ENVIADO",
-  "OCR_PROCESSADO",
-  "PAGAMENTO_RECUSADO"
-];
+const STATUS_LEMBRETE_PAGAMENTO = ["AGUARDANDO_PAGAMENTO"];
 
 const includeInscricao = {
   participante: true,
@@ -1342,7 +1341,18 @@ function formatInscricao(i) {
     ingressos
   };
 }
-async function enviarLembretePagamentoEvento(eventoId, adminId, ip) {
+async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = false, whatsapp = false } = {}) {
+  if (!email && !whatsapp) {
+    const err = new Error("Canal de envio não informado");
+    err.status = 400;
+    throw err;
+  }
+  if (whatsapp && !whatsappConfigurado()) {
+    const err = new Error("WhatsApp API não configurada no servidor");
+    err.status = 503;
+    throw err;
+  }
+
   const evento = await prisma.evento.findUnique({ where: { id: eventoId } });
   if (!evento) {
     const err = new Error("Evento não encontrado");
@@ -1353,29 +1363,25 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip) {
   const inscricoes = await prisma.inscricao.findMany({
     where: {
       eventoId,
-      status: { in: STATUS_PENDENTES_PAGAMENTO }
+      status: { in: STATUS_LEMBRETE_PAGAMENTO }
     },
     include: { participante: true }
   });
 
   const resultados = [];
-  let enviados = 0;
-  let falhas = 0;
+  let emailEnviados = 0;
+  let emailFalhas = 0;
+  let whatsappEnviados = 0;
+  let whatsappFalhas = 0;
   const baseUrl = (config.frontendUrl || "https://geucaristica.com.br").replace(/\/$/, "");
 
   for (const inscricao of inscricoes) {
-    const email = inscricao.participante?.email;
-    if (!email) {
-      falhas += 1;
-      resultados.push({ id: inscricao.id, sent: false, reason: "Participante sem e-mail cadastrado" });
-      continue;
-    }
-
+    const participanteEmail = inscricao.participante?.email;
+    const telefone = inscricao.participante?.telefone;
     const dataEvt = new Date(evento.data);
     const dataFmt = `${String(dataEvt.getUTCDate()).padStart(2, "0")}/${String(dataEvt.getUTCMonth() + 1).padStart(2, "0")}/${dataEvt.getUTCFullYear()}`;
     const linkPagamento = `${baseUrl}/inscricao/${encodeURIComponent(inscricao.codigo)}`;
-    const emailResult = await enviarLembretePagamento({
-      para: email,
+    const lembreteBase = {
       nome: inscricao.participante?.nome || "Participante",
       evento: evento.nome,
       data: dataFmt,
@@ -1384,37 +1390,85 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip) {
       cidade: evento.cidade,
       valor: Number(inscricao.valor),
       codigoInscricao: inscricao.codigo,
-      linkPagamento,
-      prazo: "amanhã"
-    });
+      linkPagamento
+    };
 
-    if (emailResult.sent) {
-      enviados += 1;
-    } else {
-      falhas += 1;
+    let emailResult = null;
+    if (email) {
+      emailResult = participanteEmail
+        ? await enviarLembretePagamento({
+            para: participanteEmail,
+            ...lembreteBase,
+            prazo: "hoje"
+          })
+        : { sent: false, reason: "Participante sem e-mail cadastrado" };
+      if (emailResult.sent) {
+        emailEnviados += 1;
+      } else {
+        emailFalhas += 1;
+      }
+    }
+
+    let whatsappResult = null;
+    if (whatsapp) {
+      whatsappResult = await enviarLembretePagamentoWhatsApp({
+        telefone,
+        text: buildLembretePagamentoWhatsAppText({
+          ...lembreteBase,
+          prazo: "hoje"
+        })
+      });
+      if (whatsappResult.sent) {
+        whatsappEnviados += 1;
+      } else {
+        whatsappFalhas += 1;
+      }
     }
 
     resultados.push({
       id: inscricao.id,
-      sent: Boolean(emailResult.sent),
-      to: email,
-      reason: emailResult.reason || null
+      email: email
+        ? {
+            sent: Boolean(emailResult?.sent),
+            to: participanteEmail,
+            reason: emailResult?.reason || null
+          }
+        : null,
+      whatsapp: whatsapp
+        ? {
+            sent: Boolean(whatsappResult?.sent),
+            reason: whatsappResult?.reason || null
+          }
+        : null
     });
   }
 
   await registrarLog({
     adminId,
-    acao: "EMAIL_LEMBRETE_PAGAMENTO",
+    acao: email ? "EMAIL_LEMBRETE_PAGAMENTO" : "WHATSAPP_LEMBRETE_PAGAMENTO",
     entidade: "Evento",
     entidadeId: eventoId,
-    detalhes: { total: inscricoes.length, enviados, falhas },
+    detalhes: {
+      total: inscricoes.length,
+      email,
+      whatsapp,
+      emailEnviados,
+      emailFalhas,
+      whatsappEnviados,
+      whatsappFalhas
+    },
     ip
   });
 
   return {
     total: inscricoes.length,
-    enviados,
-    falhas,
+    statusFiltro: STATUS_LEMBRETE_PAGAMENTO,
+    email,
+    whatsapp,
+    emailEnviados,
+    emailFalhas,
+    whatsappEnviados,
+    whatsappFalhas,
     resultados
   };
 }

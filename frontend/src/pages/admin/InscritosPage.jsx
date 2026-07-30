@@ -37,7 +37,8 @@ export default function InscritosPage() {
   const [excluindoId, setExcluindoId] = useState(null);
   const [confirmExcluir, setConfirmExcluir] = useState(null);
   const [page, setPage] = useState(1);
-  const [enviandoLembrete, setEnviandoLembrete] = useState(false);
+  const [enviandoLembreteEmail, setEnviandoLembreteEmail] = useState(false);
+  const [enviandoLembreteWhatsApp, setEnviandoLembreteWhatsApp] = useState(false);
   const [lembreteMsg, setLembreteMsg] = useState("");
   const [filters, setFilters] = useState({ q: "", status: "", cidade: "", telefone: "" });
 
@@ -148,19 +149,31 @@ export default function InscritosPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  async function enviarLembretePagamento() {
-    setEnviandoLembrete(true);
+  async function enviarLembretePagamento(canal) {
+    const isEmail = canal === "email";
+    const setLoading = isEmail ? setEnviandoLembreteEmail : setEnviandoLembreteWhatsApp;
+    setLoading(true);
     setLembreteMsg("");
     try {
-      const { data } = await api.post(`/inscricoes/evento/${id}/lembrete-pagamento`);
+      const { data } = await api.post(`/inscricoes/evento/${id}/lembrete-pagamento/${canal}`);
       const res = data.data || {};
-      setLembreteMsg(
-        `Lembrete enviado para ${res.enviados ?? 0} de ${res.total ?? 0} inscrição(ões) pendente(s).${res.falhas ? ` ${res.falhas} falha(s).` : ""}`
-      );
+      let msg = isEmail
+        ? `E-mail enviado para ${res.emailEnviados ?? 0} de ${res.total ?? 0} inscrição(ões) aguardando pagamento.`
+        : `WhatsApp enviado para ${res.whatsappEnviados ?? 0} de ${res.total ?? 0} inscrição(ões) aguardando pagamento.`;
+      if (isEmail && res.emailFalhas) {
+        msg += ` ${res.emailFalhas} falha(s).`;
+      }
+      if (!isEmail && res.whatsappFalhas) {
+        msg += ` ${res.whatsappFalhas} falha(s).`;
+      }
+      setLembreteMsg(msg);
     } catch (err) {
-      setLembreteMsg(err.response?.data?.message || "Falha ao enviar o lembrete de pagamento.");
+      setLembreteMsg(
+        err.response?.data?.message ||
+          (isEmail ? "Falha ao enviar lembrete por e-mail." : "Falha ao enviar lembrete por WhatsApp.")
+      );
     } finally {
-      setEnviandoLembrete(false);
+      setLoading(false);
     }
   }
 
@@ -188,8 +201,19 @@ export default function InscritosPage() {
           <Button variant="secondary" onClick={() => exportFile("pdf")}>
             PDF
           </Button>
-          <Button variant="secondary" onClick={enviarLembretePagamento} disabled={enviandoLembrete}>
-            {enviandoLembrete ? "Enviando…" : "Enviar lembrete de pagamento"}
+          <Button
+            variant="secondary"
+            onClick={() => enviarLembretePagamento("email")}
+            disabled={enviandoLembreteEmail || enviandoLembreteWhatsApp}
+          >
+            {enviandoLembreteEmail ? "Enviando e-mail…" : "Lembrete por e-mail"}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => enviarLembretePagamento("whatsapp")}
+            disabled={enviandoLembreteEmail || enviandoLembreteWhatsApp}
+          >
+            {enviandoLembreteWhatsApp ? "Enviando WhatsApp…" : "Lembrete por WhatsApp"}
           </Button>
         </div>
       </div>

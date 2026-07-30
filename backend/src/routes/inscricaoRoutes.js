@@ -34,7 +34,8 @@ router.post(
 );
 router.get("/dashboard/global", authAdmin, requireAdmin, inscricaoController.dashboardGlobal);
 router.get("/evento/:eventoId/dashboard", authAdmin, requireAdmin, inscricaoController.dashboard);
-router.post("/evento/:eventoId/lembrete-pagamento", authAdmin, requireAdmin, inscricaoController.enviarLembretePagamento);
+router.post("/evento/:eventoId/lembrete-pagamento/email", authAdmin, requireAdmin, inscricaoController.enviarLembretePagamentoEmail);
+router.post("/evento/:eventoId/lembrete-pagamento/whatsapp", authAdmin, requireAdmin, inscricaoController.enviarLembretePagamentoWhatsApp);
 router.get("/evento/:eventoId", authAdmin, requireAdmin, inscricaoController.listar);
 router.get("/evento/:eventoId/export/:formato", authAdmin, requireAdmin, inscricaoController.exportar);
 router.get("/evento/:eventoId/relatorio-financeiro", authAdmin, requireAdmin, inscricaoController.relatorioFinanceiro);

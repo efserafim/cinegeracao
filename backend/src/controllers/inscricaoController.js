@@ -78,10 +78,30 @@ async function confirmar(req, res, next) {
     return next(err);
   }
 }
-async function enviarLembretePagamento(req, res, next) {
+async function enviarLembretePagamentoEmail(req, res, next) {
   try {
-    const data = await inscricaoService.enviarLembretePagamentoEvento(req.params.eventoId, req.admin.id, req.ip);
-    return success(res, data, "Lembretes enviados");
+    const data = await inscricaoService.enviarLembretePagamentoEvento(
+      req.params.eventoId,
+      req.admin.id,
+      req.ip,
+      { email: true }
+    );
+    return success(res, data, "Lembretes por e-mail enviados");
+  } catch (err) {
+    err.expose = true;
+    return next(err);
+  }
+}
+
+async function enviarLembretePagamentoWhatsApp(req, res, next) {
+  try {
+    const data = await inscricaoService.enviarLembretePagamentoEvento(
+      req.params.eventoId,
+      req.admin.id,
+      req.ip,
+      { whatsapp: true }
+    );
+    return success(res, data, "Lembretes por WhatsApp enviados");
   } catch (err) {
     err.expose = true;
     return next(err);
@@ -274,7 +294,8 @@ module.exports = {
   obterAdmin,
   confirmar,
   liberarIngressos,
-  enviarLembretePagamento,
+  enviarLembretePagamentoEmail,
+  enviarLembretePagamentoWhatsApp,
   reenviarEmail,
   reprocessarOcr,
   conferirExtrato,

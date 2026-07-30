@@ -1,58 +1,104 @@
-# Evolution API — deployment & backend configuration
+# Evolution API — vincular WhatsApp e configurar o backend
 
-Este documento descreve os passos mínimos para configurar a Evolution API (rodando no Render ou localmente) e apontar o backend do CineGeração para ela.
+Use **WHATSAPP-BAILEYS** (QR code / WhatsApp Web). **Não** use `WHATSAPP-BUSINESS` a menos que tenha conta Meta Business API.
 
-1) Se você já tem a Evolution API no Render
+## 1) Evolution API no Render
 
-- Na página do serviço Evolution API no Render, copie o valor de `AUTHENTICATION_API_KEY` exibido em Environment Variables — essa é a chave que autoriza chamadas ao endpoint da Evolution.
-- Copie também a `SERVER_URL` (ex: `https://evolution-api-b4r0.onrender.com`).
+No serviço **Evolution API** no Render, copie:
 
-2) Criar a instância WhatsApp (uma vez)
+| Variável Evolution | Vai para o backend como |
+|--------------------|-------------------------|
+| `SERVER_URL` | `WHATSAPP_API_URL` |
+| `AUTHENTICATION_API_KEY` | `WHATSAPP_API_KEY` |
 
-Use o `AUTHENTICATION_API_KEY` para criar uma instância WhatsApp na sua Evolution API:
+Abra a URL da Evolution no navegador uma vez (Render free tier “acorda” o serviço).
 
-```bash
-curl -X POST "https://<EVOLUTION_URL>/instance/create" \
-  -H "Content-Type: application/json" \
-  -H "apikey: <AUTHENTICATION_API_KEY>" \
-  -d '{
-    "instanceName":"default",
-    "token":"<META_PERMANENT_TOKEN_OU_BAILEYS_TOKEN>",
-    "number":"<55XXXXXXXXX>",
-    "businessId":"<BUSINESS_ID_SE_APLICA>",
-    "qrcode":false,
-    "integration":"WHATSAPP-BUSINESS"
-  }'
+## 2) Vincular WhatsApp (QR code)
+
+### Opção A — script do projeto (Windows / PowerShell)
+
+No `backend/.env`:
+
+```env
+WHATSAPP_API_URL=https://SUA-EVOLUTION.onrender.com
+WHATSAPP_API_KEY=sua_authentication_api_key
+WHATSAPP_API_INSTANCE_NAME=default
 ```
 
-Se a criação for bem-sucedida, confirme o `instanceName` e use-o no backend.
+Depois:
 
-3) Configurar o backend (onde roda o `backend` do CineGeração)
-
-- No serviço do BACKEND (Render, Railway, Vercel, etc), adicione as variáveis de ambiente:
-  - `WHATSAPP_API_URL=https://<EVOLUTION_URL>`
-  - `WHATSAPP_API_KEY=<AUTHENTICATION_API_KEY>`
-  - `WHATSAPP_API_INSTANCE_NAME=default`
-- Reinicie o serviço do backend.
-
-4) Testes rápidos
-
-- Teste enviar mensagem diretamente para a Evolution API:
-```bash
-curl -X POST "https://<EVOLUTION_URL>/message/sendText/default" \
-  -H "Content-Type: application/json" \
-  -H "apikey: <AUTHENTICATION_API_KEY>" \
-  -d '{"number":"5511999999999","textMessage":{"text":"Teste"}}'
+```powershell
+cd backend
+node scripts/evolution-vincular.js
 ```
 
-- Teste seu endpoint no backend (requere admin auth):
-```bash
-curl -X POST "https://<SEU_BACKEND>/api/inscricoes/evento/<EVENTO_ID>/lembrete-pagamento" \
-  -H "Authorization: Bearer <ADMIN_JWT>" \
-  -H "Content-Type: application/json"
+O QR é salvo em `backend/uploads/evolution-qr-default.png`. Escaneie no celular: **WhatsApp → Aparelhos conectados → Conectar aparelho**.
+
+### Opção B — curl (criar instância)
+
+**PowerShell** — use aspas duplas e JSON válido (erro comum: JSON quebrado → `Expected property name or '}'`):
+
+```powershell
+$headers = @{
+  "Content-Type" = "application/json"
+  "apikey" = "SUA_API_KEY"
+}
+$body = @{
+  instanceName = "default"
+  qrcode = $true
+  integration = "WHATSAPP-BAILEYS"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Post -Uri "https://SUA-EVOLUTION.onrender.com/instance/create" -Headers $headers -Body $body
 ```
 
-5) Notas de segurança
+### Opção C — pegar QR de instância existente
 
-- NUNCA exponha `WHATSAPP_API_KEY` no frontend. Coloque somente no backend.
-- Use variáveis de ambiente do host (Render Dashboard → Environment) — não comite chaves em repositórios.
+```powershell
+Invoke-RestMethod -Uri "https://SUA-EVOLUTION.onrender.com/instance/connect/default" -Headers @{ apikey = "SUA_API_KEY" }
+```
+
+### Conferir conexão
+
+```powershell
+Invoke-RestMethod -Uri "https://SUA-EVOLUTION.onrender.com/instance/connectionState/default" -Headers @{ apikey = "SUA_API_KEY" }
+```
+
+Estado **`open`** = vinculado.
+
+## 3) Backend CineGeração (Render)
+
+No serviço **cinegeracao** (backend), mesmas 3 variáveis:
+
+```env
+WHATSAPP_API_URL=https://SUA-EVOLUTION.onrender.com
+WHATSAPP_API_KEY=sua_authentication_api_key
+WHATSAPP_API_INSTANCE_NAME=default
+```
+
+Salve e aguarde redeploy.
+
+## 4) Teste de envio
+
+```powershell
+$headers = @{ "Content-Type" = "application/json"; apikey = "SUA_API_KEY" }
+$body = @{ number = "5522999999999"; text = "Teste CineGeração" } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri "https://SUA-EVOLUTION.onrender.com/message/sendText/default" -Headers $headers -Body $body
+```
+
+No painel admin: **Inscritos → Lembrete por e-mail** ou **Lembrete por WhatsApp** (somente status **Aguardando pagamento**).
+
+## 5) Problemas comuns
+
+| Sintoma | Solução |
+|---------|---------|
+| `Expected property name or '}' in JSON` | JSON inválido no POST — use o script ou `ConvertTo-Json` no PowerShell |
+| QR não aparece | Rode `node scripts/evolution-vincular.js` de novo; no Render Evolution, atualize `WEB_VERSION` / `CONFIG_SESSION_PHONE_VERSION` (versão do WhatsApp Web) |
+| Timeout / 502 | Evolution no Render dormindo — abra a URL e espere |
+| Lembrete não envia | Confirme as 3 vars no **backend** Render (não só no `.env` local) |
+| `instance not found` | `WHATSAPP_API_INSTANCE_NAME` diferente do nome criado |
+
+## 6) Segurança
+
+- **Nunca** coloque `WHATSAPP_API_KEY` no frontend ou no GitHub.
+- Use Environment Variables do Render.
