@@ -3,5 +3,7 @@ services:
     name: cinegeracao
     env: node
     branch: main
-    buildCommand: npm install && npm install --prefix backend && npm install --prefix frontend && npm --prefix backend run prisma:generate && npm --prefix backend run prisma:migrate:deploy-if-db
+    # Migrate fora do build: porta 6543 trava prisma migrate. Migrations já estão no Supabase.
+    # Para nova migration: rode local com DIRECT_URL (5432) ou npm run prisma:migrate:deploy-if-db
+    buildCommand: npm install && npm install --prefix backend && npm install --prefix frontend && npm --prefix backend run prisma:generate
     startCommand: npm run start --prefix backend

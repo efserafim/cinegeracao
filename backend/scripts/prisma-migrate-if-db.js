@@ -8,7 +8,7 @@ const {
 const root = path.join(__dirname, "..");
 const schemaPath = path.join(root, "prisma", "schema.prisma");
 
-function sh(command, env, { allowFail = false } = {}) {
+function sh(command, env, { allowFail = false, timeoutMs = 90000 } = {}) {
   try {
     console.log(`[prisma-migrate-if-db] $ ${command}`);
     execSync(command, {
@@ -16,6 +16,7 @@ function sh(command, env, { allowFail = false } = {}) {
       stdio: "inherit",
       env,
       shell: true,
+      timeout: timeoutMs,
     });
     return true;
   } catch (err) {
@@ -57,5 +58,5 @@ if (!canConnect) {
 }
 
 console.log("[prisma-migrate-if-db] Database reachable. Running Prisma migrate deploy...");
-sh(`npx prisma migrate deploy --schema "${schemaPath}"`, migrateEnv);
+sh(`npx prisma migrate deploy --schema "${schemaPath}"`, migrateEnv, { timeoutMs: 120000 });
 console.log("[prisma-migrate-if-db] Prisma migrate deploy finished.");
