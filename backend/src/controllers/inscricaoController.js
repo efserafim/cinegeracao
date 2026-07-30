@@ -105,36 +105,25 @@ async function enviarLembretePagamentoWhatsApp(req, res, next) {
     }
 
     const eventoId = req.params.eventoId;
-    const { total, elegiveis, jaEnviadosHoje } =
-      await inscricaoService.contarLembretePagamentoWhatsapp(eventoId);
+    const total = await inscricaoService.contarLembretePagamento(eventoId);
 
     inscricaoService
       .enviarLembretePagamentoEvento(eventoId, req.admin.id, req.ip, { whatsapp: true })
       .then((data) => {
         console.log(
-          `[WHATSAPP] Lembrete concluído: ${data.whatsappEnviados}/${data.total} enviados, ${data.whatsappFalhas} falha(s), ${data.whatsappIgnorados ?? 0} ignorado(s) hoje`
+          `[WHATSAPP] Lembrete concluído: ${data.whatsappEnviados}/${data.total} enviados, ${data.whatsappFalhas} falha(s)`
         );
       })
       .catch((err) => {
         console.error("[WHATSAPP] Lembrete falhou:", err.message || err);
       });
 
-    let message;
-    if (elegiveis > 0) {
-      message = `Envio por WhatsApp iniciado para ${elegiveis} inscrição(ões). Pode levar alguns minutos.`;
-      if (jaEnviadosHoje > 0) {
-        message += ` ${jaEnviadosHoje} já receberam hoje e serão ignoradas.`;
-      }
-    } else if (total > 0) {
-      message = `Nenhuma inscrição elegível: ${jaEnviadosHoje} já receberam lembrete WhatsApp hoje.`;
-    } else {
-      message = "Nenhuma inscrição aguardando pagamento para enviar WhatsApp.";
-    }
-
     return success(
       res,
-      { total, elegiveis, jaEnviadosHoje, status: "processing", whatsapp: true },
-      message,
+      { total, status: "processing", whatsapp: true },
+      total > 0
+        ? `Envio por WhatsApp iniciado para ${total} inscrição(ões). Pode levar alguns minutos.`
+        : "Nenhuma inscrição aguardando pagamento para enviar WhatsApp.",
       202
     );
   } catch (err) {

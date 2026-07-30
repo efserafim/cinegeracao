@@ -162,18 +162,10 @@ export default function InscritosPage() {
       const res = data.data || {};
       let msg;
       if (!isEmail && res.status === "processing") {
-        const elegiveis = res.elegiveis ?? res.total ?? 0;
-        const jaHoje = res.jaEnviadosHoje ?? 0;
-        if (elegiveis > 0) {
-          msg = `Envio por WhatsApp iniciado para ${elegiveis} inscrição(ões) aguardando pagamento. Pode levar alguns minutos.`;
-          if (jaHoje > 0) {
-            msg += ` ${jaHoje} já receberam hoje e serão ignoradas.`;
-          }
-        } else if ((res.total ?? 0) > 0) {
-          msg = `Nenhuma inscrição elegível: ${jaHoje} já receberam lembrete WhatsApp hoje.`;
-        } else {
-          msg = "Nenhuma inscrição aguardando pagamento para enviar WhatsApp.";
-        }
+        msg =
+          res.total > 0
+            ? `Envio por WhatsApp iniciado para ${res.total} inscrição(ões) aguardando pagamento. Pode levar alguns minutos.`
+            : "Nenhuma inscrição aguardando pagamento para enviar WhatsApp.";
       } else {
         msg = isEmail
           ? `E-mail enviado para ${res.emailEnviados ?? 0} de ${res.total ?? 0} inscrição(ões) aguardando pagamento.`
