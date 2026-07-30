@@ -20,6 +20,8 @@ test('gerar texto de lembrete de pagamento para WhatsApp', () => {
   assert.match(text, /https:\/\/exemplo\.com\/inscricao\/ABC123/);
   assert.match(text, /hoje às 23h59/);
   assert.match(text, /melhores assentos/i);
+  assert.match(text, /mensagem automática/i);
+  assert.match(text, /desconsidere/i);
   assert.doesNotMatch(text, /geucaristica\.com\.br\/consultar/);
   assert.match(text, /Lavínia.*99818-7602/);
   assert.doesNotMatch(text, /Eduardo/i);

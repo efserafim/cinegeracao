@@ -60,6 +60,8 @@ function buildLembretePagamentoWhatsAppText({
     "",
     `Olá, ${primeiroNome}!`,
     "",
+    "Esta é uma mensagem automática. Se você já confirmou o pagamento ou já recebeu este lembrete, desconsidere.",
+    "",
     `O prazo foi estendido até ${prazo} às 23h59.`,
     "Quanto mais rápido você confirmar o pagamento, melhores assentos conseguimos reservar para você!",
     "",

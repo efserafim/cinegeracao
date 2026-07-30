@@ -15,8 +15,9 @@ const instanceName = (process.env.WHATSAPP_API_INSTANCE_NAME || "default").trim(
 const rawPhone = process.argv[2];
 
 function fail(msg) {
-  console.error(`\n[evolution-test] ${msg}`);
-  process.exit(1);
+  const err = new Error(msg);
+  err.isUserError = true;
+  throw err;
 }
 
 async function main() {
@@ -42,6 +43,12 @@ async function main() {
   const state = stateBody?.instance?.state || stateBody?.state || "desconhecido";
   console.log(`[evolution-test] Estado da instância: ${state}`);
 
+  if (state !== "open") {
+    fail(
+      `Instância não conectada (state=${state}). Rode "node scripts/evolution-vincular.js", escaneie o QR e aguarde state=open antes de testar envio.`
+    );
+  }
+
   const url = `${baseUrl}/message/sendText/${encodeURIComponent(instanceName)}`;
   const payload = {
     number,
@@ -63,13 +70,25 @@ async function main() {
   console.log(`[evolution-test] HTTP ${res.status} em ${elapsed}ms`);
   console.log(text);
 
-  if (!res.ok) {
-    process.exit(1);
+  if (res.status === 400 && /exists":false/i.test(text)) {
+    console.error(
+      "\n[evolution-test] A API respondeu rápido, mas o número não existe no WhatsApp (exists:false)."
+    );
+    console.error("[evolution-test] Confira o DDD e dígitos. Ex.: Lavínia (22) 99818-7602 → 5522998187602");
+    process.exitCode = 1;
+    return;
   }
+
+  if (!res.ok) {
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log("\n[evolution-test] Mensagem enviada com sucesso.");
 }
 
 main().catch((err) => {
-  console.error(`[evolution-test] Erro após ${err.message || err}`);
+  console.error(`\n[evolution-test] ${err.message || err}`);
   if (/timeout|aborted/i.test(String(err.message || err))) {
     console.error(
       "\n[evolution-test] Timeout no sendText com state=open indica Baileys desatualizado."
@@ -79,5 +98,5 @@ main().catch((err) => {
     );
     console.error("Veja backend/EVOLUTION_README.md seção «sendText trava».");
   }
-  process.exit(1);
+  process.exitCode = 1;
 });
