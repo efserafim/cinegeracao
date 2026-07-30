@@ -21,6 +21,7 @@ const { notifyAdmins } = require("./pushService");
 
 const MAX_INGRESSOS = 10;
 const STATUS_LEMBRETE_PAGAMENTO = ["AGUARDANDO_PAGAMENTO"];
+let whatsappLembreteEmAndamento = false;
 
 const includeInscricao = {
   participante: true,
@@ -1380,12 +1381,30 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
 
   let whatsappBloqueado = null;
   if (whatsapp) {
+    if (whatsappLembreteEmAndamento) {
+      console.warn("[WHATSAPP] Envio em massa já em andamento — ignorando solicitação duplicada.");
+      return {
+        total: 0,
+        statusFiltro: STATUS_LEMBRETE_PAGAMENTO,
+        email,
+        whatsapp,
+        emailEnviados: 0,
+        emailFalhas: 0,
+        whatsappEnviados: 0,
+        whatsappFalhas: 0,
+        resultados: [],
+        ignorado: true,
+        motivo: "Envio WhatsApp já em andamento"
+      };
+    }
+    whatsappLembreteEmAndamento = true;
     const evolution = await garantirEvolutionDisponivel();
     if (!evolution.ok) {
       whatsappBloqueado = evolution.reason;
     }
   }
 
+  try {
   for (const inscricao of inscricoes) {
     const participanteEmail = inscricao.participante?.email;
     const telefone = inscricao.participante?.telefone;
@@ -1485,6 +1504,11 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
     whatsappFalhas,
     resultados
   };
+  } finally {
+    if (whatsapp) {
+      whatsappLembreteEmAndamento = false;
+    }
+  }
 }
 
 async function contarLembretePagamento(eventoId) {

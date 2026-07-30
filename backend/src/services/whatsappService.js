@@ -1,10 +1,12 @@
 const config = require("../config");
 const { onlyDigits } = require("../utils/sanitize");
 
-const WHATSAPP_SEND_TIMEOUT_MS = 45000;
+const WHATSAPP_SEND_TIMEOUT_MS = 30000;
 const WHATSAPP_WAKE_TIMEOUT_MS = 90000;
-const WHATSAPP_MAX_RETRIES = 3;
+const WHATSAPP_MAX_RETRIES = 2;
 const WHATSAPP_RETRY_DELAY_MS = 3000;
+const WHATSAPP_BAILEYS_TIMEOUT_HINT =
+  "Evolution/Baileys não respondeu ao enviar. No serviço Evolution no Render, atualize CONFIG_SESSION_PHONE_VERSION, reinicie o serviço e escaneie o QR de novo (veja backend/EVOLUTION_README.md).";
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -16,6 +18,12 @@ function whatsappConfigurado() {
     config.whatsappApiKey &&
     config.whatsappApiInstanceName
   );
+}
+
+function maskPhone(number) {
+  const digits = String(number || "");
+  if (digits.length <= 4) return "****";
+  return `***${digits.slice(-4)}`;
 }
 
 function formatWhatsAppNumber(raw) {
@@ -132,7 +140,7 @@ async function enviarLembretePagamentoWhatsApp({ telefone, text }) {
   const url = `${config.whatsappApiUrl.replace(/\/$/, "")}/message/sendText/${encodeURIComponent(
     config.whatsappApiInstanceName
   )}`;
-  const payload = { number, text };
+  const payload = { number, text, linkPreview: false };
 
   let lastReason = "Falha ao enviar mensagem WhatsApp";
 
@@ -153,21 +161,31 @@ async function enviarLembretePagamentoWhatsApp({ telefone, text }) {
       }
 
       if (res.ok) {
+        console.log(`[WHATSAPP] Enviado para ${maskPhone(number)}`);
         return { sent: true, provider: "evolution-api", result: body };
       }
 
       lastReason = body?.error?.message || body?.error || body?.message || `WhatsApp HTTP ${res.status}`;
+      if (typeof lastReason === "object") {
+        lastReason = JSON.stringify(lastReason);
+      }
       const retryable = res.status >= 500 || res.status === 408 || res.status === 429;
       if (!retryable || attempt === WHATSAPP_MAX_RETRIES) {
         return { sent: false, reason: lastReason };
       }
     } catch (err) {
       lastReason = err.message || "Falha ao enviar mensagem WhatsApp";
+      const isTimeout = /timeout|aborted/i.test(lastReason);
+      if (isTimeout) {
+        lastReason = WHATSAPP_BAILEYS_TIMEOUT_HINT;
+      }
       if (attempt === WHATSAPP_MAX_RETRIES) {
-        console.error("[WHATSAPP] Falha ao enviar lembrete:", lastReason);
+        console.error(`[WHATSAPP] Falha ao enviar lembrete (${maskPhone(number)}):`, lastReason);
         return { sent: false, reason: lastReason };
       }
-      console.warn(`[WHATSAPP] Tentativa ${attempt}/${WHATSAPP_MAX_RETRIES} falhou (${lastReason}), repetindo...`);
+      console.warn(
+        `[WHATSAPP] Tentativa ${attempt}/${WHATSAPP_MAX_RETRIES} falhou para ${maskPhone(number)} (${err.message || lastReason}), repetindo...`
+      );
       if (attempt === 1) {
         await garantirEvolutionDisponivel();
       }
