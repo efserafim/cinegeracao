@@ -18,4 +18,31 @@ function applyDatabasePoolLimitToEnv() {
   }
 }
 
-module.exports = { databaseUrlWithPoolLimit, applyDatabasePoolLimitToEnv };
+/**
+ * Migrate NÃO funciona na porta 6543 (transaction pooler) — trava ou falha.
+ * Use DIRECT_URL (session 5432) ou derivamos automaticamente a partir da DATABASE_URL.
+ */
+function resolveMigrateDatabaseUrl() {
+  const direct = String(process.env.DIRECT_URL || "").trim();
+  if (direct) {
+    return databaseUrlWithPoolLimit(direct);
+  }
+
+  const runtime = String(process.env.DATABASE_URL || "").trim();
+  if (!runtime) return "";
+
+  if (/pooler\.supabase\.com:6543/i.test(runtime)) {
+    let session = runtime.replace(":6543", ":5432");
+    session = session.replace(/([?&])pgbouncer=true&?/gi, "$1");
+    session = session.replace(/\?&/, "?").replace(/[?&]$/, "");
+    return databaseUrlWithPoolLimit(session);
+  }
+
+  return databaseUrlWithPoolLimit(runtime);
+}
+
+module.exports = {
+  databaseUrlWithPoolLimit,
+  applyDatabasePoolLimitToEnv,
+  resolveMigrateDatabaseUrl,
+};
