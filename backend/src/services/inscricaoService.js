@@ -31,6 +31,24 @@ const includeInscricao = {
   ingressos: { include: { pessoa: true }, orderBy: { criadoEm: "asc" } }
 };
 
+const includeInscricaoLista = {
+  participante: {
+    select: {
+      id: true,
+      nome: true,
+      telefone: true,
+      email: true,
+      paroquia: true,
+      cidade: true
+    }
+  },
+  pagamento: { select: { id: true, metodo: true } },
+  pessoas: {
+    orderBy: { ordem: "asc" },
+    select: { id: true, nome: true, ordem: true }
+  }
+};
+
 function parseQuantidadeEPessoas(dados) {
   const quantidade = Math.max(1, Math.min(MAX_INGRESSOS, Number(dados.quantidade) || 1));
   let pessoas = Array.isArray(dados.pessoas)
@@ -490,10 +508,10 @@ async function listarPorEvento(eventoId, filtros = {}) {
   }
   const items = await prisma.inscricao.findMany({
     where,
-    include: includeInscricao,
+    include: includeInscricaoLista,
     orderBy: { criadoEm: "desc" }
   });
-  return items.map(formatInscricao);
+  return items.map(formatInscricaoLista);
 }
 async function buscarAdmin(id) {
   const inscricao = await prisma.inscricao.findUnique({
@@ -1225,6 +1243,33 @@ async function marcarConferidoExtrato(id, adminId, ip) {
   });
   return buscarAdmin(id);
 }
+function formatInscricaoLista(i) {
+  const pessoas = (i.pessoas || []).map((p) => ({
+    id: p.id,
+    nome: p.nome,
+    ordem: p.ordem
+  }));
+  const qtdPessoas = pessoas.length > 0 ? pessoas.length : i.quantidade || 1;
+  return {
+    id: i.id,
+    codigo: i.codigo,
+    status: i.status,
+    valor: Number(i.valor),
+    quantidade: qtdPessoas,
+    observacao: i.observacao,
+    criadoEm: i.criadoEm,
+    atualizadoEm: i.atualizadoEm,
+    pessoas,
+    participante: i.participante || undefined,
+    pagamento: i.pagamento
+      ? {
+          id: i.pagamento.id,
+          metodo: i.pagamento.metodo || "PIX"
+        }
+      : null
+  };
+}
+
 function formatInscricao(i) {
   const pessoas = (i.pessoas || [])
     .slice()

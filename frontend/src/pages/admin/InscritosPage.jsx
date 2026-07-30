@@ -44,16 +44,19 @@ export default function InscritosPage() {
 
   async function load() {
     setLoading(true);
+    const params = Object.fromEntries(
+      Object.entries(filters).filter(([, v]) => v)
+    );
     try {
-      const params = Object.fromEntries(
-        Object.entries(filters).filter(([, v]) => v)
-      );
-      const [list, d] = await Promise.all([
-        api.get(`/inscricoes/evento/${id}`, { params }),
-        api.get(`/inscricoes/evento/${id}/dashboard`)
-      ]);
+      const dashRes = await api.get(`/inscricoes/evento/${id}/dashboard`);
+      setDash(dashRes.data.data);
+    } catch {
+      /* stats podem falhar sem bloquear a lista */
+    }
+
+    try {
+      const list = await api.get(`/inscricoes/evento/${id}`, { params });
       setItems(list.data.data || []);
-      setDash(d.data.data);
       setPage(1);
     } finally {
       setLoading(false);
@@ -326,10 +329,13 @@ export default function InscritosPage() {
         </Button>
       </div>
 
-      {loading ? (
+      {loading && !dash ? (
         <Loading />
       ) : (
         <div className="space-y-3">
+          {loading && (
+            <p className="text-center text-sm text-[var(--color-ink-soft)]">Atualizando lista…</p>
+          )}
           <div className="overflow-x-auto rounded-xl border border-black/5 bg-white/80 dark:border-white/10 dark:bg-slate-900/70">
             <table className="w-full min-w-[1100px] border-collapse text-left text-sm">
               <thead>
