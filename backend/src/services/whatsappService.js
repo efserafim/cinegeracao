@@ -43,9 +43,9 @@ function buildLembretePagamentoWhatsAppText({
   cidade,
   valor,
   codigoInscricao,
-  linkPagamento,
-  prazo = "hoje"
+  linkPagamento
 }) {
+  const prazoTexto = config.prazoPagamento?.texto || "31/07/2026 às 23h59";
   const primeiroNome = String(nome || "").trim().split(/\s+/)[0] || "amigo";
   const valorFmt = Number(valor);
   const valorTexto = Number.isFinite(valorFmt)
@@ -62,7 +62,7 @@ function buildLembretePagamentoWhatsAppText({
     "",
     "Esta é uma mensagem automática. Se você já confirmou o pagamento ou já recebeu este lembrete, desconsidere.",
     "",
-    `O prazo foi estendido até ${prazo} às 23h59.`,
+    `O prazo foi estendido até ${prazoTexto}.`,
     "Quanto mais rápido você confirmar o pagamento, melhores assentos conseguimos reservar para você!",
     "",
     `Evento: ${evento || "CineGeração"}`,

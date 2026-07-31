@@ -66,6 +66,9 @@ const config = {
   whatsappApiUrl: (process.env.WHATSAPP_API_URL || process.env.WHATSAPP_URL || "").trim().replace(/\/$/, ""),
   whatsappApiKey: (process.env.WHATSAPP_API_KEY || "").trim(),
   whatsappApiInstanceName: (process.env.WHATSAPP_API_INSTANCE_NAME || "").trim(),
+  prazoPagamento: {
+    texto: "31/07/2026 às 23h59"
+  },
   vapid: {
     publicKey: (process.env.VAPID_PUBLIC_KEY || "").trim(),
     privateKey: (process.env.VAPID_PRIVATE_KEY || "").trim(),

@@ -12,13 +12,12 @@ test('gerar texto de lembrete de pagamento para WhatsApp', () => {
     cidade: 'Niterói',
     valor: 12,
     codigoInscricao: 'ABC123',
-    linkPagamento: 'https://exemplo.com/inscricao/ABC123',
-    prazo: 'hoje'
+    linkPagamento: 'https://exemplo.com/inscricao/ABC123'
   });
 
   assert.match(text, /CineGeração.*lembrete de pagamento/s);
   assert.match(text, /https:\/\/exemplo\.com\/inscricao\/ABC123/);
-  assert.match(text, /hoje às 23h59/);
+  assert.match(text, /31\/07\/2026 às 23h59/);
   assert.match(text, /melhores assentos/i);
   assert.match(text, /mensagem automática/i);
   assert.match(text, /desconsidere/i);

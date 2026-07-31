@@ -12,12 +12,11 @@ test('constrói html de lembrete com link de pagamento e prazo', () => {
     cidade: 'Niterói',
     valor: 12,
     codigoInscricao: 'ABC123',
-    linkPagamento: 'https://exemplo.com/inscricao/ABC123',
-    prazo: 'amanhã'
+    linkPagamento: 'https://exemplo.com/inscricao/ABC123'
   });
 
   assert.match(html, /lembrete/i);
   assert.match(html, /https:\/\/exemplo\.com\/inscricao\/ABC123/);
-  assert.match(html, /amanh[aã]/i);
+  assert.match(html, /31\/07\/2026 às 23h59/);
   assert.match(html, /ABC123/);
 });

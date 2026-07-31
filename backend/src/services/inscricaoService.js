@@ -1473,8 +1473,7 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
       emailResult = participanteEmail
         ? await enviarLembretePagamento({
             para: participanteEmail,
-            ...lembreteBase,
-            prazo: "hoje"
+            ...lembreteBase
           })
         : { sent: false, reason: "Participante sem e-mail cadastrado" };
       if (emailResult.sent) {
@@ -1490,10 +1489,7 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
         ? { sent: false, reason: whatsappBloqueado }
         : await enviarLembretePagamentoWhatsApp({
             telefone,
-            text: buildLembretePagamentoWhatsAppText({
-              ...lembreteBase,
-              prazo: "hoje"
-            })
+            text: buildLembretePagamentoWhatsAppText(lembreteBase)
           });
       if (whatsappResult.sent) {
         whatsappEnviados += 1;

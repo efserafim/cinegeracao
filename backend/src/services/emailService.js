@@ -390,9 +390,9 @@ function buildLembretePagamentoHtml({
   cidade,
   valor,
   codigoInscricao,
-  linkPagamento,
-  prazo = "amanhã"
+  linkPagamento
 }) {
+  const prazoTexto = config.prazoPagamento?.texto || "31/07/2026 às 23h59";
   const nomeSafe = escapeHtml(nome || "participante");
   const primeiroNome = escapeHtml(String(nome || "" ).trim().split(/\s+/)[0] || "herói");
   const eventoSafe = escapeHtml(evento || "evento");
@@ -406,7 +406,7 @@ function buildLembretePagamentoHtml({
   const linkSafe = escapeHtml(linkPagamento || "");
   const consultaUrl = "https://geucaristica.com.br/consultar";
   const consultaSafe = escapeHtml(consultaUrl);
-  const prazoSafe = escapeHtml(prazo || "amanhã");
+  const prazoSafe = escapeHtml(prazoTexto);
 
   return `
 <!DOCTYPE html>
@@ -418,7 +418,7 @@ function buildLembretePagamentoHtml({
 </head>
 <body style="margin:0;padding:0;background:#070a12;font-family:Arial,Helvetica,sans-serif">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0">
-    ${primeiroNome}, ainda dá tempo de concluir sua inscrição até amanhã às 23h59.
+    ${primeiroNome}, ainda dá tempo de concluir sua inscrição até ${prazoSafe}.
   </div>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#070a12;padding:28px 12px">
@@ -436,7 +436,7 @@ function buildLembretePagamentoHtml({
                 Última chance!
               </h1>
               <p style="margin:12px 0 0;font-family:Impact,Haettenschweiler,'Arial Black',Arial,sans-serif;font-size:20px;letter-spacing:1px;color:#f5c542;text-transform:uppercase">
-                Até amanhã às 23h59
+                Até ${prazoSafe}
               </p>
               <p style="margin:10px 0 0;font-size:14px;color:rgba(255,255,255,.65)">
                 ${eventoSafe}
@@ -450,7 +450,7 @@ function buildLembretePagamentoHtml({
                 Olá, ${primeiroNome}!
               </p>
               <p style="margin:0 0 18px;font-size:16px;line-height:1.7;color:#1f2937">
-                Ainda dá tempo de concluir sua inscrição com tranquilidade, mas o prazo está chegando ao fim. A equipe do <strong style="color:#e11d2e">CineGeração</strong> estendeu o pagamento até <strong>amanhã às 23h59</strong>.
+                Ainda dá tempo de concluir sua inscrição com tranquilidade, mas o prazo está chegando ao fim. A equipe do <strong style="color:#e11d2e">CineGeração</strong> estendeu o pagamento até <strong>${prazoSafe}</strong>.
               </p>
 
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;border-radius:14px;overflow:hidden;border:2px solid #1a6cff;background:#eff6ff">
@@ -512,7 +512,7 @@ function buildLembretePagamentoHtml({
                       ⚠ Importante
                     </p>
                     <ul style="margin:0;padding-left:18px;color:#78350f;font-size:13px;line-height:1.7">
-                      <li>O pagamento precisa ser concluído até <strong>amanhã às 23h59</strong>.</li>
+                      <li>O pagamento precisa ser concluído até <strong>${prazoSafe}</strong>.</li>
                       <li>Depois desse horário, a vaga pode ser liberada para outra pessoa.</li>
                       <li>Se tiver qualquer dúvida, fale com Lavínia ou Eduardo imediatamente.</li>
                     </ul>
@@ -693,13 +693,13 @@ async function enviarLembretePagamento({
   cidade,
   valor,
   codigoInscricao,
-  linkPagamento,
-  prazo = "amanhã"
+  linkPagamento
 }) {
   if (!para) {
     return { sent: false, reason: "Participante sem e-mail" };
   }
-  const subject = "🕷️ CineGeração — prazo estendido até amanhã às 23h59";
+  const prazoTexto = config.prazoPagamento?.texto || "31/07/2026 às 23h59";
+  const subject = `🕷️ CineGeração — prazo estendido até ${prazoTexto}`;
   const html = buildLembretePagamentoHtml({
     nome,
     evento,
@@ -709,13 +709,12 @@ async function enviarLembretePagamento({
     cidade,
     valor,
     codigoInscricao,
-    linkPagamento,
-    prazo
+    linkPagamento
   });
   const text = [
     `Olá, ${nome}!`,
     "",
-    `A coordenação do CineGeração estendeu o prazo para pagamento até ${prazo} às 23h59.`,
+    `A coordenação do CineGeração estendeu o prazo para pagamento até ${prazoTexto}.`,
     `Evento: ${evento}`,
     `Data: ${data}`,
     `Sessão: ${horario}`,
