@@ -1,4 +1,5 @@
 const inscricaoService = require("../services/inscricaoService");
+const config = require("../config");
 const exportService = require("../services/exportService");
 const { whatsappConfigurado } = require("../services/whatsappService");
 const prisma = require("../config/prisma");
@@ -106,12 +107,14 @@ async function enviarLembretePagamentoWhatsApp(req, res, next) {
 
     const eventoId = req.params.eventoId;
     const total = await inscricaoService.contarLembretePagamento(eventoId);
+    const maxPorLote = config.whatsappBulk?.maxPerRun ?? 15;
+    const nestaRodada = Math.min(total, maxPorLote);
 
     inscricaoService
       .enviarLembretePagamentoEvento(eventoId, req.admin.id, req.ip, { whatsapp: true })
       .then((data) => {
         console.log(
-          `[WHATSAPP] Lembrete concluído: ${data.whatsappEnviados}/${data.total} enviados, ${data.whatsappFalhas} falha(s)`
+          `[WHATSAPP] Lembrete concluído: ${data.whatsappEnviados}/${data.whatsappProcessados} enviados neste lote, ${data.whatsappFalhas} falha(s), ${data.whatsappPendentes} pendente(s)`
         );
       })
       .catch((err) => {
@@ -120,9 +123,16 @@ async function enviarLembretePagamentoWhatsApp(req, res, next) {
 
     return success(
       res,
-      { total, status: "processing", whatsapp: true },
+      {
+        total,
+        status: "processing",
+        whatsapp: true,
+        maxPorLote,
+        nestaRodada,
+        pendentes: Math.max(0, total - nestaRodada)
+      },
       total > 0
-        ? `Envio por WhatsApp iniciado para ${total} inscrição(ões). Pode levar alguns minutos.`
+        ? `Envio por WhatsApp iniciado (${nestaRodada} de ${total} neste lote). Aguarde ~3 min entre lotes.`
         : "Nenhuma inscrição aguardando pagamento para enviar WhatsApp.",
       202
     );

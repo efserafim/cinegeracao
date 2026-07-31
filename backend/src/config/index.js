@@ -69,6 +69,11 @@ const config = {
   prazoPagamento: {
     texto: "31/07/2026 às 23h59"
   },
+  whatsappBulk: {
+    delayMs: Number(process.env.WHATSAPP_BULK_DELAY_MS) || 12000,
+    delayJitterMs: Number(process.env.WHATSAPP_BULK_DELAY_JITTER_MS) || 5000,
+    maxPerRun: Number(process.env.WHATSAPP_BULK_MAX_PER_RUN) || 15
+  },
   vapid: {
     publicKey: (process.env.VAPID_PUBLIC_KEY || "").trim(),
     privateKey: (process.env.VAPID_PRIVATE_KEY || "").trim(),

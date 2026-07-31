@@ -23,6 +23,16 @@ const MAX_INGRESSOS = 10;
 const STATUS_LEMBRETE_PAGAMENTO = ["AGUARDANDO_PAGAMENTO"];
 let whatsappLembreteEmAndamento = false;
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function whatsappBulkDelayMs() {
+  const base = config.whatsappBulk?.delayMs ?? 12000;
+  const jitter = config.whatsappBulk?.delayJitterMs ?? 5000;
+  return base + Math.floor(Math.random() * (jitter + 1));
+}
+
 const includeInscricao = {
   participante: true,
   evento: true,
@@ -1422,6 +1432,8 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
   let emailFalhas = 0;
   let whatsappEnviados = 0;
   let whatsappFalhas = 0;
+  let whatsappProcessados = 0;
+  const whatsappMaxPorLote = config.whatsappBulk?.maxPerRun ?? 15;
   const baseUrl = (config.frontendUrl || "https://geucaristica.com.br").replace(/\/$/, "");
 
   let whatsappBloqueado = null;
@@ -1485,18 +1497,24 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
 
     let whatsappResult = null;
     if (whatsapp) {
+      if (whatsappProcessados >= whatsappMaxPorLote) {
+        break;
+      }
       whatsappResult = whatsappBloqueado
         ? { sent: false, reason: whatsappBloqueado }
         : await enviarLembretePagamentoWhatsApp({
             telefone,
             text: buildLembretePagamentoWhatsAppText(lembreteBase)
           });
+      whatsappProcessados += 1;
       if (whatsappResult.sent) {
         whatsappEnviados += 1;
       } else {
         whatsappFalhas += 1;
       }
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      if (whatsappProcessados < whatsappMaxPorLote && whatsappProcessados < inscricoes.length) {
+        await sleep(whatsappBulkDelayMs());
+      }
     }
 
     resultados.push({
@@ -1529,7 +1547,11 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
       emailEnviados,
       emailFalhas,
       whatsappEnviados,
-      whatsappFalhas
+      whatsappFalhas,
+      whatsappMaxPorLote,
+      whatsappProcessados,
+      whatsappPendentes: whatsapp ? Math.max(0, inscricoes.length - whatsappProcessados) : 0,
+      whatsappLimitado: whatsapp && inscricoes.length > whatsappProcessados
     },
     ip
   });
@@ -1543,6 +1565,10 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
     emailFalhas,
     whatsappEnviados,
     whatsappFalhas,
+    whatsappMaxPorLote,
+    whatsappProcessados,
+    whatsappPendentes: whatsapp ? Math.max(0, inscricoes.length - whatsappProcessados) : 0,
+    whatsappLimitado: whatsapp && inscricoes.length > whatsappProcessados,
     resultados
   };
   } finally {

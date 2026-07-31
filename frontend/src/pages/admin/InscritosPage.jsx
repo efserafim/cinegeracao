@@ -39,6 +39,7 @@ export default function InscritosPage() {
   const [page, setPage] = useState(1);
   const [enviandoLembreteEmail, setEnviandoLembreteEmail] = useState(false);
   const [enviandoLembreteWhatsApp, setEnviandoLembreteWhatsApp] = useState(false);
+  const [confirmLembreteWhatsApp, setConfirmLembreteWhatsApp] = useState(false);
   const [lembreteMsg, setLembreteMsg] = useState("");
   const [filters, setFilters] = useState({ q: "", status: "", cidade: "", telefone: "" });
 
@@ -162,10 +163,16 @@ export default function InscritosPage() {
       const res = data.data || {};
       let msg;
       if (!isEmail && res.status === "processing") {
+        const lote = res.nestaRodada ?? res.total ?? 0;
+        const max = res.maxPorLote ?? 15;
         msg =
           res.total > 0
-            ? `Envio por WhatsApp iniciado para ${res.total} inscrição(ões) aguardando pagamento. Pode levar alguns minutos.`
+            ? `WhatsApp: enviando ${lote} de ${res.total} neste lote (máx. ${max} por vez). Intervalo ~12–17 s entre mensagens.`
             : "Nenhuma inscrição aguardando pagamento para enviar WhatsApp.";
+        if (res.pendentes > 0) {
+          msg += ` Aguarde ~3 min e clique de novo para os ${res.pendentes} restante(s).`;
+        }
+        msg += " Para todos de uma vez, use Lembrete por e-mail.";
       } else {
         msg = isEmail
           ? `E-mail enviado para ${res.emailEnviados ?? 0} de ${res.total ?? 0} inscrição(ões) aguardando pagamento.`
@@ -190,6 +197,24 @@ export default function InscritosPage() {
 
   return (
     <div className="space-y-6">
+      <ConfirmModal
+        open={confirmLembreteWhatsApp}
+        title="Lembrete por WhatsApp"
+        message={`O WhatsApp limita mensagens para quem nunca conversou com este número.
+
+Serão enviados até 15 lembretes por clique, com pausa de ~12–17 s entre cada um.
+
+Se ainda faltarem inscritos, aguarde cerca de 3 minutos e clique de novo.
+
+Para avisar todos de uma vez, prefira Lembrete por e-mail.`}
+        confirmLabel="Enviar lote"
+        busy={enviandoLembreteWhatsApp}
+        onCancel={() => setConfirmLembreteWhatsApp(false)}
+        onConfirm={() => {
+          setConfirmLembreteWhatsApp(false);
+          enviarLembretePagamento("whatsapp");
+        }}
+      />
       <ConfirmModal
         open={Boolean(confirmExcluir)}
         title="Excluir inscrição?"
@@ -221,7 +246,7 @@ export default function InscritosPage() {
           </Button>
           <Button
             variant="secondary"
-            onClick={() => enviarLembretePagamento("whatsapp")}
+            onClick={() => setConfirmLembreteWhatsApp(true)}
             disabled={enviandoLembreteEmail || enviandoLembreteWhatsApp}
           >
             {enviandoLembreteWhatsApp ? "Enviando WhatsApp…" : "Lembrete por WhatsApp"}
