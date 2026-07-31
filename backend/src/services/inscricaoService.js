@@ -33,6 +33,25 @@ function whatsappBulkDelayMs() {
   return base + Math.floor(Math.random() * (jitter + 1));
 }
 
+function formatEventoData(evento) {
+  const dataEvt = new Date(evento.data);
+  return `${String(dataEvt.getUTCDate()).padStart(2, "0")}/${String(dataEvt.getUTCMonth() + 1).padStart(2, "0")}/${dataEvt.getUTCFullYear()}`;
+}
+
+function buildLembreteBase(inscricao, evento, baseUrl) {
+  return {
+    nome: inscricao.participante?.nome || "Participante",
+    evento: evento.nome,
+    data: formatEventoData(evento),
+    horario: evento.horario,
+    local: evento.local,
+    cidade: evento.cidade,
+    valor: Number(inscricao.valor),
+    codigoInscricao: inscricao.codigo,
+    linkPagamento: `${baseUrl.replace(/\/$/, "")}/inscricao/${encodeURIComponent(inscricao.codigo)}`
+  };
+}
+
 const includeInscricao = {
   participante: true,
   evento: true,
@@ -1465,20 +1484,7 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
   for (const inscricao of inscricoes) {
     const participanteEmail = inscricao.participante?.email;
     const telefone = inscricao.participante?.telefone;
-    const dataEvt = new Date(evento.data);
-    const dataFmt = `${String(dataEvt.getUTCDate()).padStart(2, "0")}/${String(dataEvt.getUTCMonth() + 1).padStart(2, "0")}/${dataEvt.getUTCFullYear()}`;
-    const linkPagamento = `${baseUrl}/inscricao/${encodeURIComponent(inscricao.codigo)}`;
-    const lembreteBase = {
-      nome: inscricao.participante?.nome || "Participante",
-      evento: evento.nome,
-      data: dataFmt,
-      horario: evento.horario,
-      local: evento.local,
-      cidade: evento.cidade,
-      valor: Number(inscricao.valor),
-      codigoInscricao: inscricao.codigo,
-      linkPagamento
-    };
+    const lembreteBase = buildLembreteBase(inscricao, evento, baseUrl);
 
     let emailResult = null;
     if (email) {
@@ -1578,6 +1584,91 @@ async function enviarLembretePagamentoEvento(eventoId, adminId, ip, { email = fa
   }
 }
 
+async function enviarLembretePagamentoInscricao(inscricaoId, adminId, ip, { email = false, whatsapp = false } = {}) {
+  if (!email && !whatsapp) {
+    const err = new Error("Canal de envio não informado");
+    err.status = 400;
+    throw err;
+  }
+  if (whatsapp && !whatsappConfigurado()) {
+    const err = new Error(
+      "WhatsApp API não configurada no servidor. Defina WHATSAPP_API_URL (ou WHATSAPP_URL), WHATSAPP_API_KEY e WHATSAPP_API_INSTANCE_NAME no Render."
+    );
+    err.status = 503;
+    throw err;
+  }
+
+  const inscricao = await prisma.inscricao.findUnique({
+    where: { id: inscricaoId },
+    include: { participante: true, evento: true }
+  });
+  if (!inscricao) {
+    const err = new Error("Inscrição não encontrada");
+    err.status = 404;
+    throw err;
+  }
+  if (!STATUS_LEMBRETE_PAGAMENTO.includes(inscricao.status)) {
+    const err = new Error("Só é possível enviar lembrete para inscrições aguardando pagamento");
+    err.status = 400;
+    throw err;
+  }
+
+  const baseUrl = config.frontendUrl || "https://geucaristica.com.br";
+  const lembreteBase = buildLembreteBase(inscricao, inscricao.evento, baseUrl);
+
+  let emailResult = null;
+  let whatsappResult = null;
+
+  if (email) {
+    const para = inscricao.participante?.email;
+    emailResult = para
+      ? await enviarLembretePagamento({ para, ...lembreteBase })
+      : { sent: false, reason: "Participante sem e-mail cadastrado" };
+  }
+
+  if (whatsapp) {
+    const telefone = inscricao.participante?.telefone;
+    if (!telefone) {
+      const err = new Error("Participante sem telefone cadastrado");
+      err.status = 400;
+      throw err;
+    }
+    const evolution = await garantirEvolutionDisponivel();
+    if (!evolution.ok) {
+      const err = new Error(evolution.reason);
+      err.status = 503;
+      throw err;
+    }
+    whatsappResult = await enviarLembretePagamentoWhatsApp({
+      telefone,
+      text: buildLembretePagamentoWhatsAppText(lembreteBase)
+    });
+  }
+
+  await registrarLog({
+    adminId,
+    acao: email ? "EMAIL_LEMBRETE_PAGAMENTO_INDIVIDUAL" : "WHATSAPP_LEMBRETE_PAGAMENTO_INDIVIDUAL",
+    entidade: "Inscricao",
+    entidadeId: inscricaoId,
+    detalhes: {
+      codigo: inscricao.codigo,
+      email,
+      whatsapp,
+      emailResult,
+      whatsappResult
+    },
+    ip
+  });
+
+  return {
+    inscricaoId,
+    codigo: inscricao.codigo,
+    nome: inscricao.participante?.nome || null,
+    email: emailResult,
+    whatsapp: whatsappResult
+  };
+}
+
 async function contarLembretePagamento(eventoId) {
   const evento = await prisma.evento.findUnique({
     where: { id: eventoId },
@@ -1673,6 +1764,7 @@ module.exports = {
   liberarIngressosFaltantes,
   reenviarEmailConfirmacao,
   enviarLembretePagamentoEvento,
+  enviarLembretePagamentoInscricao,
   contarLembretePagamento,
   recusarPagamento,
   cancelar,

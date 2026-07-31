@@ -41,6 +41,7 @@ router.get("/evento/:eventoId/export/:formato", authAdmin, requireAdmin, inscric
 router.get("/evento/:eventoId/relatorio-financeiro", authAdmin, requireAdmin, inscricaoController.relatorioFinanceiro);
 router.get("/:id", authAdmin, requireAdmin, inscricaoController.obterAdmin);
 router.post("/:id/confirmar", authAdmin, requireAdmin, inscricaoController.confirmar);
+router.post("/:id/lembrete-pagamento/whatsapp", authAdmin, requireAdmin, inscricaoController.enviarLembretePagamentoInscricaoWhatsApp);
 router.post("/:id/reenviar-email", authAdmin, requireAdmin, inscricaoController.reenviarEmail);
 router.post("/:id/liberar-ingressos", authAdmin, requireAdmin, inscricaoController.liberarIngressos);
 router.post("/:id/reprocessar-ocr", authAdmin, requireAdmin, inscricaoController.reprocessarOcr);

@@ -142,6 +142,37 @@ async function enviarLembretePagamentoWhatsApp(req, res, next) {
   }
 }
 
+async function enviarLembretePagamentoInscricaoWhatsApp(req, res, next) {
+  try {
+    if (!whatsappConfigurado()) {
+      const err = new Error(
+        "WhatsApp API não configurada no servidor. Defina WHATSAPP_API_URL (ou WHATSAPP_URL), WHATSAPP_API_KEY e WHATSAPP_API_INSTANCE_NAME no Render."
+      );
+      err.status = 503;
+      throw err;
+    }
+
+    const data = await inscricaoService.enviarLembretePagamentoInscricao(
+      req.params.id,
+      req.admin.id,
+      req.ip,
+      { whatsapp: true }
+    );
+
+    const sent = Boolean(data.whatsapp?.sent);
+    return success(
+      res,
+      data,
+      sent
+        ? `WhatsApp enviado para ${data.nome || "participante"}.`
+        : data.whatsapp?.reason || "Não foi possível enviar o WhatsApp."
+    );
+  } catch (err) {
+    err.expose = true;
+    return next(err);
+  }
+}
+
 async function reenviarEmail(req, res, next) {
   try {
     const data = await inscricaoService.reenviarEmailConfirmacao(req.params.id, req.admin.id, req.ip);
@@ -330,6 +361,7 @@ module.exports = {
   liberarIngressos,
   enviarLembretePagamentoEmail,
   enviarLembretePagamentoWhatsApp,
+  enviarLembretePagamentoInscricaoWhatsApp,
   reenviarEmail,
   reprocessarOcr,
   conferirExtrato,

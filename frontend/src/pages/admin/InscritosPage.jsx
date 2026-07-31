@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Download, Search, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, MessageCircle, Search, Trash2 } from "lucide-react";
 import api, { formatDate, formatMoney } from "../../services/api";
 import { Button, Input, Loading, StatCard, StatusBadge, ConfirmModal } from "../../components/ui";
 
@@ -40,6 +40,8 @@ export default function InscritosPage() {
   const [enviandoLembreteEmail, setEnviandoLembreteEmail] = useState(false);
   const [enviandoLembreteWhatsApp, setEnviandoLembreteWhatsApp] = useState(false);
   const [confirmLembreteWhatsApp, setConfirmLembreteWhatsApp] = useState(false);
+  const [confirmWhatsAppInscricao, setConfirmWhatsAppInscricao] = useState(null);
+  const [enviandoWhatsAppId, setEnviandoWhatsAppId] = useState(null);
   const [lembreteMsg, setLembreteMsg] = useState("");
   const [filters, setFilters] = useState({ q: "", status: "", cidade: "", telefone: "" });
 
@@ -195,6 +197,33 @@ export default function InscritosPage() {
     }
   }
 
+  async function enviarWhatsAppIndividual(inscricao) {
+    if (!inscricao?.id) return;
+    setEnviandoWhatsAppId(inscricao.id);
+    setLembreteMsg("");
+    try {
+      const { data } = await api.post(`/inscricoes/${inscricao.id}/lembrete-pagamento/whatsapp`);
+      const res = data.data || {};
+      const ok = Boolean(res.whatsapp?.sent);
+      const nome =
+        inscricao.participante?.nome ||
+        inscricao.pessoas?.[0]?.nome ||
+        "participante";
+      setLembreteMsg(
+        ok
+          ? `WhatsApp enviado para ${nome}.`
+          : res.whatsapp?.reason || data.message || `Não foi possível enviar WhatsApp para ${nome}.`
+      );
+    } catch (err) {
+      setLembreteMsg(
+        err.response?.data?.message || "Falha ao enviar WhatsApp para esta inscrição."
+      );
+    } finally {
+      setEnviandoWhatsAppId(null);
+      setConfirmWhatsAppInscricao(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <ConfirmModal
@@ -214,6 +243,23 @@ Para avisar todos de uma vez, prefira Lembrete por e-mail.`}
           setConfirmLembreteWhatsApp(false);
           enviarLembretePagamento("whatsapp");
         }}
+      />
+      <ConfirmModal
+        open={Boolean(confirmWhatsAppInscricao)}
+        title="Enviar WhatsApp"
+        message={
+          confirmWhatsAppInscricao
+            ? `Enviar lembrete de pagamento por WhatsApp para ${
+                confirmWhatsAppInscricao.participante?.nome ||
+                confirmWhatsAppInscricao.pessoas?.[0]?.nome ||
+                "esta pessoa"
+              }?\n\nTelefone: ${formatPhone(confirmWhatsAppInscricao.participante?.telefone)}`
+            : ""
+        }
+        confirmLabel="Enviar"
+        busy={Boolean(enviandoWhatsAppId)}
+        onCancel={() => setConfirmWhatsAppInscricao(null)}
+        onConfirm={() => enviarWhatsAppIndividual(confirmWhatsAppInscricao)}
       />
       <ConfirmModal
         open={Boolean(confirmExcluir)}
@@ -249,7 +295,7 @@ Para avisar todos de uma vez, prefira Lembrete por e-mail.`}
             onClick={() => setConfirmLembreteWhatsApp(true)}
             disabled={enviandoLembreteEmail || enviandoLembreteWhatsApp}
           >
-            {enviandoLembreteWhatsApp ? "Enviando WhatsApp…" : "Lembrete por WhatsApp"}
+            {enviandoLembreteWhatsApp ? "Enviando WhatsApp…" : "WhatsApp (lote)"}
           </Button>
         </div>
       </div>
@@ -435,6 +481,18 @@ Para avisar todos de uma vez, prefira Lembrete por e-mail.`}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2">
                         <div className="flex items-center justify-end gap-2">
+                          {i.status === "AGUARDANDO_PAGAMENTO" && i.participante?.telefone && (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmWhatsAppInscricao(i)}
+                              disabled={Boolean(enviandoWhatsAppId) || enviandoLembreteWhatsApp}
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-emerald-600 hover:bg-emerald-500/10 disabled:opacity-50"
+                              title="Enviar WhatsApp para esta pessoa"
+                              aria-label="Enviar WhatsApp"
+                            >
+                              <MessageCircle size={14} />
+                            </button>
+                          )}
                           <Link
                             to={`/admin/inscricoes/${i.id}`}
                             className="text-xs font-semibold text-[var(--color-forest)] hover:underline"
